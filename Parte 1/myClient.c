@@ -89,7 +89,7 @@ void menu_help() /* Funcao para realizar a impressao do menu de ajuda do program
 
     printf("\n------------------------------------------------------------------------------\n");
 
-    printf("\nPressione qualquer tecla para voltar.\n");
+    printf("\nPressione qualquer tecla para continuar.\n");
 }
 
 int verificaParametros(char *comando, int quantidade_parametros)
@@ -138,19 +138,29 @@ void analisa_diretorio(char *nome_usuario)
 
 int executa_comando(char *comando)
 {
-    if (strncmp(comando,COMANDO_MYCLIENT,strlen(COMANDO_MYCLIENT)) == 0)
+    if (strncmp(comando,COMANDO_UPLOAD,strlen(COMANDO_UPLOAD)) == 0)
     {
-        analisa_diretorio(comando);
+    	if (verificaParametros(comando,QUANTIDADE_PARAMETROS_UPLOAD) == 0)
+    		printf("\nComando invalido! Numero de parametros incorreto!\n");
+    	else
+    		printf("\nAcertou o comando!\n");
     }
 
-    else if (strncmp(comando,COMANDO_UPLOAD,strlen(COMANDO_UPLOAD)) == 0)
-        puts(COMANDO_UPLOAD);
-
     else if (strncmp(comando,COMANDO_DOWNLOAD,strlen(COMANDO_DOWNLOAD)) == 0)
-        puts(COMANDO_DOWNLOAD);
+    {
+    	if (verificaParametros(comando,QUANTIDADE_PARAMETROS_DOWNLOAD) == 0)
+    		printf("\nComando invalido! Numero de parametros incorreto!\n");
+    	else
+    		printf("\nAcertou o comando!\n");
+    }
 
     else if (strncmp(comando,COMANDO_DELETE,strlen(COMANDO_DELETE)) == 0)
-        puts(COMANDO_DELETE);
+    {
+    	if (verificaParametros(comando,QUANTIDADE_PARAMETROS_DELETE) == 0)
+    		printf("\nComando invalido! Numero de parametros incorreto!\n");
+    	else
+    		printf("\nAcertou o comando!\n");
+    }
 
     else if (strcmp(comando,COMANDO_LISTSERVER) == 0)
         puts(COMANDO_LISTSERVER);
@@ -168,10 +178,10 @@ int executa_comando(char *comando)
         menu_help();
 
     else
-    {
         printf("\nComando invalido!\n");
-        printf("\nPressione qualquer tecla para voltar.\n");
-    }
+    
+    printf("\nPressione qualquer tecla para continuar.\n");
+
 }
 
 void menu_principal(char *nome_usuario, char *endereco_ip, char *numero_porta)
@@ -215,4 +225,3 @@ int main (int argc, char *argv[])
 
     return 0;
 }
-
