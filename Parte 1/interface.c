@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <conio.h>
-
-#define ESC 27
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #define DIMENSAO_COMANDO 200
 #define DIMENSAO_NOME_USUARIO 50
@@ -15,7 +15,7 @@
 #define FALHOU_CONEXAO 0
 
 #define NOME_DIRETORIO_SERVIDOR "sync_dir_servidor"
-#define PREFIXO_DIRETORIO_USUARIO "sync_dir_"
+#define PREFIXO_DIRETORIO "sync_dir_"
 
 #define COMANDO_MYCLIENT "myClient"
 #define COMANDO_UPLOAD "upload"
@@ -31,13 +31,6 @@
 #define QUANTIDADE_PARAMETROS_DOWNLOAD 1
 #define QUANTIDADE_PARAMETROS_DELETE 1
 
-#include <stdlib.h>
-#include <stdio.h>
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-
 void limpa_tela()
 {
     system("clear || cls");
@@ -48,7 +41,7 @@ void menu_help() /* Funcao para realizar a impressao do menu de ajuda do program
     system("clear || cls");
     printf("\nLISTA DE COMANDOS:\n");
 
-    printf("\n----------------------------------------------------------------------------------------------------\n");
+    printf("\n------------------------------------------------------------------------------\n");
 
     printf("\nCOMANDO 1:");
     printf("\n\nSINTAXE:\nupload <path/filename.ext>");
@@ -57,7 +50,7 @@ void menu_help() /* Funcao para realizar a impressao do menu de ajuda do program
     printf("servidor e propagando-o para todos os dispositivos do usuario.\n");
     printf("e.g. upload /home/user/MyFolder/filename.ext\n");
 
-    printf("\n----------------------------------------------------------------------------------------------------\n");
+    printf("\n------------------------------------------------------------------------------\n");
 
     printf("\nCOMANDO 2:");
     printf("\n\nSINTAXE:\ndownload <filename.ext>");
@@ -66,37 +59,37 @@ void menu_help() /* Funcao para realizar a impressao do menu de ajuda do program
     printf("o diretorio local (de onde o servidor foi chamado).\n");
     printf("e.g. download mySpreadsheet.xlsx\n");
 
-    printf("\n----------------------------------------------------------------------------------------------------\n");
+    printf("\n------------------------------------------------------------------------------\n");
 
     printf("\nCOMANDO 3:");
     printf("\n\nSINTAXE:\ndelete <filename.ext>");
     printf("\n\nDESCRICAO:\n");
     printf("Exclui o arquivo <filename.ext> de ""sync_dir"".\n");
 
-    printf("\n----------------------------------------------------------------------------------------------------\n");
+    printf("\n------------------------------------------------------------------------------\n");
 
     printf("\nCOMANDO 4:");
     printf("\n\nSINTAXE:\nlist_server");
     printf("\n\nDESCRICAO:\n");
     printf("Lista os arquivos salvos no servidor, associados ao usuario.\n");
 
-    printf("\n----------------------------------------------------------------------------------------------------\n");
+    printf("\n------------------------------------------------------------------------------\n");
 
     printf("\nCOMANDO 5:");
     printf("\n\nSINTAXE:\nlist_client");
     printf("\n\nDESCRICAO:\n");
     printf("Lista os arquivos salvos no diretorio ""sync_dir"", do dispositivo local do usuario.\n");
 
-    printf("\n----------------------------------------------------------------------------------------------------\n");
+    printf("\n------------------------------------------------------------------------------\n");
 
     printf("\nCOMANDO 6:");
     printf("\n\nSINTAXE:\nexit");
     printf("\n\nDESCRICAO:\n");
     printf("Fecha a sessao com o servidor.\n");
 
-    printf("\n----------------------------------------------------------------------------------------------------\n");
+    printf("\n------------------------------------------------------------------------------\n");
 
-    printf("\nPressione ESC para encerrar a execucao do programa, ou qualquer outra tecla para voltar ao menu inicial.\n");
+    printf("\nPressione qualquer tecla para voltar.\n");
 }
 
 int verificaParametros(char *comando, int quantidade_parametros)
@@ -120,33 +113,19 @@ int verificaParametros(char *comando, int quantidade_parametros)
     return (numPalavras == quantidade_parametros+1);
 }
 
-void obtemNomeUsuario(char *comando, char *nome_usuario)
-{
-    int contador = 0;
-    while (comando[contador] == ' ')
-        contador++;
-    while(comando[contador] != ' ')
-        contador++;
-    while (comando[contador] == ' ')
-        contador++;
-
-    int i;
-    for (i = 0; comando[contador+i] != ' ' && comando[contador+i] != '\t'; i++)
-        nome_usuario[i] = comando[contador+i];
-    nome_usuario[i] = '\0';
-
-}
-
 void analisa_diretorio(char *nome_usuario)
 {
-    sprintf(nome_diretorio,PREFIXO_DIRETORIO_USUARIO);
+    char nome_diretorio[DIMENSAO_NOME_DIRETORIO];
+    sprintf(nome_diretorio,PREFIXO_DIRETORIO);
     strcat(nome_diretorio,nome_usuario);
 
     struct stat st = {0};
+    
+    printf("%s\n", nome_diretorio);
 
     if (stat(nome_diretorio, &st) == -1)
     {
-        if (mkdir(nome_diretorio) == 0)
+        if (mkdir(nome_diretorio, MASCARA_PERMISSAO) == 0)
             printf("\nDiretorio %s CRIADO com sucesso!\n", nome_diretorio);
 
         else
@@ -180,48 +159,56 @@ int executa_comando(char *comando)
         puts(COMANDO_LISTCLIENT);
 
     else if (strcmp(comando,COMANDO_EXIT) == 0)
-        puts(COMANDO_EXIT);
-
+    {
+        limpa_tela();
+        exit(0);
+    }
+    	
     else if (strcmp(comando,COMANDO_HELP) == 0)
         menu_help();
 
     else
     {
         printf("\nComando invalido!\n");
-        printf("\nPressione ESC para encerrar a execucao do programa, ou qualquer outra tecla para voltar ao menu inicial.\n");
+        printf("\nPressione qualquer tecla para voltar.\n");
     }
 }
 
-void menu_principal()
+void menu_principal(char *nome_usuario)
 {
-    printf("STATUS: SEM CONEXAO COM SERVIDOR\n");
-    printf("PORTA: --\t IP: --\n");
-    printf("\nDigite o comando:\n");
+    printf("USUARIO ATUAL:\n%s\n", nome_usuario);
+    printf("\nDigite 'exit' para sair.\n");
+    printf("Digite 'help' para ver uma lista de comandos.\n");
+    
+    printf("\nDIGITE O COMANDO:\n");
 }
 
-int main (int argc, char arg[])
+int main (int argc, char *argv[])
 {
-    if (argc < QUANTIDADE_PARAMETROS_MYCLIENT)
+    if (argc != QUANTIDADE_PARAMETROS_MYCLIENT+1)
     {
-        printf("\nComando invalido! Numero de parametros incorreto!\n");
-        printf("Forma correta:\n./myClient <nome de usuario> <IP do servidor> <numero de porta>\n")
+        printf("Comando invalido! Numero de parametros incorreto!\n");
+        printf("Forma correta:\n./myClient <username> <server_ip_address> <port>\n");
+        exit(0);
     }
-
+  
+    analisa_diretorio(argv[1]);
     char comando[DIMENSAO_COMANDO];
-    char tecla;
-    int codigo_comando;
-
-    do
+    
+    
+    while (1)
     {
         limpa_tela();
-        menu_principal();
-        gets(comando);
+        menu_principal(argv[1]);
+        
+        fgets(comando,sizeof(comando),stdin);
+        comando[strlen(comando)-1] = '\0';
 
-        codigo_comando = executa_comando(comando);
-        tecla = getch();
+        executa_comando(comando);
+        getchar();
 
-    } while (tecla != ESC);
-
+    }
+     
     limpa_tela();
 
     return 0;
