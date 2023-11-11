@@ -4,7 +4,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <dirent.h>
+#include <time.h>
+#include <limits.h>
 
+#define DIMENSAO_GERAL 50
 #define DIMENSAO_COMANDO 200
 #define DIMENSAO_NOME_USUARIO 50
 #define DIMENSAO_NOME_DIRETORIO 200
@@ -30,6 +34,14 @@
 #define QUANTIDADE_PARAMETROS_UPLOAD 1
 #define QUANTIDADE_PARAMETROS_DOWNLOAD 1
 #define QUANTIDADE_PARAMETROS_DELETE 1
+
+typedef struct
+{
+	char nome_usuario[DIMENSAO_NOME_USUARIO];
+	char endereco_ip[DIMENSAO_GERAL];
+	char numero_porta[DIMENSAO_GERAL];
+	
+} DadosConexao;
 
 void limpa_tela()
 {
@@ -123,18 +135,75 @@ void analisa_diretorio(char *nome_usuario)
 
     if (stat(nome_diretorio, &st) == -1)
     {
-        if (mkdir(nome_diretorio, MASCARA_PERMISSAO) == 0)
-            printf("\nDiretorio %s CRIADO com sucesso!\n", nome_diretorio);
-
-        else
+        if (!(mkdir(nome_diretorio, MASCARA_PERMISSAO) == 0))
+        {
             printf("\nErro ao criar o diretorio!\n");
+            getchar();
+            exit(1);
+	}
     }
-
-    else
-        printf("\nDiretorio %s CARREGADO com sucesso!\n", nome_diretorio);
 }
 
-int executa_comando(char *comando)
+void listarArquivosDiretorio(char *diretorio) 
+{
+    DIR *dir;
+    struct dirent *entrada;
+    struct stat info;
+
+    dir = opendir(diretorio);
+    if (dir == NULL) 
+    {
+            printf("\nErro ao abrir o diretorio.\n");
+            exit(1);
+    }
+    
+    limpa_tela();
+    printf("ARQUIVOS DO DIRETORIO\n%s\n", diretorio);
+
+    while ((entrada = readdir(dir)) != NULL)
+    {
+        char caminhoCompleto[PATH_MAX];
+        snprintf(caminhoCompleto, sizeof(caminhoCompleto), "%s/%s", diretorio, entrada->d_name);
+
+        if (stat(caminhoCompleto, &info) == 0) 
+        {
+            printf("\nNOME:\n%s\n", entrada->d_name);
+            printf("MODIFICATION TIME:\n%s", ctime(&info.st_mtime));
+            printf("ACCESS TIME:\n%s", ctime(&info.st_atime));
+            printf("CHANGE OR CREATION TIME:\n%s", ctime(&info.st_ctime));
+            printf("\n------------------------------------------------------------------------------\n");
+        } 
+        
+        else 
+        {
+            printf("\nErro ao obter informações do arquivo.\n");
+            exit(1);
+        }
+    }
+
+    closedir(dir);
+}
+
+void list_client(DadosConexao dados_conexao)
+{
+    char diretorioAtual[PATH_MAX];
+    if (getcwd(diretorioAtual, sizeof(diretorioAtual)) == NULL) 
+    {
+        printf("\nErro ao obter diretório atual.\n");
+        exit(1);
+    }
+
+    char caminhoSyncDir[PATH_MAX];
+    //snprintf(caminhoSyncDir, sizeof(caminhoSyncDir), "%s/sync_dir", diretorioAtual);
+    strcat(caminhoSyncDir,diretorioAtual);
+    strcat(caminhoSyncDir,"/");
+    strcat(caminhoSyncDir,PREFIXO_DIRETORIO);
+    strcat(caminhoSyncDir,dados_conexao.nome_usuario);
+    //printf("\nDIRETORIO:%s\n", caminhoSyncDir);
+    listarArquivosDiretorio(caminhoSyncDir);
+}
+
+int executa_comando(char *comando, DadosConexao dados_conexao)
 {
     if (strncmp(comando,COMANDO_UPLOAD,strlen(COMANDO_UPLOAD)) == 0)
     {
@@ -164,7 +233,7 @@ int executa_comando(char *comando)
         puts(COMANDO_LISTSERVER);
 
     else if (strcmp(comando,COMANDO_LISTCLIENT) == 0)
-        puts(COMANDO_LISTCLIENT);
+    	list_client(dados_conexao);
 
     else if (strcmp(comando,COMANDO_EXIT) == 0)
     {
@@ -182,11 +251,11 @@ int executa_comando(char *comando)
 
 }
 
-void menu_principal(char *nome_usuario, char *endereco_ip, char *numero_porta)
+void menu_principal(DadosConexao dados_conexao)
 {
-    printf("USUARIO ATUAL:\n%s\n", nome_usuario);
-    printf("\nIP DO SERVIDOR:\n%s\n", endereco_ip);
-    printf("\nPORTA:\n%s\n", numero_porta);
+    printf("USUARIO ATUAL:\n%s\n", dados_conexao.nome_usuario);
+    printf("\nIP DO SERVIDOR:\n%s\n", dados_conexao.endereco_ip);
+    printf("\nPORTA:\n%s\n", dados_conexao.numero_porta);
     printf("\nDigite 'exit' para sair.\n");
     printf("Digite 'help' para ver uma lista de comandos.\n");
     
@@ -195,31 +264,38 @@ void menu_principal(char *nome_usuario, char *endereco_ip, char *numero_porta)
 
 int main (int argc, char *argv[])
 {
+    DadosConexao dados_conexao;
+    
     if (argc != QUANTIDADE_PARAMETROS_MYCLIENT+1)
     {
         printf("Comando invalido! Numero de parametros incorreto!\n");
         printf("Forma correta:\n./myClient <username> <server_ip_address> <port>\n");
         exit(0);
     }
-  
-    analisa_diretorio(argv[1]);
-    char comando[DIMENSAO_COMANDO];
     
+    else
+    {
+	strcpy(dados_conexao.nome_usuario,argv[1]);
+	strcpy(dados_conexao.endereco_ip,argv[2]);
+	strcpy(dados_conexao.numero_porta,argv[3]);
+	analisa_diretorio(dados_conexao.nome_usuario);    
+    }
+   
+    char comando[DIMENSAO_COMANDO];
 
     while (1)
     {
         limpa_tela();
-        menu_principal(argv[1],argv[2],argv[3]);
+        menu_principal(dados_conexao);
         
         fgets(comando,sizeof(comando),stdin);
         comando[strlen(comando)-1] = '\0';
 
-        executa_comando(comando);
+        executa_comando(comando, dados_conexao);
         getchar();
 
     }
      
     limpa_tela();
-
     return 0;
 }
