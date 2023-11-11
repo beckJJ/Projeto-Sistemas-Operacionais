@@ -49,12 +49,16 @@ typedef struct
 	
 } DadosConexao;
 
+
+
 typedef struct
 {
 	char conteudo_arquivo[DIMENSAO_BUFFER];
 	char nome_arquivo[DIMENSAO_GERAL];
 
 } Pacote; 
+
+
 
 void limpa_tela()
 {
@@ -250,14 +254,14 @@ void upload(char *comando, DadosConexao dados_conexao)
 	char diretorio[PATH_MAX];
 	obtemDiretorio(comando,diretorio);
 	
-	Pacote pacote;
-	obtemNomeArquivo(diretorio,pacote.nome_arquivo);
+	Pacote *pacote;
+	obtemNomeArquivo(diretorio,pacote->nome_arquivo);
 	
 	FILE *arquivo = fopen(diretorio, "rb");
-	fread(pacote.conteudo_arquivo, sizeof(char), sizeof(pacote.conteudo_arquivo), arquivo);
+	fread(pacote->conteudo_arquivo, sizeof(char), sizeof(pacote->conteudo_arquivo), arquivo);
 	fclose(arquivo);
 	
-	if (write(dados_conexao.socket_id, pacote, sizeof(pacote)) < 0)
+	if (write(dados_conexao.socket_id, (void*)pacote, sizeof(pacote)) < 0)
 	{
 		printf("\nErro! Nao foi possivel realizar a escrita no buffer!\n");
 		getchar();
@@ -395,4 +399,3 @@ int main (int argc, char *argv[])
     limpa_tela();
     return 0;
 }
-
