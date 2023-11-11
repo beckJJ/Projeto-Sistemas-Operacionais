@@ -88,8 +88,6 @@ void menu_help() /* Funcao para realizar a impressao do menu de ajuda do program
     printf("Fecha a sessao com o servidor.\n");
 
     printf("\n------------------------------------------------------------------------------\n");
-
-    printf("\nPressione qualquer tecla para continuar.\n");
 }
 
 int verificaParametros(char *comando, int quantidade_parametros)
