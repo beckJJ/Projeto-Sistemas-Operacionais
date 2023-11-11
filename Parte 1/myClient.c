@@ -48,9 +48,9 @@ void limpa_tela()
     system("clear || cls");
 }
 
-void menu_help() /* Funcao para realizar a impressao do menu de ajuda do programa na tela. */
+void menu_help()
 {
-    system("clear || cls");
+    limpa_tela();
     printf("\nLISTA DE COMANDOS:\n");
 
     printf("\n------------------------------------------------------------------------------\n");
@@ -176,7 +176,7 @@ void listarArquivosDiretorio(char *diretorio)
         
         else 
         {
-            printf("\nErro ao obter informações do arquivo.\n");
+            printf("\nErro ao obter informacoes do arquivo.\n");
             exit(1);
         }
     }
@@ -189,7 +189,7 @@ void list_client(DadosConexao dados_conexao)
     char diretorioAtual[PATH_MAX];
     if (getcwd(diretorioAtual, sizeof(diretorioAtual)) == NULL) 
     {
-        printf("\nErro ao obter diretório atual.\n");
+        printf("\nErro ao obter diretorio atual.\n");
         exit(1);
     }
 
@@ -264,23 +264,18 @@ void menu_principal(DadosConexao dados_conexao)
 
 int main (int argc, char *argv[])
 {
-    DadosConexao dados_conexao;
-    
     if (argc != QUANTIDADE_PARAMETROS_MYCLIENT+1)
     {
         printf("Comando invalido! Numero de parametros incorreto!\n");
         printf("Forma correta:\n./myClient <username> <server_ip_address> <port>\n");
-        exit(0);
+        exit(1);
     }
     
-    else
-    {
-	strcpy(dados_conexao.nome_usuario,argv[1]);
-	strcpy(dados_conexao.endereco_ip,argv[2]);
-	strcpy(dados_conexao.numero_porta,argv[3]);
-	analisa_diretorio(dados_conexao.nome_usuario);    
-    }
-   
+    DadosConexao dados_conexao;
+    strcpy(dados_conexao.nome_usuario,argv[1]);
+    strcpy(dados_conexao.endereco_ip,argv[2]);
+    strcpy(dados_conexao.numero_porta,argv[3]);
+    analisa_diretorio(dados_conexao.nome_usuario);    
     char comando[DIMENSAO_COMANDO];
 
     while (1)
