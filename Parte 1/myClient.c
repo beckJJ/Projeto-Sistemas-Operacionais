@@ -1,24 +1,28 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <dirent.h>
 #include <time.h>
 #include <limits.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h> 
 
 #define DIMENSAO_GERAL 50
 #define DIMENSAO_COMANDO 200
 #define DIMENSAO_NOME_USUARIO 50
 #define DIMENSAO_NOME_DIRETORIO 200
+#define DIMENSAO_BUFFER 1024
 
 #define MASCARA_PERMISSAO 0777
 
 #define REALIZOU_CONEXAO 1
 #define FALHOU_CONEXAO 0
 
-#define NOME_DIRETORIO_SERVIDOR "sync_dir_servidor"
 #define PREFIXO_DIRETORIO "sync_dir_"
 
 #define COMANDO_MYCLIENT "myClient"
@@ -41,7 +45,21 @@ typedef struct
 	char endereco_ip[DIMENSAO_GERAL];
 	char numero_porta[DIMENSAO_GERAL];
 	
+	int socket_id;
+	
 } DadosConexao;
+
+
+typedef struct
+{
+	char conteudo_arquivo[DIMENSAO_BUFFER];
+	char nome_arquivo[DIMENSAO_GERAL];
+	char usuario_arquivo[DIMENSAO_NOME_USUARIO];
+	
+	int tamanho;
+
+} Pacote; 
+
 
 void limpa_tela()
 {
@@ -130,16 +148,13 @@ void analisa_diretorio(char *nome_usuario)
     strcat(nome_diretorio,nome_usuario);
 
     struct stat st = {0};
-    
-    printf("%s\n", nome_diretorio);
 
     if (stat(nome_diretorio, &st) == -1)
     {
         if (!(mkdir(nome_diretorio, MASCARA_PERMISSAO) == 0))
         {
-            printf("\nErro ao criar o diretorio!\n");
-            getchar();
-            exit(1);
+            printf("Erro ao criar o diretorio do cliente!\n");
+            exit(EXIT_FAILURE);
 	}
     }
 }
@@ -153,8 +168,8 @@ void listarArquivosDiretorio(char *diretorio)
     dir = opendir(diretorio);
     if (dir == NULL) 
     {
-            printf("\nErro ao abrir o diretorio.\n");
-            exit(1);
+            printf("Erro ao abrir o diretorio do cliente!\n");
+            exit(EXIT_FAILURE);
     }
     
     limpa_tela();
@@ -176,8 +191,8 @@ void listarArquivosDiretorio(char *diretorio)
         
         else 
         {
-            printf("\nErro ao obter informacoes do arquivo.\n");
-            exit(1);
+            printf("Erro ao obter informacoes do arquivo.\n");
+            exit(EXIT_FAILURE);
         }
     }
 
@@ -189,18 +204,84 @@ void list_client(DadosConexao dados_conexao)
     char diretorioAtual[PATH_MAX];
     if (getcwd(diretorioAtual, sizeof(diretorioAtual)) == NULL) 
     {
-        printf("\nErro ao obter diretorio atual.\n");
-        exit(1);
+        printf("Erro ao obter diretorio atual.\n");
+        exit(EXIT_FAILURE);
     }
 
     char caminhoSyncDir[PATH_MAX];
-    //snprintf(caminhoSyncDir, sizeof(caminhoSyncDir), "%s/sync_dir", diretorioAtual);
     strcat(caminhoSyncDir,diretorioAtual);
     strcat(caminhoSyncDir,"/");
     strcat(caminhoSyncDir,PREFIXO_DIRETORIO);
     strcat(caminhoSyncDir,dados_conexao.nome_usuario);
-    //printf("\nDIRETORIO:%s\n", caminhoSyncDir);
     listarArquivosDiretorio(caminhoSyncDir);
+}
+
+void obtemDiretorio(char *comando, char *diretorio) 
+{
+	int indice = 0;
+	while (comando[indice] == ' ')
+		indice++;
+	while (comando[indice] != ' ')
+		indice++;
+	while (comando[indice] == ' ')
+		indice++;
+	int k = 0;
+	for (int i = indice; i < strlen(comando); i++)
+	{
+		diretorio[k] = comando[i];
+		k++;
+	}
+	diretorio[k] = '\0';
+	
+}
+
+
+void obtemNomeArquivo(char *caminhoCompleto, char *nomeArquivo) 
+{
+	int conta_barras = 0, contador = 0;
+	
+	for (int i = 0; i < strlen(caminhoCompleto); i++)
+		if (caminhoCompleto[i] == '\\' || caminhoCompleto[i] == '/')
+			conta_barras++;
+	
+	int indice = 0;		
+	for (indice = 0; contador != conta_barras; indice++)
+		if (caminhoCompleto[indice] == '\\' || caminhoCompleto[indice] == '/')
+			contador++;
+			
+	int k = 0;
+	for (int i = indice; i < strlen(caminhoCompleto); i++)
+	{
+		nomeArquivo[k] = caminhoCompleto[i];
+		k++;
+	}
+	nomeArquivo[k] = '\0';
+}
+
+
+void upload(char *comando, DadosConexao dados_conexao)
+{
+	Pacote pacote;
+	char diretorio[PATH_MAX];
+	obtemDiretorio(comando,diretorio);
+	
+	//printf("DIRETORIO:\n%s\n", diretorio);
+	obtemNomeArquivo(diretorio,pacote.nome_arquivo);
+	//printf("NOME DO ARQUIVO:\n%s\n", pacote.nome_arquivo);
+	
+	FILE *arquivo = fopen(diretorio, "rb");
+	pacote.tamanho = fread(pacote.conteudo_arquivo, sizeof(char), sizeof(pacote.conteudo_arquivo), arquivo);
+	fclose(arquivo);
+	
+	
+	strcpy(pacote.usuario_arquivo,dados_conexao.nome_usuario);
+	
+	if (write(dados_conexao.socket_id, (void*)&pacote, sizeof(pacote)) < 0)
+	{
+		printf("Erro! Nao foi possivel realizar a escrita no buffer!\n");
+		exit(EXIT_FAILURE);   	
+	}
+	
 }
 
 int executa_comando(char *comando, DadosConexao dados_conexao)
@@ -210,7 +291,7 @@ int executa_comando(char *comando, DadosConexao dados_conexao)
     	if (verificaParametros(comando,QUANTIDADE_PARAMETROS_UPLOAD) == 0)
     		printf("\nComando invalido! Numero de parametros incorreto!\n");
     	else
-    		printf("\nAcertou o comando!\n");
+    		upload(comando,dados_conexao);
     }
 
     else if (strncmp(comando,COMANDO_DOWNLOAD,strlen(COMANDO_DOWNLOAD)) == 0)
@@ -230,7 +311,7 @@ int executa_comando(char *comando, DadosConexao dados_conexao)
     }
 
     else if (strcmp(comando,COMANDO_LISTSERVER) == 0)
-        puts(COMANDO_LISTSERVER);
+        printf("\nAcertou o comando!\n");
 
     else if (strcmp(comando,COMANDO_LISTCLIENT) == 0)
     	list_client(dados_conexao);
@@ -238,6 +319,7 @@ int executa_comando(char *comando, DadosConexao dados_conexao)
     else if (strcmp(comando,COMANDO_EXIT) == 0)
     {
         limpa_tela();
+        close(dados_conexao.socket_id);
         exit(0);
     }
     	
@@ -262,22 +344,58 @@ void menu_principal(DadosConexao dados_conexao)
     printf("\nDIGITE O COMANDO:\n");
 }
 
+int conecta_servidor(DadosConexao dados_conexao)
+{
+	struct sockaddr_in serv_addr;
+	struct hostent *server;
+
+	server = gethostbyname(dados_conexao.endereco_ip);
+	if (server == NULL) 
+	{
+		printf("Erro! Nenhum servidor com o IP %s foi encontrado!\n", dados_conexao.endereco_ip);
+		exit(EXIT_FAILURE);
+	}
+
+	int socket_id;
+	if ((socket_id = socket(AF_INET, SOCK_STREAM, 0)) == -1) 
+	{
+		printf("Erro! Nao foi possivel iniciar utilizacao do socket do cliente!\n");
+		exit(EXIT_FAILURE);       
+	}
+
+	serv_addr.sin_family = AF_INET;     
+	serv_addr.sin_port = htons(atoi(dados_conexao.numero_porta));    
+	serv_addr.sin_addr = *((struct in_addr *)server->h_addr);
+	bzero(&(serv_addr.sin_zero), 8);     
+
+	if (connect(socket_id,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) 
+	{
+		printf("Erro! Nao foi possivel estabelecer conexao com o socket do servidor!\n");
+		exit(EXIT_FAILURE);       
+	}
+	
+	return socket_id;
+}
+
 int main (int argc, char *argv[])
 {
     if (argc != QUANTIDADE_PARAMETROS_MYCLIENT+1)
     {
         printf("Comando invalido! Numero de parametros incorreto!\n");
         printf("Forma correta:\n./myClient <username> <server_ip_address> <port>\n");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
     
     DadosConexao dados_conexao;
     strcpy(dados_conexao.nome_usuario,argv[1]);
     strcpy(dados_conexao.endereco_ip,argv[2]);
     strcpy(dados_conexao.numero_porta,argv[3]);
+    
+    dados_conexao.socket_id = conecta_servidor(dados_conexao);
     analisa_diretorio(dados_conexao.nome_usuario);    
+    
     char comando[DIMENSAO_COMANDO];
-
+    
     while (1)
     {
         limpa_tela();
@@ -287,8 +405,6 @@ int main (int argc, char *argv[])
         comando[strlen(comando)-1] = '\0';
 
         executa_comando(comando, dados_conexao);
-        getchar();
-
     }
      
     limpa_tela();
