@@ -40,6 +40,7 @@
 #define QUANTIDADE_PARAMETROS_DELETE 1
 
 #define NOME_REQUISICAO_LISTSERVER "Requisicao_list_server"
+#define NOME_REQUISICAO_DOWNLOAD "Requisicao_download"
 
 #define CODIGO_UPLOAD 1
 #define CODIGO_LISTSERVER 2
@@ -172,6 +173,8 @@ void listarArquivosDiretorio(char *diretorio)
     DIR *dir;
     struct dirent *entrada;
     struct stat info;
+    
+    printf("ARQUIVOS DO DIRETORIO\n%s\n", diretorio);
 
     dir = opendir(diretorio);
     if (dir == NULL) 
@@ -180,8 +183,6 @@ void listarArquivosDiretorio(char *diretorio)
             exit(EXIT_FAILURE);
     }
    
-    printf("ARQUIVOS DO DIRETORIO\n%s\n", diretorio);
-
     while ((entrada = readdir(dir)) != NULL)
     {
         char caminhoCompleto[PATH_MAX];
@@ -223,6 +224,7 @@ void list_client(DadosConexao dados_conexao)
     strcat(caminhoSyncDir,PREFIXO_DIRETORIO);
     strcat(caminhoSyncDir,dados_conexao.nome_usuario);
     listarArquivosDiretorio(caminhoSyncDir);
+    memset(caminhoSyncDir,0,sizeof(caminhoSyncDir));
 }
 
 void list_server(DadosConexao dados_conexao)
@@ -315,8 +317,59 @@ void upload(DadosConexao dados_conexao)
 	}
 }
 
+void delete(DadosConexao dados_conexao)
+{
+	//printf("COMANDO:\n%s\n", dados_conexao.comando);
+	
+	char nomeArquivo[DIMENSAO_GERAL];
+	int indice = 0;
+	while (dados_conexao.comando[indice] != ' ')
+		indice++;
+	while (dados_conexao.comando[indice] == ' ')
+		indice++;
+	int k = 0;
+	for (int i = indice; dados_conexao.comando[i] != '\0' && dados_conexao.comando[i] != ' ' && dados_conexao.comando[i] != '\t'; i++)
+	{ 
+		nomeArquivo[k] = dados_conexao.comando[i];
+		k++;
+	}
+	nomeArquivo[k] = '\0';
+	
+	//printf("NOME DO ARQUIVO:\n%s\n", nomeArquivo);
+
+	char diretorioAtual[PATH_MAX];
+	if (getcwd(diretorioAtual, sizeof(diretorioAtual)) == NULL) 
+	{
+		printf("Erro ao obter diretorio atual para deletar o arquivo!\n");
+		exit(EXIT_FAILURE);
+	}
+	
+	//printf("NOME DO USUARIO QUE CHAMOU DELETE:\n%s\n", dados_conexao.nome_usuario);
+
+	char caminhoArquivo[PATH_MAX];
+	strcat(caminhoArquivo,diretorioAtual);
+	strcat(caminhoArquivo,"/");
+	strcat(caminhoArquivo,PREFIXO_DIRETORIO);
+	strcat(caminhoArquivo,dados_conexao.nome_usuario);
+	strcat(caminhoArquivo,"/");
+	strcat(caminhoArquivo,nomeArquivo);
+	
+	//printf("DIRETORIO PARA EXCLUIR ARQUIVO:\n%s\n", caminhoArquivo);
+	
+	if (!remove(caminhoArquivo) == 0)
+	{
+		printf("Erro ao deletar o arquivo!\n");
+		exit(EXIT_FAILURE);		
+	}
+	
+    	memset(caminhoArquivo,0,sizeof(caminhoArquivo));
+    	printf("\nArquivo %s deletado com sucesso.\n", nomeArquivo);
+}
+
 int executa_comando(DadosConexao dados_conexao)
 {
+    //printf("COMANDO INSERIDO:\n%s\n", dados_conexao.comando);
+    
     if (strncmp(dados_conexao.comando,COMANDO_UPLOAD,strlen(COMANDO_UPLOAD)) == 0)
     {
     	if (verificaParametros(dados_conexao.comando,QUANTIDADE_PARAMETROS_UPLOAD) == 0)
@@ -338,7 +391,7 @@ int executa_comando(DadosConexao dados_conexao)
     	if (verificaParametros(dados_conexao.comando,QUANTIDADE_PARAMETROS_DELETE) == 0)
     		printf("\nComando invalido! Numero de parametros incorreto!\n");
     	else
-    		printf("\nAcertou o comando!\n");
+    		delete(dados_conexao);
     }
 
     else if (strcmp(dados_conexao.comando,COMANDO_LISTSERVER) == 0)
