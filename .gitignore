@@ -1,3 +1,4 @@
 *.o
 myClient
 myServer
+sync_dir*
