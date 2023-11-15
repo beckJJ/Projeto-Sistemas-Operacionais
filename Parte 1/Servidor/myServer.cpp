@@ -23,6 +23,28 @@ int main(int argc, char *argv[])
 	std::vector<pthread_t> threads;
 	analisa_diretorio_servidor();
 
+	uint16_t port = PORT;
+	char c;
+
+	while ((c = getopt(argc, argv, "hp:")) != -1)
+	{
+		switch (c)
+		{
+		case 'h':
+			puts("Opcoes:");
+			puts("\t-p PORT\tPorta que devera ser usada pelo servidor.");
+			puts("\t-h\tExibe mensagem de ajuda.");
+			exit(0);
+		case 'p':
+			port = atoi(optarg);
+			break;
+		default:
+			printf("Usage:\n");
+			printf("\t%s [-p PORT]\n", argv[0]);
+			abort();
+		}
+	}
+
 	int socket_id;
 	socklen_t clilen;
 	struct sockaddr_in serv_addr, cli_addr;
@@ -34,7 +56,7 @@ int main(int argc, char *argv[])
 	}
 
 	serv_addr.sin_family = AF_INET;
-	serv_addr.sin_port = htons(PORT);
+	serv_addr.sin_port = htons(port);
 	serv_addr.sin_addr.s_addr = INADDR_ANY;
 	bzero(&(serv_addr.sin_zero), 8);
 
@@ -45,6 +67,8 @@ int main(int argc, char *argv[])
 	}
 
 	listen(socket_id, 5);
+
+	printf("Servidor está escutando na porta %d.\n", port);
 
 	clilen = sizeof(struct sockaddr_in);
 
@@ -70,7 +94,8 @@ int main(int argc, char *argv[])
 	printf("Closing server, all living threads will be cancelled.\n");
 
 	// Closes all threads
-	for (auto thread: threads) {
+	for (auto thread : threads)
+	{
 		pthread_cancel(thread);
 	}
 

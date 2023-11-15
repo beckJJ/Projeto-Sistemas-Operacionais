@@ -1,11 +1,11 @@
 #include <stdlib.h>
 #include <sys/types.h>
+#include <unistd.h>
+#include <stdio.h>
 
 #include "servFunc.hpp"
 #include "../Common/structs.hpp"
 #include "../Common/comunicacao.hpp"
-#include <unistd.h>
-#include <stdio.h>
 #include "comunicacaoServidor.hpp"
 #include "auxiliaresServidor.hpp"
 
