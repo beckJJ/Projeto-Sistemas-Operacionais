@@ -1,7 +1,7 @@
 #ifndef _AUXILIARESCLIENTE_H_
 #define _AUXILIARESCLIENTE_H_
 
-#include "../Common/structs.h"
+#include "../Common/structs.hpp"
 
 void inicializaPacote(Pacote *pacote); /* Inicializa o pacote que ira conter os dados da interacao com o servidor. */
 int verificaParametros(char *comando, int quantidade_parametros); /* Verifica se o usuario inseriu a quantidade correta de parametros, para o comando escolhido. */

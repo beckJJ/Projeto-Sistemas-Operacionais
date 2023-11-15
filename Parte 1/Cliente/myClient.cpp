@@ -12,9 +12,9 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
-#include "comunicacaoCliente.h"
-#include "interfaceCliente.h"
-#include "auxiliaresCliente.h"
+#include "comunicacaoCliente.hpp"
+#include "interfaceCliente.hpp"
+#include "auxiliaresCliente.hpp"
 
 int main(int argc, char *argv[])
 {

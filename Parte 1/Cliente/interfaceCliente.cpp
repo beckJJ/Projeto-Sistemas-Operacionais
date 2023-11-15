@@ -12,9 +12,9 @@
 #include <netinet/in.h>
 #include <netdb.h> 
 
-#include "comunicacaoCliente.h"
-#include "interfaceCliente.h"
-#include "auxiliaresCliente.h"
+#include "comunicacaoCliente.hpp"
+#include "interfaceCliente.hpp"
+#include "auxiliaresCliente.hpp"
 
 void limpaTela() /* Limpa o conteudo do terminal que executa a aplicacao. */
 {
@@ -113,7 +113,7 @@ void executa_comando(DadosConexao dados_conexao)
     	if (verificaParametros(dados_conexao.comando,QUANTIDADE_PARAMETROS_DELETE) == 0)
     		printf("\nComando invalido! Numero de parametros incorreto!\n");
     	else
-    		delete(dados_conexao); /* Deleta um arquivo presente na maquina local do usuario, no diretorio sync_dir_<usuario> */
+    		delete_cmd(dados_conexao); /* Deleta um arquivo presente na maquina local do usuario, no diretorio sync_dir_<usuario> */
     }
 
     else if (strcmp(dados_conexao.comando,COMANDO_LISTSERVER) == 0)

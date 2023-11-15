@@ -1,7 +1,7 @@
 #ifndef _COMMON_STRUCTS_H_
 #define _COMMON_STRUCTS_H_
 
-#include "defines.h"
+#include "defines.hpp"
 #include <stdint.h>
 
 /* Estrutura utilizada para conter todos os dados da conexao. */

@@ -12,13 +12,13 @@
 #include <netinet/in.h>
 #include <netdb.h> 
 
-#include "auxiliaresServidor.h"
+#include "auxiliaresServidor.hpp"
 
 /* Faz a criacao do diretorio sync_dir_SERVER, caso ele ainda nao exista. */
 void analisa_diretorio_servidor()
 {
     /* Criacao do novo diretorio remoto do usuario, com controle dos casos em que nao e possivel cria-lo. */
-    struct stat st = {0};
+    struct stat st = {};
     if (stat(PREFIXO_DIRETORIO_SERVIDOR, &st) == -1)
     {
         if (!(mkdir(PREFIXO_DIRETORIO_SERVIDOR, MASCARA_PERMISSAO) == 0)) 
@@ -30,7 +30,7 @@ void analisa_diretorio_servidor()
 }
 
 /* Faz a criacao de um diretorio correspondente a um usuario, dentro do diretorio sync_dir_SERVER. */
-void criaNovoDiretorio(char *diretorioPai, char *nomeNovoDiretorio) 
+void criaNovoDiretorio(const char *diretorioPai, char *nomeNovoDiretorio) 
 {
     char caminhoCompleto[PATH_MAX];
     
@@ -38,7 +38,7 @@ void criaNovoDiretorio(char *diretorioPai, char *nomeNovoDiretorio)
     snprintf(caminhoCompleto, sizeof(caminhoCompleto), "%s/%s", diretorioPai, nomeNovoDiretorio);
 
     /* Criacao do novo diretorio remoto do usuario, com controle dos casos em que nao e possivel cria-lo. */
-    struct stat st = {0};
+    struct stat st = {};
     if (stat(caminhoCompleto, &st) == -1) 
     {
         if (!(mkdir(caminhoCompleto, MASCARA_PERMISSAO) == 0))

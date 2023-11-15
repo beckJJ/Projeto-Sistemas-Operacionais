@@ -1,4 +1,4 @@
-CC:=gcc
+CC:=g++
 CFLAGS:=-O2 -Wall -Wextra
 
 default: all
@@ -6,27 +6,30 @@ default: all
 all: myClient myServer
 
 
-myClient: Cliente/myClient.c auxiliaresCliente interfaceCliente comunicacaoCliente
-	$(CC) $(CFLAGS) -o myClient Cliente/myClient.c Cliente/auxiliaresCliente.o Cliente/interfaceCliente.o Cliente/comunicacaoCliente.o
+myClient: Cliente/myClient.cpp auxiliaresCliente interfaceCliente comunicacaoCliente
+	$(CC) $(CFLAGS) -o myClient Cliente/myClient.cpp Cliente/auxiliaresCliente.o Cliente/interfaceCliente.o Cliente/comunicacaoCliente.o
 
-auxiliaresCliente: Cliente/auxiliaresCliente.c
-	$(CC) $(CFLAGS) -c -o Cliente/auxiliaresCliente.o Cliente/auxiliaresCliente.c
+auxiliaresCliente: Cliente/auxiliaresCliente.cpp
+	$(CC) $(CFLAGS) -c -o Cliente/auxiliaresCliente.o Cliente/auxiliaresCliente.cpp
 
-interfaceCliente: Cliente/interfaceCliente.c
-	$(CC) $(CFLAGS) -c -o Cliente/interfaceCliente.o Cliente/interfaceCliente.c
+interfaceCliente: Cliente/interfaceCliente.cpp
+	$(CC) $(CFLAGS) -c -o Cliente/interfaceCliente.o Cliente/interfaceCliente.cpp
 
-comunicacaoCliente: Cliente/comunicacaoCliente.c
-	$(CC) $(CFLAGS) -c -o Cliente/comunicacaoCliente.o Cliente/comunicacaoCliente.c
+comunicacaoCliente: Cliente/comunicacaoCliente.cpp
+	$(CC) $(CFLAGS) -c -o Cliente/comunicacaoCliente.o Cliente/comunicacaoCliente.cpp
 
 
-myServer: Servidor/myServer.c auxiliaresServidor comunicacaoServidor
-	$(CC) $(CFLAGS) -o myServer Servidor/myServer.c Servidor/auxiliaresServidor.o Servidor/comunicacaoServidor.o
+myServer: Servidor/myServer.cpp auxiliaresServidor comunicacaoServidor servFunc
+	$(CC) $(CFLAGS) -o myServer Servidor/myServer.cpp Servidor/servFunc.o Servidor/auxiliaresServidor.o Servidor/comunicacaoServidor.o
 
-auxiliaresServidor: Servidor/auxiliaresServidor.c
-	$(CC) $(CFLAGS) -c -o Servidor/auxiliaresServidor.o Servidor/auxiliaresServidor.c
+servFunc: Servidor/servFunc.cpp
+	$(CC) $(CFLAGS) -c -o Servidor/servFunc.o Servidor/servFunc.cpp
 
-comunicacaoServidor: Servidor/comunicacaoServidor.c
-	$(CC) $(CFLAGS) -c -o Servidor/comunicacaoServidor.o Servidor/comunicacaoServidor.c
+auxiliaresServidor: Servidor/auxiliaresServidor.cpp
+	$(CC) $(CFLAGS) -c -o Servidor/auxiliaresServidor.o Servidor/auxiliaresServidor.cpp
+
+comunicacaoServidor: Servidor/comunicacaoServidor.cpp
+	$(CC) $(CFLAGS) -c -o Servidor/comunicacaoServidor.o Servidor/comunicacaoServidor.cpp
 
 
 clean:

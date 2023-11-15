@@ -12,9 +12,9 @@
 #include <netinet/in.h>
 #include <netdb.h> 
 
-#include "comunicacaoCliente.h"
-#include "interfaceCliente.h"
-#include "auxiliaresCliente.h"
+#include "comunicacaoCliente.hpp"
+#include "interfaceCliente.hpp"
+#include "auxiliaresCliente.hpp"
 
 int conecta_servidor(DadosConexao dados_conexao) /* Inicia a conexao com o servidor, via socket. */
 {
@@ -141,7 +141,7 @@ void download (DadosConexao dados_conexao)
 	printf("\nArquivo '%s' baixado do servidor com sucesso.\n", nomeArquivo);
 }
 
-void delete(DadosConexao dados_conexao) /* Delete um arquivo presente na maquina local do usuario, no diretorio sync_dir_<usuario> */
+void delete_cmd(DadosConexao dados_conexao) /* Delete um arquivo presente na maquina local do usuario, no diretorio sync_dir_<usuario> */
 {
 	//printf("COMANDO:\n%s\n", dados_conexao.comando);
 	

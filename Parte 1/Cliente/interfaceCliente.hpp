@@ -1,7 +1,7 @@
 #ifndef _INTERFACECLIENTE_H_
 #define _INTERFACECLIENTE_H_
 
-#include "../Common/structs.h"
+#include "../Common/structs.hpp"
 
 /* Constantes para indicar a sintaxe de cada comando. */
 #define COMANDO_MYCLIENT "myClient"
@@ -22,6 +22,7 @@
 void menu_help();
 void menu_principal(DadosConexao dados_conexao);
 void executa_comando(DadosConexao dados_conexao);
+void limpaTela();
 
 #endif
 

@@ -12,9 +12,9 @@
 #include <netinet/in.h>
 #include <netdb.h> 
 
-#include "comunicacaoCliente.h"
-#include "interfaceCliente.h"
-#include "auxiliaresCliente.h"
+#include "comunicacaoCliente.hpp"
+#include "interfaceCliente.hpp"
+#include "auxiliaresCliente.hpp"
 
 /* Inicializa o pacote que ira conter os dados da interacao com o servidor. */
 void inicializaPacote(Pacote *pacote) 
@@ -57,7 +57,7 @@ void analisa_diretorio(char *nome_usuario)
     sprintf(nome_diretorio,PREFIXO_DIRETORIO);
     strcat(nome_diretorio,nome_usuario);
 
-    struct stat st = {0};
+    struct stat st = {};
 
     if (stat(nome_diretorio, &st) == -1)
     {

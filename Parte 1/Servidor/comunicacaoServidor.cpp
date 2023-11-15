@@ -12,7 +12,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
-#include "comunicacaoServidor.h"
+#include "comunicacaoServidor.hpp"
 
 /* Envia um pacote contendo um arquivo, que foi solicitado por um cliente. */
 void download(int newsocket_id, Pacote *pacote)
@@ -142,7 +142,7 @@ void list_server(int newsocket_id, Pacote *pacote)
 }
 
 /* Armazena um arquivo enviado pelo cliente, no repositorio remoto associado a ele. */
-void upload(char *diretorioDestino, Pacote *pacote)
+void upload(const char *diretorioDestino, Pacote *pacote)
 {
 	char caminhoCompleto[PATH_MAX];
 	snprintf(caminhoCompleto, sizeof(caminhoCompleto), "%s/%s/%s", diretorioDestino, pacote->usuario, pacote->nomeArquivo);
