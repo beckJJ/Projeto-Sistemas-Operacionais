@@ -15,13 +15,22 @@ void *servFunc(void *arg)
     pid_t tid = gettid();
     Pacote pacote;
 
-    printf("Thread with tid %d started.\n", tid);
+    printf("[tid: %d] Thread is running.\n", tid);
 
     while (1)
     {
-        if (read(socket, &pacote, sizeof(pacote)) < 0)
+        int ret;
+
+        ret = read(socket, &pacote, sizeof(pacote));
+
+        if (ret < 0)
         {
-            printf("Erro! Nao foi possivel realizar a leitura dos dados com o socket!\n");
+            printf("[tid: %d] Erro! Nao foi possivel realizar a leitura dos dados com o socket!\n", tid);
+            break;
+        }
+        else if (ret == 0)
+        {
+            printf("[tid: %d] Cliente encerrou a conexao.\n", tid);
             break;
         }
 
