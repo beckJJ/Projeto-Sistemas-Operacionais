@@ -12,7 +12,6 @@
 #include <netinet/in.h>
 #include <netdb.h> 
 
-#include "comunicacaoServidor.h"
 #include "auxiliaresServidor.h"
 
 /* Faz a criacao do diretorio sync_dir_SERVER, caso ele ainda nao exista. */

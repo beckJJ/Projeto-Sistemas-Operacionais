@@ -88,7 +88,7 @@ void menu_principal(DadosConexao dados_conexao)
 }
 
 /* Identifica qual o comando inserido pelo usuario, verifica se o numero de parametros esta correto e inicia a execucao. */
-int executa_comando(DadosConexao dados_conexao)
+void executa_comando(DadosConexao dados_conexao)
 {
     //printf("COMANDO INSERIDO:\n%s\n", dados_conexao.comando);
     

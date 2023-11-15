@@ -19,11 +19,9 @@ int main(int argc, char *argv[])
 {
 	analisa_diretorio_servidor();
 	
-	int socket_id, newsocket_id, n;
+	int socket_id, newsocket_id;
 	socklen_t clilen;
 	struct sockaddr_in serv_addr, cli_addr;
-	
-	char buffer[DIMENSAO_BUFFER];
 	
 	if ((socket_id = socket(AF_INET, SOCK_STREAM, 0)) == -1) 
 	{
