@@ -20,7 +20,7 @@
 
 int main(int argc, char *argv[])
 {
-	std::vector<pthread_t> threads;
+	DeviceManager deviceMan;
 	analisa_diretorio_servidor();
 
 	uint16_t port = PORT;
@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
 	serv_addr.sin_family = AF_INET;
 	serv_addr.sin_port = htons(port);
 	serv_addr.sin_addr.s_addr = INADDR_ANY;
-	bzero(&(serv_addr.sin_zero), 8);
+	bzero(&(serv_addr.sin_zero), sizeof(serv_addr.sin_zero));
 
 	if (bind(socket_id, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
 	{
@@ -74,10 +74,10 @@ int main(int argc, char *argv[])
 
 	while (1)
 	{
-		pthread_t thread;
-		int new_socket;
+		thread_arg_t thread_arg { };
+		thread_arg.deviceMan = &deviceMan;
 
-		if ((new_socket = accept(socket_id, (struct sockaddr *)&cli_addr, &clilen)) == -1)
+		if ((thread_arg.socket = accept(socket_id, (struct sockaddr *)&cli_addr, &clilen)) == -1)
 		{
 			printf("Erro! Nao foi possivel realizar conexao com o cliente!\n");
 			exit(EXIT_FAILURE);
@@ -85,19 +85,13 @@ int main(int argc, char *argv[])
 
 		printf("Nova conexao estabelecida.\n");
 
-		threads.push_back(thread);
-		pthread_create(&thread, NULL, servFunc, &new_socket);
+		pthread_create(&thread_arg.thread, NULL, servFunc, &thread_arg);
 	}
+
+	// Cancela todas as threads que ainda estejam executando
+	deviceMan.disconnect_all();
 
 	close(socket_id);
-
-	printf("Closing server, all living threads will be cancelled.\n");
-
-	// Closes all threads
-	for (auto thread : threads)
-	{
-		pthread_cancel(thread);
-	}
 
 	return 0;
 }

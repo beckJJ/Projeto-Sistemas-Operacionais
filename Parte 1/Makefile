@@ -1,5 +1,5 @@
 CC:=g++
-CFLAGS:=-O2 -Wall -Wextra
+CFLAGS:=-g -O2 -Wall -Wextra -pthread
 
 default: all
 
@@ -19,8 +19,11 @@ comunicacaoCliente: Cliente/comunicacaoCliente.cpp
 	$(CC) $(CFLAGS) -c -o Cliente/comunicacaoCliente.o Cliente/comunicacaoCliente.cpp
 
 
-myServer: Servidor/myServer.cpp auxiliaresServidor comunicacaoServidor servFunc
-	$(CC) $(CFLAGS) -o myServer Servidor/myServer.cpp Servidor/servFunc.o Servidor/auxiliaresServidor.o Servidor/comunicacaoServidor.o
+myServer: Servidor/myServer.cpp auxiliaresServidor comunicacaoServidor servFunc deviceManager
+	$(CC) $(CFLAGS) -o myServer Servidor/myServer.cpp Servidor/servFunc.o Servidor/auxiliaresServidor.o Servidor/comunicacaoServidor.o Servidor/deviceManager.o
+
+deviceManager: Servidor/deviceManager.cpp
+	$(CC) $(CFLAGS) -c -o Servidor/deviceManager.o Servidor/deviceManager.cpp
 
 servFunc: Servidor/servFunc.cpp
 	$(CC) $(CFLAGS) -c -o Servidor/servFunc.o Servidor/servFunc.cpp
