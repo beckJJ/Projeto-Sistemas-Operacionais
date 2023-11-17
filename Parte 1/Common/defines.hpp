@@ -21,4 +21,7 @@
 /* Constantes indicando o prefixo do diretorio local, de cada usuario. */
 #define PREFIXO_DIRETORIO "sync_dir_"
 
+#define SUCCESS         0
+#define GENERIC_ERROR   1
+
 #endif

@@ -10,7 +10,7 @@
 #include <limits.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <netdb.h> 
+#include <netdb.h>
 
 #include "auxiliaresServidor.hpp"
 
@@ -21,30 +21,33 @@ void analisa_diretorio_servidor()
     struct stat st = {};
     if (stat(PREFIXO_DIRETORIO_SERVIDOR, &st) == -1)
     {
-        if (!(mkdir(PREFIXO_DIRETORIO_SERVIDOR, MASCARA_PERMISSAO) == 0)) 
+        if (!(mkdir(PREFIXO_DIRETORIO_SERVIDOR, MASCARA_PERMISSAO) == 0))
         {
             printf("Erro ao criar o diretorio do servidor!\n");
             exit(EXIT_FAILURE);
-	}
+        }
     }
 }
 
 /* Faz a criacao de um diretorio correspondente a um usuario, dentro do diretorio sync_dir_SERVER. */
-void criaNovoDiretorio(const char *diretorioPai, char *nomeNovoDiretorio) 
+int criaNovoDiretorio(const char *diretorioPai, char *nomeNovoDiretorio)
 {
     char caminhoCompleto[PATH_MAX];
-    
+
     /* Obtem o caminho completo no qual ocorrera a criacao do novo diretorio associado ao usuario. */
     snprintf(caminhoCompleto, sizeof(caminhoCompleto), "%s/%s", diretorioPai, nomeNovoDiretorio);
 
     /* Criacao do novo diretorio remoto do usuario, com controle dos casos em que nao e possivel cria-lo. */
     struct stat st = {};
-    if (stat(caminhoCompleto, &st) == -1) 
+
+    if (stat(caminhoCompleto, &st) == -1)
     {
         if (!(mkdir(caminhoCompleto, MASCARA_PERMISSAO) == 0))
         {
-            printf("Erro ao criar o diretorio do usuario %s, dentro do diretorio %s!\n",nomeNovoDiretorio,PREFIXO_DIRETORIO_SERVIDOR);
-            exit(EXIT_FAILURE);
-        } 
-    } 
+            printf("Erro ao criar o diretorio do usuario %s, dentro do diretorio %s!\n", nomeNovoDiretorio, PREFIXO_DIRETORIO_SERVIDOR);
+            return GENERIC_ERROR;
+        }
+    }
+
+    return SUCCESS;
 }
