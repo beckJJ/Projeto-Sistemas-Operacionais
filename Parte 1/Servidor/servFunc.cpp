@@ -17,7 +17,7 @@ pthread_mutex_t pid_to_socket_lock = PTHREAD_MUTEX_INITIALIZER;
 void sigterm_handler(int signal) {
     pid_t thread_tid = gettid();
 
-    // Obtem socket que estava sendo usadio pela thread
+    // Obtem socket que estava sendo usado pela thread
     pthread_mutex_lock(&pid_to_socket_lock);
     int socket = pid_to_socket[thread_tid];
     pid_to_socket.erase(thread_tid);
@@ -85,22 +85,24 @@ void *servFunc(void *arg)
             primeiro_pacote = false;
         }
 
-        if (pacote.codigoComunicacao == CODIGO_UPLOAD)
-        {
+        switch (pacote.codigoComunicacao) {
+        case CODIGO_UPLOAD:
             criaNovoDiretorio(PREFIXO_DIRETORIO_SERVIDOR, pacote.usuario);
             upload(PREFIXO_DIRETORIO_SERVIDOR, &pacote);
-        }
-        else if (pacote.codigoComunicacao == CODIGO_LISTSERVER)
-        {
+            break;
+        case CODIGO_LISTSERVER:
             list_server(thread_socket, &pacote);
             printf("\n[tid: %d] <<< PACOTE ENVIADO >>>\n", thread_tid);
             imprimeDadosPacote(pacote);
-        }
-        else if (pacote.codigoComunicacao == CODIGO_DOWNLOAD)
-        {
+            break;
+        case CODIGO_DOWNLOAD:
             download(thread_socket, &pacote);
             printf("\n[tid: %d] <<< PACOTE ENVIADO >>>\n", thread_tid);
             imprimeDadosPacote(pacote);
+            break;
+        default:
+            printf("\n[tid: %d] Codigo comunicacao desconhecido: %d\n", thread_tid, pacote.codigoComunicacao);
+            break;
         }
     }
 
