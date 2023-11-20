@@ -94,6 +94,7 @@ void *servFunc(void *arg)
         imprimeDadosPacote(pacote);
 
         if (primeiro_pacote) {
+            criaNovoDiretorio(PREFIXO_DIRETORIO_SERVIDOR, pacote.usuario);
             usuario = pacote.usuario;
 
             // Registra thread atual como dispositivo do usuario
