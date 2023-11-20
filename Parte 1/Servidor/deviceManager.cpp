@@ -2,69 +2,58 @@
 #include <signal.h>
 
 DeviceManager::DeviceManager() {
-    // Inicializa lock
-    lock = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
+    global_lock = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
 }
 
 DeviceManager::~DeviceManager() {
     disconnect_all();
 }
 
-void DeviceManager::connect(std::string &user, pthread_t thread)
+int DeviceManager::connect(std::string &user, pthread_t thread)
 {
-    pthread_t thread_to_kill;
-    bool need_to_kill_thread = false;
-
-    pthread_mutex_lock(&lock);
-
     // Dispositivos atuais do usuário
     auto usuario = conexoes[user];
 
-    if (usuario.size() == 2) {
-        // Se há dois dispositivos, remove o que está a mais tempo conectado
-        thread_to_kill = usuario[0];
-        need_to_kill_thread = true;
+    pthread_mutex_lock(&usuario.lock);
 
-        usuario[0] = usuario[1];
-        usuario[1] = thread;
-    } else {
-        // Se não há 2 dispositivos, adiciona thread no final do vetor
-        usuario.push_back(thread);
+    if (usuario.devices.size() == 2) {
+        pthread_mutex_unlock(&usuario.lock);
+        return DEVICES_FULL;
     }
 
-    conexoes[user] = usuario;
+    // Se não há 2 dispositivos, adiciona thread no final do vetor
+    usuario.devices.push_back(thread);
+    conexoes[user].devices = usuario.devices;
 
-    pthread_mutex_unlock(&lock);
+    pthread_mutex_unlock(&usuario.lock);
 
-    if (need_to_kill_thread) {
-        pthread_kill(thread_to_kill, SIGTERM);
-    }
+    return SUCCESS;
 }
 
 void DeviceManager::disconnect(std::string &user, pthread_t thread)
 {
-    pthread_mutex_lock(&lock);
-
     auto usuario = conexoes[user];
 
+    pthread_mutex_lock(&usuario.lock);
+
     // Ajusta vetor se a thread sendo removida esteja no índice 0 e tem outra no índice 1
-    if (usuario.size() == 2 && usuario[0] == thread) {
-        usuario[0] = usuario[1];
+    if (usuario.devices.size() == 2 && usuario.devices[0] == thread) {
+        usuario.devices[0] = usuario.devices[1];
     }
 
-    usuario.pop_back();
-    conexoes[user] = usuario;
+    usuario.devices.pop_back();
+    conexoes[user].devices = usuario.devices;
 
-    pthread_mutex_unlock(&lock);
+    pthread_mutex_unlock(&usuario.lock);
 }
 
 void DeviceManager::disconnect_all(void)
 {
-    pthread_mutex_lock(&lock);
+    pthread_mutex_lock(&global_lock);
 
     // Senda sinal SIGTERM para todas as threads
     for (auto usuario : conexoes) {
-        for (auto thread : usuario.second) {
+        for (auto thread : usuario.second.devices) {
             pthread_kill(thread, SIGTERM);
         }
     }
@@ -72,5 +61,5 @@ void DeviceManager::disconnect_all(void)
     // Remove todas as entradas
     conexoes.clear();
 
-    pthread_mutex_unlock(&lock);
+    pthread_mutex_unlock(&global_lock);
 }

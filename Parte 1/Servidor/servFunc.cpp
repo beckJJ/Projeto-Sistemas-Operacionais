@@ -98,7 +98,21 @@ void *servFunc(void *arg)
             usuario = pacote.usuario;
 
             // Registra thread atual como dispositivo do usuario
-            thread_arg->deviceMan->connect(usuario, thread_arg->thread);
+            if (thread_arg->deviceMan->connect(usuario, thread_arg->thread)) {
+                // Não foi possível registrar thread atual como dispositivo
+                fprintf(stderr, "Novo dispositivo do usuario %s nao pode ser conectado.\n", pacote.usuario);
+
+                // Fecha socket
+                close(thread_socket);
+
+                pthread_mutex_lock(&pid_to_socket_lock);
+                pid_to_socket.erase(thread_tid);
+                pthread_mutex_unlock(&pid_to_socket_lock);
+
+                return NULL;
+            }
+
+            fprintf(stderr, "Novo dispositivo do usuario %s conectado.\n", pacote.usuario);
             primeiro_pacote = false;
         }
 
