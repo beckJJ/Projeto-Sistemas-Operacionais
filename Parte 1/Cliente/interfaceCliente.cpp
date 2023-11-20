@@ -18,7 +18,7 @@
 
 void limpaTela() /* Limpa o conteudo do terminal que executa a aplicacao. */
 {
-    system("cls || clear");
+    system("clear");
 }
 
 void menu_help() /* Exibe uma lista de comandos possiveis de serem executados, informando a sua sintaxe e a sua utilidade. */
