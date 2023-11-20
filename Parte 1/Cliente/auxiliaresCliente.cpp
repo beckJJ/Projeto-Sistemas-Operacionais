@@ -140,7 +140,7 @@ void obtemDiretorioComando(char *comando, char *diretorio)
 	while (comando[indice] == ' ' || comando[indice] == '\t')
 		indice++;
 	int k = 0;
-	for (int i = indice; i < strlen(comando); i++)
+	for (int i = indice; comando[i] != '\0'; i++)
 	{
 		diretorio[k] = comando[i];
 		k++;
@@ -153,7 +153,7 @@ void obtemNomeArquivoDiretorio(char *caminhoCompleto, char *nomeArquivo)
 {
 	int conta_barras = 0, contador = 0;
 	
-	for (int i = 0; i < strlen(caminhoCompleto); i++)
+	for (int i = 0; caminhoCompleto[i] != '\0'; i++)
 		if (caminhoCompleto[i] == '\\' || caminhoCompleto[i] == '/')
 			conta_barras++;
 	
@@ -163,7 +163,7 @@ void obtemNomeArquivoDiretorio(char *caminhoCompleto, char *nomeArquivo)
 			contador++;
 			
 	int k = 0;
-	for (int i = indice; i < strlen(caminhoCompleto); i++)
+	for (int i = indice; caminhoCompleto[i] != '\0'; i++)
 	{
 		nomeArquivo[k] = caminhoCompleto[i];
 		k++;
