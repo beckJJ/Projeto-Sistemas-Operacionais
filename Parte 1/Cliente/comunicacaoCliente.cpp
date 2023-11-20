@@ -171,7 +171,7 @@ void delete_cmd(DadosConexao dados_conexao) /* Delete um arquivo presente na maq
 	//printf("DIRETORIO PARA EXCLUIR ARQUIVO:\n%s\n", caminhoArquivo);
 	
 	/* Delete o arquivo presente na maquina local do usuario. */
-	if (!remove(caminhoArquivo) == 0)
+	if (!remove(caminhoArquivo))
 		printf("\nErro! Arquivo '%s' inexistente no diretorio local!\n", nomeArquivo);
 	else
 		printf("\nArquivo '%s' deletado do diretorio local com sucesso.\n", nomeArquivo);

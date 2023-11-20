@@ -54,7 +54,7 @@ int verificaParametros(char *comando, int quantidade_parametros)
 void analisa_diretorio(char *nome_usuario)
 {
     char nome_diretorio[DIMENSAO_NOME_DIRETORIO];
-    sprintf(nome_diretorio,PREFIXO_DIRETORIO);
+    snprintf(nome_diretorio, DIMENSAO_NOME_DIRETORIO, PREFIXO_DIRETORIO);
     strcat(nome_diretorio,nome_usuario);
 
     struct stat st = {};
