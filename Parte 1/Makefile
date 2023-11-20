@@ -1,5 +1,5 @@
 CC:=g++
-CFLAGS:=-g -O2 -Wall -Wextra -pthread
+CFLAGS:=-g -O2 -Wall -Wextra -pthread -Wno-c++11-extensions
 
 default: all
 
@@ -36,5 +36,6 @@ comunicacaoServidor: Servidor/comunicacaoServidor.cpp
 
 
 clean:
-	rm myClient myServer Cliente/*.o Servidor/*.o
+	rm -f myClient myServer Cliente/*.o Servidor/*.o
+	rm -rf myClient.dSYM myServer.dSYM
 

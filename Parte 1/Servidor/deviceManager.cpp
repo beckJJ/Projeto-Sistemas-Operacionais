@@ -3,14 +3,15 @@
 
 DeviceManager::DeviceManager() {
     // Inicializa lock
-    lock = PTHREAD_MUTEX_INITIALIZER;
+    lock = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
 }
 
 DeviceManager::~DeviceManager() {
     disconnect_all();
 }
 
-void DeviceManager::connect(std::string &user, pthread_t thread) {
+void DeviceManager::connect(std::string &user, pthread_t thread)
+{
     pthread_t thread_to_kill;
     bool need_to_kill_thread = false;
 
@@ -40,7 +41,8 @@ void DeviceManager::connect(std::string &user, pthread_t thread) {
     }
 }
 
-void DeviceManager::disconnect(std::string &user, pthread_t thread) {
+void DeviceManager::disconnect(std::string &user, pthread_t thread)
+{
     pthread_mutex_lock(&lock);
 
     auto usuario = conexoes[user];
@@ -56,7 +58,8 @@ void DeviceManager::disconnect(std::string &user, pthread_t thread) {
     pthread_mutex_unlock(&lock);
 }
 
-void DeviceManager::disconnect_all(void) {
+void DeviceManager::disconnect_all(void)
+{
     pthread_mutex_lock(&lock);
 
     // Senda sinal SIGTERM para todas as threads

@@ -10,12 +10,25 @@
 #include "comunicacaoServidor.hpp"
 #include "auxiliaresServidor.hpp"
 
+#ifdef __APPLE__
+#include <pthread.h>
+#endif
+
 // Para fechar o socket em sigterm_handler precisamos ter o socket globalmente
 std::map<pid_t, int> pid_to_socket;
 pthread_mutex_t pid_to_socket_lock = PTHREAD_MUTEX_INITIALIZER;
 
 void sigterm_handler(int signal) {
-    pid_t thread_tid = gettid();
+
+    pid_t thread_tid;
+#ifndef __APPLE__
+    thread_tid = gettid();
+#else
+    // macOS nao tem gettid()
+    uint64_t tid;
+    pthread_threadid_np(NULL, &tid);
+    thread_tid = (pid_t)tid;
+#endif
 
     // Obtem socket que estava sendo usado pela thread
     pthread_mutex_lock(&pid_to_socket_lock);
@@ -40,7 +53,14 @@ void *servFunc(void *arg)
     struct thread_arg_t *thread_arg = (struct thread_arg_t *)arg;
 
     thread_socket = thread_arg->socket;
+
+#ifndef __APPLE__
     thread_tid = gettid();
+#else
+    uint64_t tid;
+    pthread_threadid_np(NULL, &tid);
+    thread_tid = (pid_t)tid;
+#endif
 
     // Armazena socket no hashmap, poderá ser usado em sigterm_handler
     pthread_mutex_lock(&pid_to_socket_lock);
@@ -57,19 +77,15 @@ void *servFunc(void *arg)
 
     printf("[tid: %d] Thread is running.\n", thread_tid);
 
-    while (1)
-    {
+    while (1) {
         int ret;
 
         ret = read(thread_socket, &pacote, sizeof(pacote));
 
-        if (ret < 0)
-        {
+        if (ret < 0) {
             printf("[tid: %d] Erro! Nao foi possivel realizar a leitura dos dados com o socket!\n", thread_tid);
             break;
-        }
-        else if (ret == 0)
-        {
+        } else if (ret == 0) {
             printf("[tid: %d] Cliente encerrou a conexao.\n", thread_tid);
             break;
         }

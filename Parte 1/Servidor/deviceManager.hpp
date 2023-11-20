@@ -10,7 +10,7 @@ class DeviceManager {
 private:
     pthread_mutex_t lock;
     // hash usuario para threads de conexão (uma thread está conectada a um dispositivo)
-    std::map<std::string, std::vector<pthread_t>> conexoes;
+    std::map<std::string, std::vector<pthread_t> > conexoes;
 
 public:
     DeviceManager();
