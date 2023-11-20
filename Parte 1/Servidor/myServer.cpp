@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
 
 	while (1)
 	{
-		thread_arg_t thread_arg { };
+		thread_arg_t thread_arg; // { };
 		thread_arg.deviceMan = &deviceMan;
 
 		if ((thread_arg.socket = accept(socket_id, (struct sockaddr *)&cli_addr, &clilen)) == -1)
