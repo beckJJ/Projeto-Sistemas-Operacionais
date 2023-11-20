@@ -18,7 +18,7 @@
 std::map<pid_t, int> pid_to_socket;
 pthread_mutex_t pid_to_socket_lock = PTHREAD_MUTEX_INITIALIZER;
 
-void sigterm_handler() {
+void sigterm_handler(int signal) {
 
     pid_t thread_tid;
 #ifndef __APPLE__
