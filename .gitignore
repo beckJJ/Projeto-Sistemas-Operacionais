@@ -3,3 +3,4 @@ myClient
 myServer
 sync_dir*
 .DS_Store
+*.dSYM
