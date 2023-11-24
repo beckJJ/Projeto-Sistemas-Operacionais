@@ -73,7 +73,7 @@ void *servFunc(void *arg)
     // Cada pacote tem o nome de usuário, usaremos o primeiro para determinar quem o usuário é
     Pacote pacote;
     bool primeiro_pacote = true;
-    std::string usuario;
+    std::string usuario = "";
 
     printf("[tid: %d] Thread is running.\n", thread_tid);
 
@@ -98,7 +98,7 @@ void *servFunc(void *arg)
             usuario = pacote.usuario;
 
             // Registra thread atual como dispositivo do usuario
-            if (thread_arg->deviceMan->connect(usuario, thread_arg->thread)) {
+            if (usuario == "" || thread_arg->deviceMan->connect(usuario, thread_arg->thread)) {
                 // Não foi possível registrar thread atual como dispositivo
                 fprintf(stderr, "Novo dispositivo do usuario %s nao pode ser conectado.\n", pacote.usuario);
 
@@ -140,8 +140,10 @@ void *servFunc(void *arg)
     // Fecha socket
     close(thread_socket);
 
-    // Remove a thread da lista de dispositivos do usuário
-    thread_arg->deviceMan->disconnect(usuario, thread_arg->thread);
+    if (usuario != "") {
+        // Remove a thread da lista de dispositivos do usuário
+        thread_arg->deviceMan->disconnect(usuario, thread_arg->thread);
+    }
 
     pthread_mutex_lock(&pid_to_socket_lock);
     pid_to_socket.erase(thread_tid);

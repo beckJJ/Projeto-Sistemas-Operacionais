@@ -15,7 +15,6 @@ struct UserDevices {
     std::vector<pthread_t> devices;
 
     UserDevices() {
-        std::cout << "const" << std::endl;
         lock = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
     }
 };
