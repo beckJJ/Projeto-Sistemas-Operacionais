@@ -14,84 +14,96 @@
 #include <pthread.h>
 #include <vector>
 
-#include "comunicacaoServidor.hpp"
-#include "auxiliaresServidor.hpp"
 #include "servFunc.hpp"
+#include "../Common/functions.hpp"
+#include "config.hpp"
+
+// Genreciador de dispositivos, a thread deve ser adicionada para que possa
+//   ser interrompida, caso a execução termine normalmente a thread deve se
+//   retirar da lista de dispositivos
+DeviceManager deviceManager = DeviceManager();
 
 int main(int argc, char *argv[])
 {
-	DeviceManager deviceMan;
-	analisa_diretorio_servidor();
+    if (create_dir_if_not_exists(PREFIXO_DIRETORIO_SERVIDOR))
+    {
+        std::cout << "Nao foi possivel criar diretorio " << PREFIXO_DIRETORIO_SERVIDOR << std::endl;
+        return 1;
+    }
 
-	uint16_t port = PORT;
-	char c;
+    std::vector<pthread_t> threads;
+    uint16_t port = PORT;
+    char c;
 
-	while ((c = getopt(argc, argv, "hp:")) != -1)
-	{
-		switch (c)
-		{
-		case 'h':
-			puts("Opcoes:");
-			puts("\t-p PORT\tPorta que devera ser usada pelo servidor.");
-			puts("\t-h\tExibe mensagem de ajuda.");
-			exit(0);
-		case 'p':
-			port = atoi(optarg);
-			break;
-		default:
-			printf("Usage:\n");
-			printf("\t%s [-p PORT]\n", argv[0]);
-			abort();
-		}
-	}
+    while ((c = getopt(argc, argv, "hp:")) != -1)
+    {
+        switch (c)
+        {
+        case 'h':
+            puts("Opcoes:");
+            puts("\t-p PORT\tPorta que devera ser usada pelo servidor.");
+            puts("\t-h\tExibe mensagem de ajuda.");
+            exit(0);
+        case 'p':
+            port = atoi(optarg);
+            break;
+        default:
+            printf("Usage:\n");
+            printf("\t%s [-p PORT]\n", argv[0]);
+            abort();
+        }
+    }
 
-	int socket_id;
-	socklen_t clilen;
-	struct sockaddr_in serv_addr, cli_addr;
+    int socket_id;
+    socklen_t clilen;
+    struct sockaddr_in serv_addr, cli_addr;
 
-	if ((socket_id = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-	{
-		printf("Erro! Nao foi possivel iniciar utilizacao do socket do servidor!\n");
-		exit(EXIT_FAILURE);
-	}
+    if ((socket_id = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+    {
+        printf("Erro! Nao foi possivel iniciar utilizacao do socket do servidor!\n");
+        exit(EXIT_FAILURE);
+    }
 
-	serv_addr.sin_family = AF_INET;
-	serv_addr.sin_port = htons(port);
-	serv_addr.sin_addr.s_addr = INADDR_ANY;
-	bzero(&(serv_addr.sin_zero), sizeof(serv_addr.sin_zero));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(port);
+    serv_addr.sin_addr.s_addr = INADDR_ANY;
+    bzero(&(serv_addr.sin_zero), sizeof(serv_addr.sin_zero));
 
-	if (bind(socket_id, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
-	{
-		printf("Erro! Nao foi possivel atribuir uma identidade ao socket do servidor!\n");
-		exit(EXIT_FAILURE);
-	}
+    if (bind(socket_id, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    {
+        printf("Erro! Nao foi possivel atribuir uma identidade ao socket do servidor!\n");
+        exit(EXIT_FAILURE);
+    }
 
-	listen(socket_id, 5);
+    listen(socket_id, 5);
 
-	printf("Servidor está escutando na porta %d.\n", port);
+    printf("Servidor está escutando na porta %d.\n", port);
 
-	clilen = sizeof(struct sockaddr_in);
+    clilen = sizeof(struct sockaddr_in);
 
-	while (1)
-	{
-		thread_arg_t thread_arg; // { };
-		thread_arg.deviceMan = &deviceMan;
+    while (1)
+    {
+        thread_arg_t thread_arg; // { };
+        pthread_t thread;
 
-		if ((thread_arg.socket = accept(socket_id, (struct sockaddr *)&cli_addr, &clilen)) == -1)
-		{
-			printf("Erro! Nao foi possivel realizar conexao com o cliente!\n");
-			exit(EXIT_FAILURE);
-		}
+        if ((thread_arg.socket_id = accept(socket_id, (struct sockaddr *)&cli_addr, &clilen)) == -1)
+        {
+            printf("Erro! Nao foi possivel realizar conexao com o cliente!\n");
+            break;
+        }
 
-		printf("Nova conexao estabelecida.\n");
+        printf("Nova conexao estabelecida.\n");
 
-		pthread_create(&thread_arg.thread, NULL, servFunc, &thread_arg);
-	}
+        pthread_create(&thread, NULL, servFunc, &thread_arg);
+        threads.push_back(thread);
+    }
 
-	// Cancela todas as threads que ainda estejam executando
-	deviceMan.disconnect_all();
+    for (auto thread : threads)
+    {
+        pthread_cancel(thread);
+    }
 
-	close(socket_id);
+    close(socket_id);
 
-	return 0;
+    return 0;
 }

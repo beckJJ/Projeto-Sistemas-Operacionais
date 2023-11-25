@@ -75,7 +75,8 @@ DirNode::~DirNode()
 
 FilesTree::FilesTree() {}
 
-void FilesTree::clear_root(void) {
+void FilesTree::clear_root(void)
+{
     root.internalNode.dir.remove_all_children();
 }
 
@@ -372,7 +373,8 @@ std::vector<FilesTreeFlat> FilesTree::get_flatten_tree(void)
         }
 
         // Emite comando POP caso necessário
-        if (!ignore_pop) {
+        if (!ignore_pop)
+        {
             flat.push_back(FilesTreeFlat(0, 0, 0, 0, "", FILE_TYPE, POP));
         }
     }
