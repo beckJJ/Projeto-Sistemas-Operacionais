@@ -95,6 +95,7 @@ void menu_principal(DadosConexao *dados_conexao)
 void executa_comando(DadosConexao *dados_conexao)
 {
     printf("COMANDO INSERIDO:\n%s\n", dados_conexao->comando);
+    limpaTela();
 
     if (strncmp(dados_conexao->comando, COMANDO_UPLOAD, strlen(COMANDO_UPLOAD)) == 0)
     {
@@ -141,4 +142,5 @@ void executa_comando(DadosConexao *dados_conexao)
 
     printf("\nPressione qualquer tecla para continuar.\n");
     getchar();
+    limpaTela();
 }

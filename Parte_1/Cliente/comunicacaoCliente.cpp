@@ -82,7 +82,10 @@ void upload(DadosConexao *dados_conexao) /* Realiza o envio de um arquivo para o
     if (send_file(dados_conexao->socket_id, path.c_str()))
     {
         printf("Algum erro ocorreu ao enviar o arquivo.\n");
+        return;
     }
+
+    printf("Arquivo \"%s\" enviado para o servidor com sucesso.\n", path.c_str());
 }
 
 /* Recebe um arquivo do servidor, e copia para o diretorio de onde a aplicacao cliente foi chamada. */
@@ -130,9 +133,12 @@ void delete_cmd(DadosConexao *dados_conexao) /* Delete um arquivo presente na ma
     path.append(filename);
 
     if (remove(path.c_str()))
+    {
         printf("Nao foi possivel remover arquivo \"%s\"\n", filename.c_str());
-    else
-        printf("\nArquivo '%s' deletado do diretorio local com sucesso.\n", filename.c_str());
+        return;
+    }
+
+    printf("Arquivo \"%s\" deletado do diretorio local com sucesso.\n", filename.c_str());
 }
 
 /* Lista os arquivos armazenados no repositorio remoto do servidor, associados ao usuario. */
