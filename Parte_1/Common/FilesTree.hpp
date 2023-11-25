@@ -10,47 +10,49 @@
 #include <vector>
 
 // Buffer usado para formatação de tempo com strftime
-#define BUFFER_SIZE     80
+#define BUFFER_SIZE 80
 // Tamanho máximo de um nodo
-#define MAX_NAME_SIZE   256
+#define MAX_NAME_SIZE 256
 
 // Erros
-#define ERROR_NOT_FOUND     1
+#define ERROR_NOT_FOUND 1
 #define ERROR_ALREADY_EXIST 2
-#define ERROR_REMOVE_ROOT   3
-#define ERROR_NODE_IS_FILE  4
+#define ERROR_REMOVE_ROOT 3
+#define ERROR_NODE_IS_FILE 4
 
 // status&NODE_EQUALNESS_MASK, o nodo é igual ou há diferenças
 #define NODE_EQUALNESS_MASK 0b00000001
-#define NODE_EQUAL          0b00000000
-#define NODE_DIFFERENT      0b00000001
+#define NODE_EQUAL 0b00000000
+#define NODE_DIFFERENT 0b00000001
 
 // status&NODE_EXISTANCE_MASK, diferença na existência do nodo
 #define NODE_EXISTANCE_MASK 0b00000110
-#define NODE_SAME           0b00000000
-#define NODE_MISSING        0b00000010
-#define NODE_EXTRA          0b00000100
-#define NODE_CHANGE_TYPE    0b00000110
+#define NODE_SAME 0b00000000
+#define NODE_MISSING 0b00000010
+#define NODE_EXTRA 0b00000100
+#define NODE_CHANGE_TYPE 0b00000110
 
 // status&NODE_MAC_MASK, diferença em MAC time
-#define NODE_MAC_MASK       0b00011000
-#define NODE_MAC_SAME       0b00000000
-#define NODE_MAC_OLDER      0b00001000
-#define NODE_MAC_NEWER      0b00010000
+#define NODE_MAC_MASK 0b00011000
+#define NODE_MAC_SAME 0b00000000
+#define NODE_MAC_OLDER 0b00001000
+#define NODE_MAC_NEWER 0b00010000
 
 // status&NODE_SIZE_MASK, há diferença de tamanho?
-#define NODE_SIZE_MASK      0b00100000
-#define NODE_SIZE_SAME      0b00000000
+#define NODE_SIZE_MASK 0b00100000
+#define NODE_SIZE_SAME 0b00000000
 #define NODE_SIZE_DIFFERENT 0b00100000
 
 // Um nodo pode ser arquivo ou diretório
-enum NodeType {
+enum NodeType
+{
     FILE_TYPE,
     DIR_TYPE,
 };
 
 // Comandos para a reconstrução da árvore de arquivos
-enum FilesTreeFlatAction {
+enum FilesTreeFlatAction
+{
     PUSH,
     POP,
     CONTINUE,
@@ -59,7 +61,8 @@ enum FilesTreeFlatAction {
 class Node;
 
 // Nodo base, define campos comuns para arquivos e diretórios
-class BaseNode {
+class BaseNode
+{
 public:
     // Tamanho do arquivo/nodo
     off_t size = 0;
@@ -68,7 +71,7 @@ public:
     time_t atime = 0;
     time_t ctime = 0;
     // Nome do nodo
-    char name[MAX_NAME_SIZE] { };
+    char name[MAX_NAME_SIZE]{};
 
     BaseNode();
     BaseNode(off_t size, time_t mtime, time_t atime, time_t ctime, const char _name[MAX_NAME_SIZE]);
@@ -76,10 +79,11 @@ public:
 };
 
 // Nodo de diretório
-class DirNode {
+class DirNode
+{
 public:
     // Filhos do diretório
-    std::vector<Node *> children { };
+    std::vector<Node *> children{};
 
     DirNode();
     ~DirNode();
@@ -93,10 +97,13 @@ public:
 };
 
 // Nodo de arquivo
-class FileNode { };
+class FileNode
+{
+};
 
 // Nodo da árvore, pode ser arquivo ou diretório, checar campo type
-class Node: public BaseNode {
+class Node : public BaseNode
+{
 public:
     // Tipo do nodo atual
     NodeType type;
@@ -104,39 +111,42 @@ public:
     Node *parent = NULL;
 
     // Dados internos dependentes do tipo do nodo
-    union InternalNode {
+    union InternalNode
+    {
         FileNode file;
         DirNode dir;
 
-        InternalNode(FileNode file): file(file) { }
-        InternalNode(DirNode dir): dir(dir) { }
-        ~InternalNode() { }
+        InternalNode(FileNode file) : file(file) {}
+        InternalNode(DirNode dir) : dir(dir) {}
+        ~InternalNode() {}
     } internalNode;
 
-    Node(FileNode node) : BaseNode(), type(FILE_TYPE), internalNode(node) { }
+    Node(FileNode node) : BaseNode(), type(FILE_TYPE), internalNode(node) {}
     Node(FileNode node, Node *parent, off_t size, time_t mtime, time_t atime, time_t ctime, const char _name[MAX_NAME_SIZE])
-        : BaseNode(size, mtime, atime, ctime, _name), type(FILE_TYPE), parent(parent), internalNode(node) { }
+        : BaseNode(size, mtime, atime, ctime, _name), type(FILE_TYPE), parent(parent), internalNode(node) {}
 
-    Node(DirNode node) : BaseNode(), type(DIR_TYPE), internalNode(node) { }
+    Node(DirNode node) : BaseNode(), type(DIR_TYPE), internalNode(node) {}
     Node(DirNode node, Node *parent, off_t size, time_t mtime, time_t atime, time_t ctime, const char _name[MAX_NAME_SIZE])
-        : BaseNode(size, mtime, atime, ctime, _name), type(DIR_TYPE), parent(parent), internalNode(node) { }
+        : BaseNode(size, mtime, atime, ctime, _name), type(DIR_TYPE), parent(parent), internalNode(node) {}
 };
 
 // Usado durante a construção da versão "flat" da árvore de arquivos
-struct DirNodeIndex {
+struct DirNodeIndex
+{
     DirNode *node;
     size_t index;
 };
 
 // Nodo da versão flat, determina ações para reconstruir a árvore original
-struct FilesTreeFlat: public BaseNode {
+struct FilesTreeFlat : public BaseNode
+{
     // Tipo do nodo
     NodeType type;
     // Ação que deve ser tomada
     FilesTreeFlatAction action;
 
     FilesTreeFlat(off_t size, time_t mtime, time_t atime, time_t ctime, const char _name[MAX_NAME_SIZE], NodeType type, FilesTreeFlatAction action)
-        : BaseNode(size, mtime, atime, ctime, _name), type(type), action(action) { }
+        : BaseNode(size, mtime, atime, ctime, _name), type(type), action(action) {}
 };
 
 // Árvore de arquivos

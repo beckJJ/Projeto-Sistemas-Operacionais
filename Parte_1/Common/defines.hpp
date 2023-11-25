@@ -1,16 +1,17 @@
 #ifndef _COMMON_DEFINES_H_
 #define _COMMON_DEFINES_H_
 
+#ifndef DEBUG_PACOTE
+#define DEBUG_PACOTE false
+#endif
+
+#ifndef DEBUG_PACOTE_FILE_CONTENT
+#define DEBUG_PACOTE_FILE_CONTENT false
+#endif
+
 #ifdef __linux__
 #include <linux/limits.h>
 #endif
-
-/* Constantes utilizadas para tamanhos de strings, usadas na interacao entre cliente e servidor. */
-#define DIMENSAO_GERAL 100
-#define DIMENSAO_COMANDO 200
-#define DIMENSAO_NOME_USUARIO 50
-#define DIMENSAO_NOME_DIRETORIO 200
-#define DIMENSAO_BUFFER 1024
 
 /* Constante indicando a mascara de permissao de um diretorio a ser criado. */
 #define MASCARA_PERMISSAO 0777
@@ -21,7 +22,7 @@
 /* Constantes indicando o prefixo do diretorio local, de cada usuario. */
 #define PREFIXO_DIRETORIO "sync_dir_"
 
-#define SUCCESS         0
-#define GENERIC_ERROR   1
+#define SUCCESS 0
+#define GENERIC_ERROR 1
 
 #endif

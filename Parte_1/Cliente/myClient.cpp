@@ -1,20 +1,13 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <dirent.h>
-#include <time.h>
-#include <limits.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netdb.h>
-
+#include <iostream>
+#include "../Common/package.hpp"
+#include "../Common/package_functions.hpp"
+#include "../Common/functions.hpp"
+#include "../Common/defines.hpp"
+#include "../Common/package_commands.hpp"
 #include "comunicacaoCliente.hpp"
 #include "interfaceCliente.hpp"
-#include "auxiliaresCliente.hpp"
 
 int main(int argc, char *argv[])
 {
@@ -31,28 +24,65 @@ int main(int argc, char *argv[])
     strcpy(dados_conexao.endereco_ip, argv[2]);
     strcpy(dados_conexao.numero_porta, argv[3]);
 
-    dados_conexao.socket_id = conecta_servidor(dados_conexao); /* Inicia a conexao com o servidor, via socket. */
-    analisa_diretorio(dados_conexao.nome_usuario);             /* Cria ou carrega o diretorio sync_dir_<usuario> */
+    std::string sync_dir_path = PREFIXO_DIRETORIO;
+    sync_dir_path.append(dados_conexao.nome_usuario);
+
+    if (create_dir_if_not_exists(sync_dir_path.c_str()))
+    {
+        printf("Erro criar diretorio sync dir do usuario.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    dados_conexao.socket_id = conecta_servidor(&dados_conexao); /* Inicia a conexao com o servidor, via socket. */
+
+    auto package = Package(PackageUserIndentification(dados_conexao.nome_usuario));
+    std::vector<char> fileContentBuffer;
+
+    if (write_package_to_socket(dados_conexao.socket_id, package, fileContentBuffer))
+    {
+        printf("Nao foi possivel enviar nome de usuario.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (read_package_from_socket(dados_conexao.socket_id, package, fileContentBuffer))
+    {
+        printf("Erro ao ler resposta inicial do servidor.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (package.package_type != USER_INDENTIFICATION_RESPONSE)
+    {
+        printf("Resposta invalida do servidor.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (package.package_specific.userIdentificationResponse.status == REJECTED)
+    {
+        printf("Nao foi possivel se registrar como dispositivo para usuario \"%s\".\n", dados_conexao.nome_usuario);
+        exit(EXIT_FAILURE);
+    }
 
     while (1)
     {
         char *ret;
 
         limpaTela();
-        menu_principal(dados_conexao); /* Exibe o menu principal ao usuario, para digitar os comandos. */
+        menu_principal(&dados_conexao); /* Exibe o menu principal ao usuario, para digitar os comandos. */
 
         ret = fgets(dados_conexao.comando, sizeof(dados_conexao.comando), stdin); /* Obtem o comando inserido pelo usuario. */
 
         // Erro ou EOF
-        if (ret == NULL) {
+        if (ret == NULL)
+        {
             break;
         }
 
         dados_conexao.comando[strnlen(dados_conexao.comando, sizeof(dados_conexao.comando)) - 1] = '\0';
 
-        executa_comando(dados_conexao); /* Identifica e executa o comando inserido pelo usuario. */
+        executa_comando(&dados_conexao); /* Identifica e executa o comando inserido pelo usuario. */
     }
 
     limpaTela();
+
     return 0;
 }

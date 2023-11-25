@@ -5,41 +5,28 @@
 #include <signal.h>
 
 #include "servFunc.hpp"
-#include "../Common/structs.hpp"
-#include "../Common/comunicacao.hpp"
-#include "comunicacaoServidor.hpp"
-#include "auxiliaresServidor.hpp"
+#include "../Common/defines.hpp"
+#include "../Common/package.hpp"
+#include "../Common/package_commands.hpp"
 
-#ifdef __APPLE__
 #include <pthread.h>
-#endif
+#include <threads.h>
 
-// Para fechar o socket em sigterm_handler precisamos ter o socket globalmente
-std::map<pid_t, int> pid_to_socket;
-pthread_mutex_t pid_to_socket_lock = PTHREAD_MUTEX_INITIALIZER;
+#include "../Common/package_functions.hpp"
+#include "../Common/functions.hpp"
+#include <string.h>
 
-void sigterm_handler(int) {
+extern DeviceManager deviceManager;
 
-    pid_t thread_tid;
-#ifndef __APPLE__
-    thread_tid = gettid();
-#else
-    // macOS nao tem gettid()
-    uint64_t tid;
-    pthread_threadid_np(NULL, &tid);
-    thread_tid = (pid_t)tid;
-#endif
+thread_local pid_t tid;
+thread_local int socket_id;
 
-    // Obtem socket que estava sendo usado pela thread
-    pthread_mutex_lock(&pid_to_socket_lock);
-    int socket = pid_to_socket[thread_tid];
-    pid_to_socket.erase(thread_tid);
-    pthread_mutex_unlock(&pid_to_socket_lock);
-
-    printf("[tid: %d] Received SIGTERM\n", thread_tid);
+void sigterm_handler(int)
+{
+    printf("[tid: %d] Received SIGTERM\n", tid);
 
     // Fecha socket
-    close(socket);
+    close(socket_id);
 
     // Encerra thread
     pthread_exit(NULL);
@@ -47,107 +34,163 @@ void sigterm_handler(int) {
 
 void *servFunc(void *arg)
 {
-    int thread_socket;
-    pid_t thread_tid;
-
-    struct thread_arg_t *thread_arg = (struct thread_arg_t *)arg;
-
-    thread_socket = thread_arg->socket;
+    std::string username;
+    Package package;
+    std::optional<std::pair<UserDevices *, uint8_t>> deviceConnectReturn;
+    UserDevices *userDevices;
+    uint8_t deviceID = 0;
+    pthread_t thread_self = pthread_self();
 
 #ifndef __APPLE__
-    thread_tid = gettid();
+    tid = gettid();
 #else
+    // macOS nao tem gettid()
     uint64_t tid;
     pthread_threadid_np(NULL, &tid);
-    thread_tid = (pid_t)tid;
+    tid = (pid_t)tid;
 #endif
 
-    // Armazena socket no hashmap, poderá ser usado em sigterm_handler
-    pthread_mutex_lock(&pid_to_socket_lock);
-    pid_to_socket[thread_tid] = thread_socket;
-    pthread_mutex_unlock(&pid_to_socket_lock);
+    struct thread_arg_t *thread_arg = (struct thread_arg_t *)arg;
+    std::vector<char> fileContentBuffer;
+
+    socket_id = thread_arg->socket_id;
 
     // Registra sigterm_handler para SIGTERM, fecha socket e informa no terminal
     signal(SIGTERM, sigterm_handler);
 
-    // Cada pacote tem o nome de usuário, usaremos o primeiro para determinar quem o usuário é
-    Pacote pacote;
-    bool primeiro_pacote = true;
-    std::string usuario = "";
+    if (read_package_from_socket(socket_id, package, fileContentBuffer))
+    {
+        printf("[tid: %d] Erro ao ler primeiro pacote do usuario\n", tid);
+        goto cleanup;
+    }
 
-    printf("[tid: %d] Thread is running.\n", thread_tid);
+    if (package.package_type != INITAL_USER_INDENTIFICATION)
+    {
+        printf("[tid: %d] Pacote inicial do usuario nao e identificacao: 0x%02x\n", tid, (uint8_t)package.package_type);
+        goto cleanup;
+    }
 
-    while (1) {
-        int ret;
+    username = std::string(package.package_specific.userIdentification.user_name);
+    deviceConnectReturn = deviceManager.connect(username, thread_self);
 
-        ret = read(thread_socket, &pacote, sizeof(pacote));
+    if (!deviceConnectReturn.has_value())
+    {
+        printf("[tid: %d] Novo dispositivo do usuario \"%s\" rejeitado.\n", tid, username.c_str());
+        package = Package(PackageUserIndentificationResponse(REJECTED, 0));
+        write_package_to_socket(socket_id, package, fileContentBuffer);
+        goto cleanup;
+    }
 
-        if (ret < 0) {
-            printf("[tid: %d] Erro! Nao foi possivel realizar a leitura dos dados com o socket!\n", thread_tid);
-            break;
-        } else if (ret == 0) {
-            printf("[tid: %d] Cliente encerrou a conexao.\n", thread_tid);
+    userDevices = deviceConnectReturn.value().first;
+    deviceID = deviceConnectReturn.value().second;
+
+    printf("[tid: %d] Novo dispositivo do usuario \"%s\" conectado.\n", tid, username.c_str());
+
+    package = Package(PackageUserIndentificationResponse(ACCEPTED, deviceID));
+
+    if (write_package_to_socket(socket_id, package, fileContentBuffer))
+    {
+        printf("[tid: %d] Erro ao enviar resposta inicial ao usuario.\n", tid);
+        goto cleanup_disconnect;
+    }
+
+    while (true)
+    {
+        if (read_package_from_socket(socket_id, package, fileContentBuffer))
+        {
+            printf("[tid: %d] Nao foi possivel ler pacote.\n", tid);
             break;
         }
 
-        printf("\n[tid: %d] <<< PACOTE RECEBIDO >>>\n", thread_tid);
-        imprimeDadosPacote(pacote);
+        switch (package.package_type)
+        {
+        case REQUEST_FILE:
+        {
+            std::string path = std::string(PREFIXO_DIRETORIO_SERVIDOR);
+            path.append("/");
+            path.append(username);
+            path.append("/");
+            path.append(package.package_specific.requestFile.filename);
 
-        if (primeiro_pacote) {
-            criaNovoDiretorio(PREFIXO_DIRETORIO_SERVIDOR, pacote.usuario);
-            usuario = pacote.usuario;
+            // Arquivos em sync dir serão lidos
+            pthread_mutex_lock(userDevices->files_lock);
 
-            // Registra thread atual como dispositivo do usuario
-            if (usuario == "" || thread_arg->deviceMan->connect(usuario, thread_arg->thread)) {
-                // Não foi possível registrar thread atual como dispositivo
-                fprintf(stderr, "Novo dispositivo do usuario %s nao pode ser conectado.\n", pacote.usuario);
+            // Obtém dados do arquivo que será enviado
+            auto file = userDevices->get_file(package.package_specific.requestFile.filename);
 
-                // Fecha socket
-                close(thread_socket);
+            if (file.has_value())
+            {
+                package = Package(PackageUploadFile(file.value()));
 
-                pthread_mutex_lock(&pid_to_socket_lock);
-                pid_to_socket.erase(thread_tid);
-                pthread_mutex_unlock(&pid_to_socket_lock);
-
-                return NULL;
+                if (!write_package_to_socket(socket_id, package, fileContentBuffer))
+                {
+                    send_file(socket_id, path.c_str());
+                }
+            }
+            else
+            {
+                package = Package(PackageFileNotFound());
+                write_package_to_socket(socket_id, package, fileContentBuffer);
             }
 
-            fprintf(stderr, "Novo dispositivo do usuario %s conectado.\n", pacote.usuario);
-            primeiro_pacote = false;
-        }
+            pthread_mutex_unlock(userDevices->files_lock);
 
-        switch (pacote.codigoComunicacao) {
-        case CODIGO_UPLOAD:
-            criaNovoDiretorio(PREFIXO_DIRETORIO_SERVIDOR, pacote.usuario);
-            upload(PREFIXO_DIRETORIO_SERVIDOR, &pacote);
             break;
-        case CODIGO_LISTSERVER:
-            list_server(thread_socket, &pacote);
-            printf("\n[tid: %d] <<< PACOTE ENVIADO >>>\n", thread_tid);
-            imprimeDadosPacote(pacote);
+        }
+        case REQUEST_FILE_LIST:
+        {
+            pthread_mutex_lock(userDevices->files_lock);
+            send_file_list(socket_id, *userDevices->files);
+            pthread_mutex_unlock(userDevices->files_lock);
             break;
-        case CODIGO_DOWNLOAD:
-            download(thread_socket, &pacote);
-            printf("\n[tid: %d] <<< PACOTE ENVIADO >>>\n", thread_tid);
-            imprimeDadosPacote(pacote);
+        }
+        case UPLOAD_FILE:
+        {
+            std::string path = std::string(PREFIXO_DIRETORIO_SERVIDOR);
+            path.append("/");
+            path.append(username);
+            path.append("/");
+            path.append(package.package_specific.uploadFile.name);
+
+            // Arquivos em sync dir serão modificados
+            pthread_mutex_lock(userDevices->files_lock);
+
+            if (read_file_and_save(socket_id, path.c_str()))
+            {
+                printf("[tid: %d] Nao foi possivel ler arquivo enviado pelo usuario.\n", tid);
+            }
+            else
+            {
+                userDevices->add_file_or_replace(package.package_specific.uploadFile);
+            }
+
+            pthread_mutex_unlock(userDevices->files_lock);
+
+            break;
+        }
+        case CHANGE_EVENT:   // inotify e propagar notificação de alteração
+        case FILE_CONTENT:   // Deve ser usado após requisitar arquivo do usuario
+        case FILE_NOT_FOUND: // Enviado quando requisitar arquivo atualizado pelo usuário e o mesmo ter sido já removido
+            printf("[tid: %d] Ainda nao implementado.\n", tid);
+            break;
+        case FILE_LIST: // Não há motivos para o usuário enviar uma lista de arquivos para o servidor
+            printf("[tid: %d] Pacote FILE_LIST nao deveria ter sido enviado pelo usuario.\n", tid);
             break;
         default:
-            printf("\n[tid: %d] Codigo comunicacao desconhecido: %d\n", thread_tid, pacote.codigoComunicacao);
+            printf("[tid: %d] Codigo comunicacao desconhecido: 0x%02x\n", tid, (uint8_t)package.package_type);
             break;
         }
     }
 
+cleanup_disconnect:
+    printf("[tid: %d] Thread disconnecting.\n", tid);
+
+    // Remove a thread da lista de dispositivos do usuário
+    deviceManager.disconnect(username, deviceID);
+
+cleanup:
     // Fecha socket
-    close(thread_socket);
-
-    if (usuario != "") {
-        // Remove a thread da lista de dispositivos do usuário
-        thread_arg->deviceMan->disconnect(usuario, thread_arg->thread);
-    }
-
-    pthread_mutex_lock(&pid_to_socket_lock);
-    pid_to_socket.erase(thread_tid);
-    pthread_mutex_unlock(&pid_to_socket_lock);
+    close(socket_id);
 
     return NULL;
 }

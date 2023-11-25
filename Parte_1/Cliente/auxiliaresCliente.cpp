@@ -1,37 +1,16 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <dirent.h>
-#include <time.h>
-#include <limits.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netdb.h> 
-
-#include "comunicacaoCliente.hpp"
-#include "interfaceCliente.hpp"
 #include "auxiliaresCliente.hpp"
+#include <cstddef>
+#include <stdio.h>
+#include <ctime>
 
-/* Inicializa o pacote que ira conter os dados da interacao com o servidor. */
-void inicializaPacote(Pacote *pacote) 
-{
-	memset(pacote->conteudo,0,sizeof(pacote->conteudo));
-	memset(pacote->nomePacote,0,sizeof(pacote->nomePacote));
-	memset(pacote->nomeArquivo,0,sizeof(pacote->nomeArquivo));
-	memset(pacote->usuario,0,sizeof(pacote->usuario));
-	pacote->tamanho = 0;
-	pacote->codigoComunicacao = 0;
-}
+void format_time(char *buffer, time_t time);
 
 /* Verifica se o usuario inseriu a quantidade correta de parametros, para o comando escolhido. */
 int verificaParametros(char *comando, int quantidade_parametros)
 {
     int numPalavras = 0;
     int dentroPalavra = 0;
+
     for (int i = 0; comando[i] != '\0'; i++)
     {
         if (comando[i] == ' ' || comando[i] == '\t')
@@ -46,127 +25,67 @@ int verificaParametros(char *comando, int quantidade_parametros)
             }
         }
     }
-    
-    return (numPalavras == quantidade_parametros+1);
+
+    return (numPalavras == quantidade_parametros + 1);
 }
 
-/* Cria ou carrega o diretorio sync_dir_<usuario> */
-void analisa_diretorio(char *nome_usuario)
+/* Retorna um vetor de char * para o inicio de cada string do comando */
+std::vector<char *> splitComando(char *comando)
 {
-    char nome_diretorio[DIMENSAO_NOME_DIRETORIO];
-    snprintf(nome_diretorio, DIMENSAO_NOME_DIRETORIO, PREFIXO_DIRETORIO);
-    strcat(nome_diretorio,nome_usuario);
+    std::vector<char *> strings;
+    bool dentroPalavra = false;
 
-    struct stat st = {};
-
-    if (stat(nome_diretorio, &st) == -1)
+    for (size_t i = 0; comando[i] != '\0'; i++)
     {
-        if (!(mkdir(nome_diretorio, MASCARA_PERMISSAO) == 0)) /* Criacao do diretorio do cliente, com controle dos casos em que nao e possivel cria-lo. */
+        if (comando[i] == ' ' || comando[i] == '\t')
         {
-            printf("Erro ao criar o diretorio do cliente!\n");
-            exit(EXIT_FAILURE);
-	}
-    }
-}
+            // Estava dentro de uma palavra, \0 para indicar fim
+            if (dentroPalavra)
+            {
+                comando[i] = '\0';
+            }
 
-/* Lista todos os arquivos de um determinado diretorio, junto com os MAC times. */
-void listarArquivosDiretorio(char *diretorio) 
-{
-    DIR *dir;
-    struct dirent *entrada;
-    struct stat info;
-    
-    printf("ARQUIVOS DO DIRETORIO\n%s\n", diretorio);
-
-    dir = opendir(diretorio);
-    if (dir == NULL) /* Realiza a abertura do diretorio, para listar os arquivos. */
-    {
-            printf("Erro ao abrir o diretorio do cliente!\n");
-            return;
-    }
-   
-   /* Iteracao para percorrer todo o diretorio, imprimindo os dados MAC de cada arquivo. */
-    while ((entrada = readdir(dir)) != NULL) 
-    {
-        char caminhoCompleto[PATH_MAX];
-        snprintf(caminhoCompleto, sizeof(caminhoCompleto), "%s/%s", diretorio, entrada->d_name);
-
-        if (stat(caminhoCompleto, &info) == 0) 
+            dentroPalavra = false;
+        }
+        else
         {
-            printf("\nNOME:\n%s\n", entrada->d_name);
-            printf("MODIFICATION TIME:\n%s", ctime(&info.st_mtime));
-            printf("ACCESS TIME:\n%s", ctime(&info.st_atime));
-            printf("CHANGE OR CREATION TIME:\n%s", ctime(&info.st_ctime));
-            printf("\n------------------------------------------------------------------------------\n");
-        } 
-        
-        else 
-        {
-            printf("Erro ao obter informacoes do arquivo.\n");
-            return;
+            // Encontrou nova palavra, adiciona ao vetor
+            if (!dentroPalavra)
+            {
+                strings.push_back(&comando[i]);
+                dentroPalavra = true;
+            }
         }
     }
 
-    closedir(dir);
+    return strings;
 }
 
-/* Recebe um comando digitado pelo usuario, e obtem o nome do arquivo final referenciado no comando. */
-void obtemNomeArquivoComando(char *comando, char *nomeArquivo)
+void format_time(char *buffer, time_t time)
 {
-	int indice = 0;
-	while (comando[indice] != ' ')
-		indice++;
-	while (comando[indice] == ' ')
-		indice++;
-	int k = 0;
-	for (int i = indice; comando[i] != '\0' && comando[i] != ' ' && comando[i] != '\t'; i++)
-	{ 
-		nomeArquivo[k] = comando[i];
-		k++;
-	}
-	nomeArquivo[k] = '\0';
+    auto tmp = localtime(&time);
+
+    if (!tmp)
+    {
+        return;
+    }
+
+    strftime(buffer, sizeof(char) * TIME_FORMATTED_BUFFER, TIME_FORMAT, tmp);
 }
 
-/* Recebe um comando digitado pelo usuario, e obtem o nome do diretorio referenciado no comando. */
-void obtemDiretorioComando(char *comando, char *diretorio) 
+void print_files(std::vector<File> files)
 {
-	//printf("COMANDO RECEBIDO:\n%s\n", comando);
-		
-	int indice = 0;
-	while (comando[indice] == ' ' || comando[indice] == '\t')
-		indice++;
-	while (comando[indice] != ' ')
-		indice++;
-	while (comando[indice] == ' ' || comando[indice] == '\t')
-		indice++;
-	int k = 0;
-	for (int i = indice; comando[i] != '\0'; i++)
-	{
-		diretorio[k] = comando[i];
-		k++;
-	}
-	diretorio[k] = '\0';
-}
+    char mtime_formatted[TIME_FORMATTED_BUFFER]{};
+    char atime_formatted[TIME_FORMATTED_BUFFER]{};
+    char ctime_formatted[TIME_FORMATTED_BUFFER]{};
 
-/* Recebe um diretorio escolhido pelo usuario, e obtem o nome do arquivo final referenciado no diretorio. */
-void obtemNomeArquivoDiretorio(char *caminhoCompleto, char *nomeArquivo) 
-{
-	int conta_barras = 0, contador = 0;
-	
-	for (int i = 0; caminhoCompleto[i] != '\0'; i++)
-		if (caminhoCompleto[i] == '\\' || caminhoCompleto[i] == '/')
-			conta_barras++;
-	
-	int indice = 0;		
-	for (indice = 0; contador != conta_barras; indice++)
-		if (caminhoCompleto[indice] == '\\' || caminhoCompleto[indice] == '/')
-			contador++;
-			
-	int k = 0;
-	for (int i = indice; caminhoCompleto[i] != '\0'; i++)
-	{
-		nomeArquivo[k] = caminhoCompleto[i];
-		k++;
-	}
-	nomeArquivo[k] = '\0';
+    printf(HEADER_FORMAT, "Nome", "Tamanho", "M time", "A time", "C time");
+
+    for (auto file : files)
+    {
+        format_time(mtime_formatted, file.mtime);
+        format_time(atime_formatted, file.atime);
+        format_time(ctime_formatted, file.ctime);
+        printf(FILE_FORMAT, file.name, file.size, mtime_formatted, atime_formatted, ctime_formatted);
+    }
 }
