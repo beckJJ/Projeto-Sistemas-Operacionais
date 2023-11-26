@@ -142,7 +142,7 @@ inotifyThread(void *threadArg)
 
             ptr += sizeof(struct inotify_event) + event->len;
 
-            // Eventos já foram enviado, limpa vetor de eventos
+            // Eventos já foram enviados, limpa vetor de eventos
             completeUserEvents.clear();
         }
     }
