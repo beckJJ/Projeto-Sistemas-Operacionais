@@ -30,8 +30,8 @@ default: all
 all: myClient myServer
 
 
-myClient: Cliente/myClient.cpp auxiliaresCliente interfaceCliente comunicacaoCliente package functions package_commands package_functions
-	$(CC) $(CFLAGS) $(DEFINES) -o myClient Cliente/myClient.cpp Cliente/auxiliaresCliente.o Cliente/interfaceCliente.o Cliente/comunicacaoCliente.o Common/package.o Common/functions.o Common/package_commands.o Common/package_functions.o
+myClient: Cliente/myClient.cpp auxiliaresCliente interfaceCliente comunicacaoCliente package functions package_commands package_functions inotifyThread
+	$(CC) $(CFLAGS) $(DEFINES) -o myClient Cliente/myClient.cpp Cliente/auxiliaresCliente.o Cliente/interfaceCliente.o Cliente/comunicacaoCliente.o Cliente/inotifyThread.o Common/package.o Common/functions.o Common/package_commands.o Common/package_functions.o
 
 auxiliaresCliente: Cliente/auxiliaresCliente.cpp
 	$(CC) $(CFLAGS) $(DEFINES) -c -o Cliente/auxiliaresCliente.o Cliente/auxiliaresCliente.cpp
@@ -41,6 +41,9 @@ interfaceCliente: Cliente/interfaceCliente.cpp
 
 comunicacaoCliente: Cliente/comunicacaoCliente.cpp
 	$(CC) $(CFLAGS) $(DEFINES) -c -o Cliente/comunicacaoCliente.o Cliente/comunicacaoCliente.cpp
+
+inotifyThread: Cliente/inotifyThread.cpp
+	$(CC) $(CFLAGS) $(DEFINES) -c -o Cliente/inotifyThread.o Cliente/inotifyThread.cpp
 
 
 myServer: Servidor/myServer.cpp servFunc deviceManager package functions package_commands package_functions

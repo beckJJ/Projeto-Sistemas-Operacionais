@@ -19,10 +19,11 @@ PackageUserIndentification::PackageUserIndentification(const char _user_name[USE
 PackageUserIndentificationResponse::PackageUserIndentificationResponse(InitialUserIndentificationResponseStatus status, int8_t deviceID)
     : status(status), deviceID(deviceID) {}
 
-PackageChangeEvent::PackageChangeEvent(ChangeEvents event, const char _filename[NAME_MAX])
-    : event(event)
+PackageChangeEvent::PackageChangeEvent(ChangeEvents event, uint8_t deviceID, const char _filename1[NAME_MAX], const char _filename2[NAME_MAX])
+    : event(event), deviceID(deviceID)
 {
-    strncpy(filename, _filename, NAME_MAX - 1);
+    strncpy(filename1, _filename1, NAME_MAX - 1);
+    strncpy(filename2, _filename2, NAME_MAX - 1);
 }
 
 PackageRequestFile::PackageRequestFile(const char _filename[NAME_MAX])

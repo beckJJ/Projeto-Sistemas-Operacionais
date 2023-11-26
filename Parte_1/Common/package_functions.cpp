@@ -117,7 +117,9 @@ int read_package_from_socket(int socket, Package &package, std::vector<char> &fi
     case CHANGE_EVENT:
         package = Package(PackageChangeEvent(
             *(ChangeEvents *)buffer_data,
-            &buffer_data[ALIGN_VALUE]));
+            *(uint8_t *)&buffer_data[ALIGN_VALUE],
+            &buffer_data[2 * ALIGN_VALUE],
+            &buffer_data[2 * ALIGN_VALUE + NAME_MAX]));
         break;
     case REQUEST_FILE:
         package = Package(PackageRequestFile(buffer_data));
@@ -279,7 +281,7 @@ void print_package(FILE *fout, bool sending, Package &package, std::vector<char>
         fprintf(fout, ", %d", package.package_specific.userIdentificationResponse.deviceID);
         break;
     case CHANGE_EVENT:
-        fprintf(fout, "Package(CHANGE_EVENT, ");
+        fprintf(fout, "Package(CHANGE_EVENT, 0x%02x, ", (uint8_t)package.package_specific.ChangeEvent.deviceID);
 
         switch (package.package_specific.ChangeEvent.event)
         {
@@ -292,12 +294,16 @@ void print_package(FILE *fout, bool sending, Package &package, std::vector<char>
         case FILE_MODIFIED:
             fprintf(fout, "FILE_MODIFIED, ");
             break;
+        case FILE_RENAME:
+            fprintf(fout, "FILE_RENAME, ");
+            break;
         default:
             fprintf(fout, "UNKNOWN, ");
             break;
         }
 
-        fprintf(fout, "%s", package.package_specific.ChangeEvent.filename);
+        fprintf(fout, "%s, ", package.package_specific.ChangeEvent.filename1);
+        fprintf(fout, "%s", package.package_specific.ChangeEvent.filename2);
         break;
     case REQUEST_FILE:
         fprintf(fout, "Package(REQUEST_FILE, %s", package.package_specific.requestFile.filename);

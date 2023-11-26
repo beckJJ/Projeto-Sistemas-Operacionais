@@ -38,6 +38,7 @@ enum ChangeEvents : char
     FILE_DELETED,
     FILE_CREATED,
     FILE_MODIFIED,
+    FILE_RENAME,
 };
 
 struct alignas(ALIGN_VALUE) File
@@ -73,9 +74,11 @@ struct alignas(ALIGN_VALUE) PackageUserIndentificationResponse
 struct alignas(ALIGN_VALUE) PackageChangeEvent
 {
     alignas(ALIGN_VALUE) ChangeEvents event;
-    alignas(ALIGN_VALUE) char filename[NAME_MAX]{};
+    alignas(ALIGN_VALUE) uint8_t deviceID;
+    alignas(ALIGN_VALUE) char filename1[NAME_MAX]{};
+    alignas(ALIGN_VALUE) char filename2[NAME_MAX]{};
 
-    PackageChangeEvent(ChangeEvents event, const char _filename[NAME_MAX]);
+    PackageChangeEvent(ChangeEvents event, uint8_t deviceID, const char _filename1[NAME_MAX], const char _filename2[NAME_MAX]);
 };
 
 struct alignas(ALIGN_VALUE) PackageRequestFile

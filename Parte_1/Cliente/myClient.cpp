@@ -8,6 +8,7 @@
 #include "../Common/package_commands.hpp"
 #include "comunicacaoCliente.hpp"
 #include "interfaceCliente.hpp"
+#include "inotifyThread.hpp"
 
 int main(int argc, char *argv[])
 {
@@ -62,6 +63,14 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
+    uint8_t device_id = package.package_specific.userIdentificationResponse.deviceID;
+
+    // Usuário já está conectado como dispositivo, iniciamos a thread que monitora eventos do inotify
+    pthread_t thread;
+    ThreadArg thread_arg{dados_conexao.socket_id, device_id, dados_conexao.nome_usuario};
+
+    pthread_create(&thread, NULL, inotifyThread, &thread_arg);
+
     while (1)
     {
         char *ret;
@@ -83,6 +92,8 @@ int main(int argc, char *argv[])
     }
 
     limpaTela();
+
+    pthread_cancel(thread);
 
     return 0;
 }
