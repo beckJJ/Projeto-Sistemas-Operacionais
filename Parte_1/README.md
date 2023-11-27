@@ -8,6 +8,8 @@ syncThread e eventThread do cliente escrevem na mesma socket de eventos, para re
 
 Permitir múltiplas leituras dos arquivos do usuário no servidor.
 
+Corrigir alteração de mesmo arquivo em dois dispositivos sendo suprimida.
+
 ## Geral
 
 Toda escrita e leitura base de pacotes deverão ser feitas pelas funções são feitas pelas funções `read_package_from_socket` e `write_package_to_socket`. Essas funções irão exibir os pacotes recebidos e enviados no `stderr` caso a macro `DEBUG_PACOTE` sejá verdadeira.
@@ -136,7 +138,7 @@ Para sincronização foram usadas mutexes, leituras são mutuamente exclusivas, 
 
 ## Problemas encontrados
 
-Com dois dispositivos é possível obter um loop de notificações de eventos:
+Com dois dispositivos era possível obter um loop de notificações de eventos:
 
 ```text
 [id=0x01] Dispositivo atual onde o arquivo 'teste' foi renomeado para 'exemplo':
@@ -172,3 +174,5 @@ for (auto userEvent : completeUserEvents)
     // ...
 }
 ```
+
+Porém, com isso perde-se a possibilidade de se alterar o mesmo arquivo em dois dispositivo, se o último evento foi uma modificação do x pelo dispositivo 1, alterações feitas pelo dispositivo 2 serão ignoradas.
