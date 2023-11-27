@@ -5,13 +5,64 @@
 #include "../Common/package_functions.hpp"
 #include "../Common/functions.hpp"
 #include "../Common/defines.hpp"
-#include "../Common/package_commands.hpp"
+#include "../Common/package_file.hpp"
 #include "comunicacaoCliente.hpp"
 #include "interfaceCliente.hpp"
-#include "inotifyThread.hpp"
+#include "eventThread.hpp"
+#include <unistd.h>
+#include "auxiliaresCliente.hpp"
+#include "syncThread.hpp"
+#include <csignal>
+
+// Dados sobre a comunicação com o servidor
+DadosConexao dados_conexao;
+
+// Último evento recebido pelo servidor, usado para determinar se o evento gerado por outro
+//   dispositivo foi gerado em resposta a um evento gerado no dispositivo atual
+PackageChangeEvent previousSyncedChangeEvent = PackageChangeEvent((ChangeEvents)0xff, (uint8_t)0xff, "", "");
+// Lock para evento anterior
+pthread_mutex_t previousSyncedChangeEventLock = PTHREAD_MUTEX_INITIALIZER;
+
+// Cancela threads caso estejam executando
+void cancel_threads()
+{
+    if (dados_conexao.sync_thread.has_value())
+    {
+        pthread_cancel(dados_conexao.sync_thread.value());
+    }
+
+    if (dados_conexao.event_thread.has_value())
+    {
+        pthread_cancel(dados_conexao.event_thread.value());
+    }
+}
+
+// Fecha sockets que estejam abertos
+void close_sockets()
+{
+    if (dados_conexao.main_connection_socket != -1)
+    {
+        close(dados_conexao.main_connection_socket);
+    }
+
+    if (dados_conexao.event_connection_socket != -1)
+    {
+        close(dados_conexao.event_connection_socket);
+    }
+}
+
+// SIGINT é gerado pelo terminal ao receber Ctrl-C
+void sigint_handler(int)
+{
+    cancel_threads();
+    close_sockets();
+    exit(SIGINT);
+}
 
 int main(int argc, char *argv[])
 {
+    signal(SIGINT, sigint_handler);
+
     if (argc != QUANTIDADE_PARAMETROS_MYCLIENT + 1) /* Controle do numero de correto de parametros. */
     {
         printf("Comando invalido! Numero de parametros incorreto!\n");
@@ -20,63 +71,46 @@ int main(int argc, char *argv[])
     }
 
     /* Copia os dados da conexao, passados como parametro pelo usuario. */
-    DadosConexao dados_conexao;
     strcpy(dados_conexao.nome_usuario, argv[1]);
     strcpy(dados_conexao.endereco_ip, argv[2]);
     strcpy(dados_conexao.numero_porta, argv[3]);
 
-    std::string sync_dir_path = PREFIXO_DIRETORIO;
-    sync_dir_path.append(dados_conexao.nome_usuario);
-
-    if (create_dir_if_not_exists(sync_dir_path.c_str()))
+    /* Inicia a conexao do dispositivo com o servidor, será obtido o socket principal. */
+    if (conecta_device(dados_conexao, true))
     {
-        printf("Erro criar diretorio sync dir do usuario.\n");
         exit(EXIT_FAILURE);
     }
 
-    dados_conexao.socket_id = conecta_servidor(&dados_conexao); /* Inicia a conexao com o servidor, via socket. */
-
-    auto package = Package(PackageUserIndentification(dados_conexao.nome_usuario));
-    std::vector<char> fileContentBuffer;
-
-    if (write_package_to_socket(dados_conexao.socket_id, package, fileContentBuffer))
+    // Inicializa o sync dir em um estado válido.
+    // Deve ser executado antes da thread de eventos ter sido inicializada
+    if (get_sync_dir(dados_conexao))
     {
-        printf("Nao foi possivel enviar nome de usuario.\n");
         exit(EXIT_FAILURE);
     }
 
-    if (read_package_from_socket(dados_conexao.socket_id, package, fileContentBuffer))
+    /* Inicia a conexao do dispositivo com o servidor, será obtido o socket para eventos. */
+    if (conecta_device(dados_conexao, false))
     {
-        printf("Erro ao ler resposta inicial do servidor.\n");
         exit(EXIT_FAILURE);
     }
 
-    if (package.package_type != USER_INDENTIFICATION_RESPONSE)
-    {
-        printf("Resposta invalida do servidor.\n");
-        exit(EXIT_FAILURE);
-    }
+    pthread_t new_thread;
 
-    if (package.package_specific.userIdentificationResponse.status == REJECTED)
-    {
-        printf("Nao foi possivel se registrar como dispositivo para usuario \"%s\".\n", dados_conexao.nome_usuario);
-        exit(EXIT_FAILURE);
-    }
+    // Inicia thread de eventos
+    pthread_create(&new_thread, NULL, eventThread, NULL);
+    dados_conexao.event_thread = new_thread;
 
-    uint8_t device_id = package.package_specific.userIdentificationResponse.deviceID;
+    // Inicia thread de sincronização
+    pthread_create(&new_thread, NULL, syncThread, NULL);
+    dados_conexao.sync_thread = new_thread;
 
-    // Usuário já está conectado como dispositivo, iniciamos a thread que monitora eventos do inotify
-    pthread_t thread;
-    ThreadArg thread_arg{dados_conexao.socket_id, device_id, dados_conexao.nome_usuario};
-
-    pthread_create(&thread, NULL, inotifyThread, &thread_arg);
-
+    // A thread atual será responsável por ler comandos do usuário
     while (1)
     {
         char *ret;
 
         limpaTela();
-        menu_principal(&dados_conexao); /* Exibe o menu principal ao usuario, para digitar os comandos. */
+        menu_principal(dados_conexao); /* Exibe o menu principal ao usuario, para digitar os comandos. */
 
         ret = fgets(dados_conexao.comando, sizeof(dados_conexao.comando), stdin); /* Obtem o comando inserido pelo usuario. */
 
@@ -88,12 +122,16 @@ int main(int argc, char *argv[])
 
         dados_conexao.comando[strnlen(dados_conexao.comando, sizeof(dados_conexao.comando)) - 1] = '\0';
 
-        executa_comando(&dados_conexao); /* Identifica e executa o comando inserido pelo usuario. */
+        /* Identifica e executa o comando inserido pelo usuario. */
+        if (executa_comando(dados_conexao))
+        {
+            // Comando exit, sai do loop e encerra
+            break;
+        }
     }
 
-    limpaTela();
-
-    pthread_cancel(thread);
+    cancel_threads();
+    close_sockets();
 
     return 0;
 }

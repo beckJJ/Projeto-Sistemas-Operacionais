@@ -1,7 +1,7 @@
 #ifndef _INTERFACECLIENTE_H_
 #define _INTERFACECLIENTE_H_
 
-#include "DadosConexao.h"
+#include "DadosConexao.hpp"
 
 /* Constantes para indicar a sintaxe de cada comando. */
 #define COMANDO_MYCLIENT "myClient"
@@ -20,8 +20,9 @@
 #define QUANTIDADE_PARAMETROS_DELETE 1
 
 void menu_help();
-void menu_principal(DadosConexao *dados_conexao);
-void executa_comando(DadosConexao *dados_conexao);
+void menu_principal(DadosConexao &dados_conexao);
+// 1 = comando exit executado
+int executa_comando(DadosConexao &dados_conexao);
 int limpaTela();
 
 #endif

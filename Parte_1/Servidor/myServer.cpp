@@ -14,27 +14,36 @@
 #include <pthread.h>
 #include <vector>
 
-#include "servFunc.hpp"
+#include "serverThread.hpp"
 #include "../Common/functions.hpp"
 #include "config.hpp"
+#include <signal.h>
 
-// Genreciador de dispositivos, a thread deve ser adicionada para que possa
-//   ser interrompida, caso a execução termine normalmente a thread deve se
-//   retirar da lista de dispositivos
 DeviceManager deviceManager = DeviceManager();
+int main_thread_socket = -1;
+
+void sigint_handler_main(int)
+{
+    printf("Main thread received SIGINT.\n");
+
+    // Desconecta todos os dispositivos
+    deviceManager.disconnect_all();
+
+    if (main_thread_socket != -1)
+    {
+        close(main_thread_socket);
+    }
+
+    // Encerra o servidor
+    exit(EXIT_FAILURE);
+}
 
 int main(int argc, char *argv[])
 {
-    if (create_dir_if_not_exists(PREFIXO_DIRETORIO_SERVIDOR))
-    {
-        std::cout << "Nao foi possivel criar diretorio " << PREFIXO_DIRETORIO_SERVIDOR << std::endl;
-        return 1;
-    }
-
-    std::vector<pthread_t> threads;
     uint16_t port = PORT;
     char c;
 
+    // Lê argumentos do programa
     while ((c = getopt(argc, argv, "hp:")) != -1)
     {
         switch (c)
@@ -54,11 +63,20 @@ int main(int argc, char *argv[])
         }
     }
 
-    int socket_id;
+    // Registra sigint_handler_main para SIGINT
+    signal(SIGINT, sigint_handler_main);
+
+    // Cria sync_dir do servidor
+    if (create_dir_if_not_exists(PREFIXO_DIRETORIO_SERVIDOR))
+    {
+        std::cout << "Nao foi possivel criar diretorio " << PREFIXO_DIRETORIO_SERVIDOR << std::endl;
+        return 1;
+    }
+
     socklen_t clilen;
     struct sockaddr_in serv_addr, cli_addr;
 
-    if ((socket_id = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+    if ((main_thread_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {
         printf("Erro! Nao foi possivel iniciar utilizacao do socket do servidor!\n");
         exit(EXIT_FAILURE);
@@ -69,24 +87,24 @@ int main(int argc, char *argv[])
     serv_addr.sin_addr.s_addr = INADDR_ANY;
     bzero(&(serv_addr.sin_zero), sizeof(serv_addr.sin_zero));
 
-    if (bind(socket_id, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    if (bind(main_thread_socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
     {
         printf("Erro! Nao foi possivel atribuir uma identidade ao socket do servidor!\n");
         exit(EXIT_FAILURE);
     }
 
-    listen(socket_id, 5);
+    listen(main_thread_socket, 5);
 
-    printf("Servidor está escutando na porta %d.\n", port);
+    printf("Servidor está escutando na porta: %d.\n", port);
 
     clilen = sizeof(struct sockaddr_in);
 
     while (1)
     {
-        thread_arg_t thread_arg; // { };
+        ServerThreadArg thread_arg; // { };
         pthread_t thread;
 
-        if ((thread_arg.socket_id = accept(socket_id, (struct sockaddr *)&cli_addr, &clilen)) == -1)
+        if ((thread_arg.socket_id = accept(main_thread_socket, (struct sockaddr *)&cli_addr, &clilen)) == -1)
         {
             printf("Erro! Nao foi possivel realizar conexao com o cliente!\n");
             break;
@@ -94,16 +112,11 @@ int main(int argc, char *argv[])
 
         printf("Nova conexao estabelecida.\n");
 
-        pthread_create(&thread, NULL, servFunc, &thread_arg);
-        threads.push_back(thread);
+        // Cria thread para lidar com a conexão estabelecida
+        pthread_create(&thread, NULL, serverThread, &thread_arg);
     }
 
-    for (auto thread : threads)
-    {
-        pthread_cancel(thread);
-    }
-
-    close(socket_id);
+    close(main_thread_socket);
 
     return 0;
 }

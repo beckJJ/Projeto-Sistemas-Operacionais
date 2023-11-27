@@ -1,13 +1,16 @@
-#include "package_commands.hpp"
+#include "package_file.hpp"
 #include "package_functions.hpp"
 #include <sys/stat.h>
 #include <algorithm>
 #include <iostream>
+#include "functions.hpp"
 
+// Envia uma sequência de pacotes PackageFileList
 int send_file_list(int socket, std::vector<File> files)
 {
     std::vector<char> fileContentBuffer;
 
+    // Nâo há arquivos
     if (files.size() == 0)
     {
         auto package = Package(PackageFileList(0, 0, File()));
@@ -28,6 +31,7 @@ int send_file_list(int socket, std::vector<File> files)
     return 0;
 }
 
+// Envia uma sequência de pacotes PackageFileContent contendo o conteúdo em path
 int send_file(int socket, const char *path)
 {
     Package package;
@@ -44,13 +48,18 @@ int send_file(int socket, const char *path)
         return -2;
     }
 
+    // Obtém tamanho do arquivo
     auto fsize = st.st_size;
     auto to_read = fsize;
 
+    // Buffer de leitura
     std::vector<char> buffer(std::min((long)MAX_DATA_SIZE, to_read));
 
-    for (auto seqn = 1; to_read > 0; seqn++)
+    // Arquivos vazios não seriam enviado se a condição para o for fosse to_read > 0, para enviar
+    //   arquivos sem conteúdo a verificação foi movida para o final do loop
+    for (auto seqn = 1;; seqn++)
     {
+        // Lê arquivo
         size_t to_read_now = std::min((long)MAX_DATA_SIZE, to_read);
         auto readed = fread(buffer.data(), sizeof(char), to_read_now, fp);
 
@@ -61,11 +70,17 @@ int send_file(int socket, const char *path)
 
         to_read -= readed;
 
-        package = Package(PackageFileContent(PackageFileContentBase(fsize, seqn, readed)));
+        // Cria pacote a ser enviado com o conteúdo recém lido
+        package = Package(PackageFileContent(fsize, seqn, readed));
 
         if (write_package_to_socket(socket, package, buffer))
         {
             goto fail;
+        }
+
+        if (to_read <= 0)
+        {
+            break;
         }
     }
 
@@ -73,12 +88,50 @@ int send_file(int socket, const char *path)
 
     return 0;
 
+// Fecha arquivo e retorna erro
 fail:
     fclose(fp);
 
     return -1;
 }
 
+// Envia um arquivo em path com o nome de filename, enviará o pacote PackageUploadFile ou
+//   PackageNotFound, caso PackageUploadFile tenha sido enviado chamará send_file para enviar o
+//   conteúdo do arquivo
+int send_file_from_path(int socket_id, const char *path, const char *filename)
+{
+    Package package;
+    std::vector<char> fileContentBuffer;
+
+    // Obtém File()
+    auto file_opt = file_from_path(path, filename);
+
+    if (!file_opt.has_value())
+    {
+        // Arquivo não existe, será indicado
+        package = Package(PackageFileNotFound());
+    }
+    else
+    {
+        // Arquivo exite, será enviado o File() obtido
+        package = Package(PackageUploadFile(file_opt.value()));
+    }
+
+    if (write_package_to_socket(socket_id, package, fileContentBuffer))
+    {
+        return 1;
+    }
+
+    if (!file_opt.has_value())
+    {
+        return 0;
+    }
+
+    // Envia arquivo
+    return send_file(socket_id, path);
+}
+
+// Lê uma sequência de pacotes PackageFileList e retorna um vetor contendo os File's recebidos
 std::optional<std::vector<File>> read_file_list(int socket)
 {
     Package package;
@@ -94,6 +147,7 @@ std::optional<std::vector<File>> read_file_list(int socket)
             return std::nullopt;
         }
 
+        // Tipo inesperado
         if (package.package_type != FILE_LIST)
         {
             return std::nullopt;
@@ -105,14 +159,17 @@ std::optional<std::vector<File>> read_file_list(int socket)
             total_files = package.package_specific.fileList.count;
             first_package = false;
 
+            // Não há arquivos, retornamos um vetor vazio
             if (total_files == 0)
             {
                 return std::vector<File>(0);
             }
         }
 
+        // Adiciona file
         files.push_back(package.package_specific.fileList.file);
 
+        // Todos arquivos foram obtidos
         if (total_files == files.size())
         {
             break;
@@ -122,6 +179,7 @@ std::optional<std::vector<File>> read_file_list(int socket)
     return files;
 }
 
+// Lê uma sequência de pacotes PackageFileContent e armazena o conteúdo obtido em path
 int read_file_and_save(int socket, const char *path)
 {
     FILE *fp = fopen(path, "wb");
@@ -143,18 +201,26 @@ int read_file_and_save(int socket, const char *path)
             goto fail;
         }
 
+        // Tipo de pacote inesperado
         if (package.package_type != FILE_CONTENT)
         {
             goto fail;
         }
 
-        // Se for o primeiro pacote obtemos a informação sobre tamanho
+        // Se for o primeiro pacote obtemos a informação sobre o tamanho do arquivo
         if (first_package)
         {
             fsize = package.package_specific.fileContent.size;
             first_package = false;
+
+            // Arquivo não tem conteúdo
+            if (fsize == 0)
+            {
+                break;
+            }
         }
 
+        // Escreve conteúdo obtido
         auto ret = fwrite(
             fileContentBuffer.data(),
             sizeof(char),
@@ -168,6 +234,7 @@ int read_file_and_save(int socket, const char *path)
 
         total_write += ret;
 
+        // Escreveu todo conteúdo que deveria
         if (total_write == fsize)
         {
             break;
@@ -178,9 +245,35 @@ int read_file_and_save(int socket, const char *path)
 
     return 0;
 
+// Fecha arquivo e retorna erro
 fail:
     fclose(fp);
-    remove(path);
 
     return -1;
+}
+
+// Primeiramente lê um pacote e verifica seu tipo, se PackageFileNotFound não então haverá alterações,
+//   caso PackageUploadFile read_file_and_save será chamado
+int read_upload_file_and_save(int socket, const char *path)
+{
+    Package package;
+    std::vector<char> fileContentBuffer;
+
+    if (read_package_from_socket(socket, package, fileContentBuffer))
+    {
+        return 1;
+    }
+
+    switch (package.package_type)
+    {
+    case FILE_NOT_FOUND:
+        // Não receberá conteúdo pois arquivo não existe
+        return 0;
+    case UPLOAD_FILE:
+        // Receberá conteúdo, armazena em path
+        return read_file_and_save(socket, path);
+    default:
+        // Tipo de pacote inválido
+        return 1;
+    }
 }

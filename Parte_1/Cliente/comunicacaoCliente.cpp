@@ -4,28 +4,30 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <string>
+#include <cstring>
 #include <strings.h>
 #include <libgen.h>
 #include <iostream>
 #include "../Common/package.hpp"
 #include "../Common/functions.hpp"
 #include "../Common/package_functions.hpp"
-#include "../Common/package_commands.hpp"
-#include "DadosConexao.h"
+#include "../Common/package_file.hpp"
+#include "DadosConexao.hpp"
 #include "interfaceCliente.hpp"
 #include "auxiliaresCliente.hpp"
 
-int conecta_servidor(DadosConexao *dados_conexao) /* Inicia a conexao com o servidor, via socket. */
+// Conecta-se com o servidor
+std::optional<int> conecta_servidor(DadosConexao &dados_conexao)
 {
     struct sockaddr_in serv_addr;
     struct hostent *server;
 
-    server = gethostbyname(dados_conexao->endereco_ip); /* Obtem informacao do host, a partir do seu endereco IP. */
+    server = gethostbyname(dados_conexao.endereco_ip); /* Obtem informacao do host, a partir do seu endereco IP. */
 
     if (server == NULL)
     {
-        printf("Erro! Nenhum servidor com o IP %s foi encontrado!\n", dados_conexao->endereco_ip);
-        exit(EXIT_FAILURE);
+        printf("Erro! Nenhum servidor com o IP %s foi encontrado!\n", dados_conexao.endereco_ip);
+        return std::nullopt;
     }
 
     int socket_id;
@@ -33,102 +35,116 @@ int conecta_servidor(DadosConexao *dados_conexao) /* Inicia a conexao com o serv
     if ((socket_id = socket(AF_INET, SOCK_STREAM, 0)) == -1) /* Inicia a utilizacao de um socket, guardando o valor inteiro que o referencia. */
     {
         printf("Erro! Nao foi possivel iniciar utilizacao do socket do cliente!\n");
-        exit(EXIT_FAILURE);
+        return std::nullopt;
     }
 
-    serv_addr.sin_family = AF_INET;                                /* Identifica o protocolo de rede a ser utilizado. */
-    serv_addr.sin_port = htons(atoi(dados_conexao->numero_porta)); /* Identifica o numero de porta a ser utilizado. */
+    serv_addr.sin_family = AF_INET;                               /* Identifica o protocolo de rede a ser utilizado. */
+    serv_addr.sin_port = htons(atoi(dados_conexao.numero_porta)); /* Identifica o numero de porta a ser utilizado. */
     serv_addr.sin_addr = *((struct in_addr *)server->h_addr);
     bzero(&(serv_addr.sin_zero), 8);
 
     if (connect(socket_id, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) /* Solicita abertura de conexao com o servidor. */
     {
         printf("Erro! Nao foi possivel estabelecer conexao com o socket do servidor!\n");
-        exit(EXIT_FAILURE);
+        return std::nullopt;
     }
 
-    return socket_id; /* Retorna o identificador do socket utilizado para estabelecer conexao com servidor. */
+    return socket_id;
 }
 
-void upload(DadosConexao *dados_conexao) /* Realiza o envio de um arquivo para o diretorio do usuario, presente no servidor. */
+// Copia o arquivo informado pelo usuário para o diretório sync_dir local, thread de eventos que
+//   observa eventos do inotify deverá gerar os eventos apropriados
+void upload(DadosConexao &dados_conexao)
 {
-    Package package;
-    struct stat info;
-    std::vector<char> fileContentBuffer;
+    auto strings = splitComando(dados_conexao.comando);
+    std::string path_in = strings[1];
+    std::string path_out = PREFIXO_DIRETORIO;
+    path_out.append(dados_conexao.nome_usuario);
+    path_out.append("/");
 
-    auto strings = splitComando(dados_conexao->comando);
+    // Obtém basename do path, usuário pode ter passado caminho com '/'
+    char *filename = basename(strings[1]);
+    path_out.append(filename);
 
-    if (stat(strings[1], &info) != 0)
+    char buffer[MAX_DATA_SIZE];
+
+    bool success = true;
+
+    FILE *fin = fopen(path_in.c_str(), "rb");
+
+    if (!fin)
     {
-        printf("Erro ao fazer stat do arquivo \"%s\".\n", strings[1]);
-        return;
+        printf("Nao foi possivel abrir arquivo \"%s\" para leitura.\n", path_in.c_str());
     }
 
-    std::string path = strings[1];
+    FILE *fout = fopen(path_out.c_str(), "wb");
 
-    package = Package(PackageUploadFile(File(
-        info.st_size,
-        info.st_mtime,
-        info.st_atime,
-        info.st_ctime,
-        basename(strings[1]))));
-
-    if (write_package_to_socket(dados_conexao->socket_id, package, fileContentBuffer))
+    if (!fout)
     {
-        printf("Nao foi possivel enviar PackageUploadFile header.\n");
-        return;
+        printf("Nao foi possivel abrir arquivo \"%s\" para escrita.\n", path_out.c_str());
     }
 
-    if (send_file(dados_conexao->socket_id, path.c_str()))
+    // Lê todo arquivo fin e escreve o conteúdo em fout
+    while (!feof(fin))
     {
-        printf("Algum erro ocorreu ao enviar o arquivo.\n");
-        return;
+        auto total_read = fread(buffer, sizeof(char), MAX_DATA_SIZE, fin);
+
+        if (ferror(fin))
+        {
+            success = false;
+            break;
+        }
+
+        fwrite(buffer, sizeof(char), total_read, fout);
+
+        if (ferror(fout))
+        {
+            success = false;
+            break;
+        }
     }
 
-    printf("Arquivo \"%s\" enviado para o servidor com sucesso.\n", path.c_str());
+    fclose(fin);
+    fclose(fout);
+
+    if (success)
+    {
+        printf("Arquivo \"%s\" copiado para sync dir local com sucesso.\n", path_in.c_str());
+    }
+    else
+    {
+        printf("Algum erro ocorreu durante a copia do arquivo \"%s\".\n", path_in.c_str());
+    }
 }
 
-/* Recebe um arquivo do servidor, e copia para o diretorio de onde a aplicacao cliente foi chamada. */
-void download(DadosConexao *dados_conexao)
+// Pede arquivo do servidor, caso esteja disponível, será salvo no cwd atual
+void download(DadosConexao &dados_conexao)
 {
-    auto strings = splitComando(dados_conexao->comando);
+    auto strings = splitComando(dados_conexao.comando);
     std::string filename = strings[1];
-    Package package = Package(PackageRequestFile(filename.c_str()));
-    std::vector<char> fileContentBuffer;
 
-    if (write_package_to_socket(dados_conexao->socket_id, package, fileContentBuffer))
+    switch (download_file(dados_conexao.main_connection_socket, filename.c_str(), filename.c_str()))
     {
-        printf("Erro ao enviar pacote para pedir arquivo.\n");
-        return;
+    case SUCCESS:
+        printf("Arquivo \"%s\" baixado do servidor com sucesso.\n", filename.c_str());
+        break;
+    case DOWNLOAD_FILE_FILE_NOT_FOUND:
+        printf("Arquivo \"%s\" nao existe no servidor.\n", filename.c_str());
+        break;
+    case DOWNLOAD_FILE_ERROR:
+    default:
+        printf("Erro ao baixar arquivo \"%s\" do servidor (pode nao existir).\n", filename.c_str());
+        break;
     }
-
-    if (read_package_from_socket(dados_conexao->socket_id, package, fileContentBuffer))
-    {
-        printf("Erro ao ler resposta de requisição de arquivo.\n");
-        return;
-    }
-
-    if (package.package_type == FILE_NOT_FOUND)
-    {
-        printf("Arquivo requisitado nao existe no servidor.\n");
-        return;
-    }
-
-    if (read_file_and_save(dados_conexao->socket_id, filename.c_str()))
-    {
-        printf("Erro ao ler e salvar o arquivo do servidor.\n");
-        return;
-    }
-
-    printf("Arquivo \"%s\" baixado do servidor com sucesso.\n", filename.c_str());
 }
 
-void delete_cmd(DadosConexao *dados_conexao) /* Delete um arquivo presente na maquina local do usuario, no diretorio sync_dir_<usuario> */
+// Deleta um arquivo em sync_dir
+void delete_cmd(DadosConexao &dados_conexao)
 {
-    auto strings = splitComando(dados_conexao->comando);
+    auto strings = splitComando(dados_conexao.comando);
     std::string filename = strings[1];
     std::string path = PREFIXO_DIRETORIO;
-    path.append(dados_conexao->nome_usuario);
+    path.append(dados_conexao.nome_usuario);
     path.append("/");
     path.append(filename);
 
@@ -141,19 +157,20 @@ void delete_cmd(DadosConexao *dados_conexao) /* Delete um arquivo presente na ma
     printf("Arquivo \"%s\" deletado do diretorio local com sucesso.\n", filename.c_str());
 }
 
-/* Lista os arquivos armazenados no repositorio remoto do servidor, associados ao usuario. */
-void list_server(DadosConexao *dados_conexao)
+// Pede lista de arquivos para o servidor e exibe a lista
+void list_server(DadosConexao &dados_conexao)
 {
     Package package = Package(PackageRequestFileList());
     std::vector<char> fileContentBuffer;
 
-    if (write_package_to_socket(dados_conexao->socket_id, package, fileContentBuffer))
+    // Pede listagem de arquivos do servidor
+    if (write_package_to_socket(dados_conexao.main_connection_socket, package, fileContentBuffer))
     {
         printf("Erro ao enviar pacote para pedir listagem do servidor.\n");
         return;
     }
 
-    auto files = read_file_list(dados_conexao->socket_id);
+    auto files = read_file_list(dados_conexao.main_connection_socket);
 
     if (!files.has_value())
     {
@@ -161,14 +178,17 @@ void list_server(DadosConexao *dados_conexao)
         return;
     }
 
+    // Exibe listagem recebida
     print_files(files.value());
 }
 
-void list_client(DadosConexao *dados_conexao) /* Lista todos os arquivos do repositorio local syn_dir_<usuario>, junto com os MAC times. */
+// Lista arquivos presentes no sync_dir local
+void list_client(DadosConexao &dados_conexao)
 {
     std::string path = PREFIXO_DIRETORIO;
-    path.append(dados_conexao->nome_usuario);
+    path.append(dados_conexao.nome_usuario);
 
+    // Lista diretório local
     auto files = list_dir(path.c_str());
 
     if (!files.has_value())

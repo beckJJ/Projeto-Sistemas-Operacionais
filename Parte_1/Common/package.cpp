@@ -3,6 +3,8 @@
 #include <endian.h>
 #include <iostream>
 
+// Define construtores e destrutores para as estruturas
+
 File::File() {}
 
 File::File(int64_t size, int64_t mtime, int64_t atime, int64_t ctime, const char _name[NAME_MAX])
@@ -11,13 +13,20 @@ File::File(int64_t size, int64_t mtime, int64_t atime, int64_t ctime, const char
     strncpy(name, _name, NAME_MAX - 1);
 }
 
-PackageUserIndentification::PackageUserIndentification(const char _user_name[USER_NAME_MAX_LENGTH])
+PackageUserIndentification::PackageUserIndentification(ConnectionType connectionType, uint8_t deviceID, const char _user_name[USER_NAME_MAX_LENGTH])
+    : connectionType(connectionType), deviceID(deviceID)
 {
     strncpy(user_name, _user_name, USER_NAME_MAX_LENGTH - 1);
 }
 
-PackageUserIndentificationResponse::PackageUserIndentificationResponse(InitialUserIndentificationResponseStatus status, int8_t deviceID)
+PackageUserIndentificationResponse::PackageUserIndentificationResponse(InitialUserIndentificationResponseStatus status, uint8_t deviceID)
     : status(status), deviceID(deviceID) {}
+
+PackageChangeEvent::PackageChangeEvent() : event((ChangeEvents)0), deviceID(0)
+{
+    filename1[0] = '\0';
+    filename2[0] = '\0';
+}
 
 PackageChangeEvent::PackageChangeEvent(ChangeEvents event, uint8_t deviceID, const char _filename1[NAME_MAX], const char _filename2[NAME_MAX])
     : event(event), deviceID(deviceID)
@@ -31,11 +40,8 @@ PackageRequestFile::PackageRequestFile(const char _filename[NAME_MAX])
     strncpy(filename, _filename, NAME_MAX - 1);
 }
 
-PackageFileContentBase::PackageFileContentBase(int64_t size, uint16_t seqn, uint16_t data_length)
+PackageFileContent::PackageFileContent(int64_t size, uint16_t seqn, uint16_t data_length)
     : size(size), seqn(seqn), data_length(data_length) {}
-
-PackageFileContent::PackageFileContent(PackageFileContentBase fileContentBase)
-    : PackageFileContentBase(fileContentBase) {}
 
 PackageRequestFileList::PackageRequestFileList() {}
 
@@ -55,7 +61,7 @@ PackageSpecific::PackageSpecific(PackageUserIndentificationResponse userIdentifi
     : userIdentificationResponse(userIdentificationResponse) {}
 
 PackageSpecific::PackageSpecific(PackageChangeEvent ChangeEvent)
-    : ChangeEvent(ChangeEvent) {}
+    : changeEvent(ChangeEvent) {}
 
 PackageSpecific::PackageSpecific(PackageRequestFile requestFile)
     : requestFile(requestFile) {}
@@ -83,6 +89,7 @@ Package::Package(const Package &&rhs)
 {
     package_type = rhs.package_type;
 
+    // Move dependendo do tipo
     switch (package_type)
     {
     case INITAL_USER_INDENTIFICATION:
@@ -92,7 +99,7 @@ Package::Package(const Package &&rhs)
         package_specific.userIdentificationResponse = std::move(rhs.package_specific.userIdentificationResponse);
         break;
     case CHANGE_EVENT:
-        package_specific.ChangeEvent = std::move(rhs.package_specific.ChangeEvent);
+        package_specific.changeEvent = std::move(rhs.package_specific.changeEvent);
         break;
     case REQUEST_FILE:
         package_specific.requestFile = std::move(rhs.package_specific.requestFile);
@@ -125,6 +132,7 @@ Package &Package::operator=(const Package &rhs)
 
     package_type = rhs.package_type;
 
+    // Cópia dependendo do tipo
     switch (package_type)
     {
     case INITAL_USER_INDENTIFICATION:
@@ -134,7 +142,7 @@ Package &Package::operator=(const Package &rhs)
         package_specific.userIdentificationResponse = rhs.package_specific.userIdentificationResponse;
         break;
     case CHANGE_EVENT:
-        package_specific.ChangeEvent = rhs.package_specific.ChangeEvent;
+        package_specific.changeEvent = rhs.package_specific.changeEvent;
         break;
     case REQUEST_FILE:
         package_specific.requestFile = rhs.package_specific.requestFile;
@@ -188,10 +196,12 @@ Package::Package(PackageUploadFile file)
 Package::Package(PackageFileNotFound fileNotFound)
     : package_type(FILE_NOT_FOUND), package_specific(fileNotFound) {}
 
+// Conversão de Package de representação local para be
 void Package::htobe(void)
 {
     switch (this->package_type)
     {
+    // Não há campo para converter
     case INITAL_USER_INDENTIFICATION:
     case USER_INDENTIFICATION_RESPONSE:
     case CHANGE_EVENT:
@@ -227,6 +237,7 @@ void Package::betoh(void)
 {
     switch (this->package_type)
     {
+    // Não há campo para converter
     case INITAL_USER_INDENTIFICATION:
     case USER_INDENTIFICATION_RESPONSE:
     case CHANGE_EVENT:

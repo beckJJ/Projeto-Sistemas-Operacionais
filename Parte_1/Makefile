@@ -1,8 +1,9 @@
 CC:=g++
 
+# Opções para melhor diagnóstico e verificação de erros
+# https://gcc.gnu.org/onlinedocs/gcc/Instrumentation-Options.html
 # As opções abaixo conflitam com -fsanitize=address:
 #   -fsanitize=leak -fsanitize=thread
-
 # HARDENING:=-D_FORTIFY_SOURCE=3 \
 	-D_GLIBCXX_ASSERTIONS \
 	-fPIE  -pie  -Wl,-z,relro,-z,now \
@@ -17,21 +18,21 @@ CC:=g++
 
 CFLAGS:=$(HARDENING) -g -O2 -Wall -Wextra -pthread
 
-# Configura defines:
+# Configuração disponível por defines:
 #   DEBUG_PACOTE:              Imprime pacotes recebidos e escritos em stderr
-#   DEBUG_PACOTE_FILE_CONTENT: Imprime conteúdo do arquivo enviado no pacote
-#   LIMPA_TELA_NOOP:           limpatela() não mais irá limpar a tela
+#   DEBUG_PACOTE_FILE_CONTENT: Imprime conteúdo do arquivo enviado no pacote em hex
+#   LIMPA_TELA_NOOP:           Função limpatela() não limpará a tela
 
-# DEFINES:=-DDEBUG_PACOTE=true -DLIMPA_TELA_NOOP=true
-DEFINES:=-DDEBUG_PACOTE=true
+DEFINES:=-DDEBUG_PACOTE=true -DLIMPA_TELA_NOOP=true
+# DEFINES:=-DDEBUG_PACOTE=true
 
 default: all
 
 all: myClient myServer
 
 
-myClient: Cliente/myClient.cpp auxiliaresCliente interfaceCliente comunicacaoCliente package functions package_commands package_functions inotifyThread
-	$(CC) $(CFLAGS) $(DEFINES) -o myClient Cliente/myClient.cpp Cliente/auxiliaresCliente.o Cliente/interfaceCliente.o Cliente/comunicacaoCliente.o Cliente/inotifyThread.o Common/package.o Common/functions.o Common/package_commands.o Common/package_functions.o
+myClient: Cliente/myClient.cpp auxiliaresCliente interfaceCliente comunicacaoCliente package functions package_file package_functions eventThread syncThread DadosConexao
+	$(CC) $(CFLAGS) $(DEFINES) -o myClient Cliente/myClient.cpp Cliente/auxiliaresCliente.o Cliente/interfaceCliente.o Cliente/comunicacaoCliente.o Cliente/eventThread.o Cliente/syncThread.o Cliente/DadosConexao.o Common/package.o Common/functions.o Common/package_file.o Common/package_functions.o
 
 auxiliaresCliente: Cliente/auxiliaresCliente.cpp
 	$(CC) $(CFLAGS) $(DEFINES) -c -o Cliente/auxiliaresCliente.o Cliente/auxiliaresCliente.cpp
@@ -42,18 +43,30 @@ interfaceCliente: Cliente/interfaceCliente.cpp
 comunicacaoCliente: Cliente/comunicacaoCliente.cpp
 	$(CC) $(CFLAGS) $(DEFINES) -c -o Cliente/comunicacaoCliente.o Cliente/comunicacaoCliente.cpp
 
-inotifyThread: Cliente/inotifyThread.cpp
-	$(CC) $(CFLAGS) $(DEFINES) -c -o Cliente/inotifyThread.o Cliente/inotifyThread.cpp
+eventThread: Cliente/eventThread.cpp
+	$(CC) $(CFLAGS) $(DEFINES) -c -o Cliente/eventThread.o Cliente/eventThread.cpp
+
+syncThread: Cliente/syncThread.cpp
+	$(CC) $(CFLAGS) $(DEFINES) -c -o Cliente/syncThread.o Cliente/syncThread.cpp
+
+DadosConexao: Cliente/DadosConexao.cpp
+	$(CC) $(CFLAGS) $(DEFINES) -c -o Cliente/DadosConexao.o Cliente/DadosConexao.cpp
 
 
-myServer: Servidor/myServer.cpp servFunc deviceManager package functions package_commands package_functions
-	$(CC) $(CFLAGS) $(DEFINES) -o myServer Servidor/myServer.cpp Servidor/servFunc.o Servidor/deviceManager.o Common/package.o Common/functions.o Common/package_commands.o Common/package_functions.o
+myServer: Servidor/myServer.cpp serverThread deviceManager mainConnectionLoop eventConnectionLoop package functions package_file package_functions
+	$(CC) $(CFLAGS) $(DEFINES) -o myServer Servidor/myServer.cpp Servidor/serverThread.o Servidor/deviceManager.o Servidor/mainConnectionLoop.o Servidor/eventConnectionLoop.o Common/package.o Common/functions.o Common/package_file.o Common/package_functions.o
 
 deviceManager: Servidor/deviceManager.cpp
 	$(CC) $(CFLAGS) $(DEFINES) -c -o Servidor/deviceManager.o Servidor/deviceManager.cpp
 
-servFunc: Servidor/servFunc.cpp
-	$(CC) $(CFLAGS) $(DEFINES) -c -o Servidor/servFunc.o Servidor/servFunc.cpp
+serverThread: Servidor/serverThread.cpp
+	$(CC) $(CFLAGS) $(DEFINES) -c -o Servidor/serverThread.o Servidor/serverThread.cpp
+
+mainConnectionLoop: Servidor/mainConnectionLoop.cpp
+	$(CC) $(CFLAGS) $(DEFINES) -c -o Servidor/mainConnectionLoop.o Servidor/mainConnectionLoop.cpp
+
+eventConnectionLoop: Servidor/eventConnectionLoop.cpp
+	$(CC) $(CFLAGS) $(DEFINES) -c -o Servidor/eventConnectionLoop.o Servidor/eventConnectionLoop.cpp
 
 
 package: Common/package.cpp
@@ -62,8 +75,8 @@ package: Common/package.cpp
 functions: Common/functions.cpp
 	$(CC) $(CFLAGS) $(DEFINES) -c -o Common/functions.o Common/functions.cpp
 
-package_commands: Common/package_commands.cpp
-	$(CC) $(CFLAGS) $(DEFINES) -c -o Common/package_commands.o Common/package_commands.cpp
+package_file: Common/package_file.cpp
+	$(CC) $(CFLAGS) $(DEFINES) -c -o Common/package_file.o Common/package_file.cpp
 
 package_functions: Common/package_functions.cpp
 	$(CC) $(CFLAGS) $(DEFINES) -c -o Common/package_functions.o Common/package_functions.cpp

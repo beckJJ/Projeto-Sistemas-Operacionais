@@ -3,17 +3,26 @@
 #include <iostream>
 #include <string.h>
 
+// Lê n bytes de um socket, caso sucesso o vetor terá o conteúdo lido
 std::optional<std::vector<char>> read_n_bytes_from_socket(int socket, ssize_t size);
+
+// Lê o tipo do pacote de um socket
 std::optional<PackageType> read_package_type_from_socket(int socket);
+
+// Tamanho de um pacote dependendo de seu package_type (não contabiliza o PackageType de Package)
 std::optional<ssize_t> sizeof_base_package(PackageType package_type);
+
+// Escreve n bytes em um socket
 int write_n_bytes_from_socket(int socket, char *buffer, ssize_t size);
 
+// Lê n bytes de um socket, caso sucesso o vetor terá o conteúdo lido
 std::optional<std::vector<char>> read_n_bytes_from_socket(int socket, ssize_t size)
 {
     std::vector<char> buffer = std::vector<char>(size);
     ssize_t readed_bytes_count = 0;
     ssize_t readed_bytes = 0;
 
+    // Lê até ter lido size bytes
     while (size)
     {
         readed_bytes = read(socket, &buffer.data()[readed_bytes_count], size);
@@ -36,6 +45,7 @@ std::optional<std::vector<char>> read_n_bytes_from_socket(int socket, ssize_t si
     return buffer;
 }
 
+// Lê o tipo do pacote de um socket
 std::optional<PackageType> read_package_type_from_socket(int socket)
 {
     std::optional<std::vector<char>> buffer = read_n_bytes_from_socket(socket, ALIGN_VALUE);
@@ -50,6 +60,7 @@ std::optional<PackageType> read_package_type_from_socket(int socket)
     return package_type;
 }
 
+// Tamanho de um pacote dependendo de seu package_type (não contabiliza o PackageType de Package)
 std::optional<ssize_t> sizeof_base_package(PackageType package_type)
 {
     switch (package_type)
@@ -63,8 +74,7 @@ std::optional<ssize_t> sizeof_base_package(PackageType package_type)
     case REQUEST_FILE:
         return sizeof(PackageRequestFile);
     case FILE_CONTENT:
-        // Não sabemos o tamanho de data no momento
-        return sizeof(PackageFileContentBase);
+        return sizeof(PackageFileContent);
     case REQUEST_FILE_LIST:
         return sizeof(PackageRequestFileList);
     case FILE_LIST:
@@ -79,8 +89,11 @@ std::optional<ssize_t> sizeof_base_package(PackageType package_type)
     }
 }
 
+// Lê um pacote do socket, aplica automaticamente a conversão de bexxtoh e debuga pacote caso DEBUG_PACOTE
+//   package terá o pacote lido e fileContentBuffer o conteúdo do arquivo do pacote atual
 int read_package_from_socket(int socket, Package &package, std::vector<char> &fileContentBuffer)
 {
+    // Obtém PackageType do pacote atual
     std::optional<PackageType> package_type = read_package_type_from_socket(socket);
 
     if (!package_type.has_value())
@@ -88,6 +101,7 @@ int read_package_from_socket(int socket, Package &package, std::vector<char> &fi
         return 1;
     }
 
+    // Obtém tamanho do pacote que deve ser lido
     std::optional<ssize_t> size_to_read_opt = sizeof_base_package(package_type.value());
 
     if (!size_to_read_opt.has_value())
@@ -95,6 +109,7 @@ int read_package_from_socket(int socket, Package &package, std::vector<char> &fi
         return 1;
     }
 
+    // Lê o tamanho necessário
     std::optional<std::vector<char>> buffer = read_n_bytes_from_socket(socket, size_to_read_opt.value());
 
     if (!buffer.has_value())
@@ -104,29 +119,34 @@ int read_package_from_socket(int socket, Package &package, std::vector<char> &fi
 
     char *buffer_data = buffer.value().data();
 
+    // Cria Package dependendo tipo, aplicando bexxtoh conforme necessário
     switch (package_type.value())
     {
     case INITAL_USER_INDENTIFICATION:
-        package = Package(PackageUserIndentification(buffer_data));
+        package = Package(PackageUserIndentification(
+            *(ConnectionType *)buffer_data,
+            *(uint8_t *)&buffer_data[ALIGN_VALUE],
+            &buffer_data[2 * ALIGN_VALUE]));
         break;
     case USER_INDENTIFICATION_RESPONSE:
         package = Package(PackageUserIndentificationResponse(
             *(InitialUserIndentificationResponseStatus *)buffer_data,
-            buffer_data[ALIGN_VALUE]));
+            *(uint8_t *)&buffer_data[ALIGN_VALUE]));
         break;
     case CHANGE_EVENT:
         package = Package(PackageChangeEvent(
             *(ChangeEvents *)buffer_data,
             *(uint8_t *)&buffer_data[ALIGN_VALUE],
             &buffer_data[2 * ALIGN_VALUE],
-            &buffer_data[2 * ALIGN_VALUE + NAME_MAX]));
+            // NAME_MAX == 255 e alignas(8), logo haverá 1 byte de padding
+            &buffer_data[2 * ALIGN_VALUE + NAME_MAX + 1]));
         break;
     case REQUEST_FILE:
         package = Package(PackageRequestFile(buffer_data));
         break;
     case FILE_CONTENT:
     {
-        package = Package(PackageFileContentBase(
+        package = Package(PackageFileContent(
             be64toh(*(int64_t *)buffer_data),
             be16toh(*(uint16_t *)&buffer_data[ALIGN_VALUE]),
             be16toh(*(uint16_t *)&buffer_data[2 * ALIGN_VALUE])));
@@ -172,6 +192,7 @@ int read_package_from_socket(int socket, Package &package, std::vector<char> &fi
         return 1;
     }
 
+    // Debuga caso DEBUG_PACOTE habilitado
 #if DEBUG_PACOTE
     print_package(stderr, false, package, fileContentBuffer);
 #endif
@@ -179,11 +200,13 @@ int read_package_from_socket(int socket, Package &package, std::vector<char> &fi
     return 0;
 }
 
+// Escreve n bytes em um socket
 int write_n_bytes_from_socket(int socket, char *buffer, ssize_t size)
 {
     ssize_t writed_bytes_count = 0;
     ssize_t writed_bytes = 0;
 
+    // Escreve até ter escrito size bytes
     while (size)
     {
         writed_bytes = write(socket, &buffer[writed_bytes_count], size);
@@ -208,7 +231,7 @@ int write_n_bytes_from_socket(int socket, char *buffer, ssize_t size)
 
 int write_package_to_socket(int socket, Package &package, std::vector<char> &fileContentBuffer)
 {
-    // Escreve apenas os bytes necessários
+    // Tamanho do pacote específico sem PackageType
     auto size_base_package = sizeof_base_package(package.package_type);
 
     if (!size_base_package.has_value())
@@ -216,16 +239,13 @@ int write_package_to_socket(int socket, Package &package, std::vector<char> &fil
         return -1;
     }
 
+    // Tamanho do pacote a ser escrito
     ssize_t size_to_write = ALIGN_VALUE + size_base_package.value();
-
-#if DEBUG_PACOTE
-    print_package(stderr, true, package, fileContentBuffer);
-#endif
 
     // Converte Package para representação be
     package.htobe();
 
-    // Tenta enviar o pacote
+    // Envia o pacote
     int failed = write_n_bytes_from_socket(socket, (char *)&package, size_to_write);
 
     // Retorna a representação local
@@ -235,6 +255,11 @@ int write_package_to_socket(int socket, Package &package, std::vector<char> &fil
     {
         return -1;
     }
+
+    // Debuga caso DEBUG_PACOTE habilitado
+#if DEBUG_PACOTE
+    print_package(stderr, true, package, fileContentBuffer);
+#endif
 
     // Apenas FILE_CONTENT tem conteúdo a mais
     if (package.package_type != FILE_CONTENT)
@@ -246,6 +271,7 @@ int write_package_to_socket(int socket, Package &package, std::vector<char> &fil
     return write_n_bytes_from_socket(socket, fileContentBuffer.data(), package.package_specific.fileContent.data_length);
 }
 
+// Exibe informações sobre um pacote
 void print_package(FILE *fout, bool sending, Package &package, std::vector<char> &fileContentBuffer)
 {
     if (sending)
@@ -260,7 +286,22 @@ void print_package(FILE *fout, bool sending, Package &package, std::vector<char>
     switch (package.package_type)
     {
     case INITAL_USER_INDENTIFICATION:
-        fprintf(fout, "Package(INITAL_USER_INDENTIFICATION, %s", package.package_specific.userIdentification.user_name);
+        fprintf(fout, "Package(INITAL_USER_INDENTIFICATION, 0x%02x, ", (uint8_t)package.package_specific.userIdentification.deviceID);
+
+        switch (package.package_specific.userIdentification.connectionType)
+        {
+        case MAIN_CONNECTION:
+            fprintf(fout, "MAIN_CONNECTION");
+            break;
+        case EVENT_CONNECTION:
+            fprintf(fout, "EVENT_CONNECTION");
+            break;
+        default:
+            fprintf(fout, "UNKNOWN");
+            break;
+        }
+
+        fprintf(fout, ", %s", package.package_specific.userIdentification.user_name);
         break;
     case USER_INDENTIFICATION_RESPONSE:
         fprintf(fout, "Package(USER_INDENTIFICATION_RESPONSE, ");
@@ -271,7 +312,7 @@ void print_package(FILE *fout, bool sending, Package &package, std::vector<char>
             fprintf(fout, "ACCEPTED");
             break;
         case REJECTED:
-            fprintf(fout, "ACCEPTED");
+            fprintf(fout, "REJECTED");
             break;
         default:
             fprintf(fout, "UNKNOWN");
@@ -281,9 +322,9 @@ void print_package(FILE *fout, bool sending, Package &package, std::vector<char>
         fprintf(fout, ", %d", package.package_specific.userIdentificationResponse.deviceID);
         break;
     case CHANGE_EVENT:
-        fprintf(fout, "Package(CHANGE_EVENT, 0x%02x, ", (uint8_t)package.package_specific.ChangeEvent.deviceID);
+        fprintf(fout, "Package(CHANGE_EVENT, 0x%02x, ", (uint8_t)package.package_specific.changeEvent.deviceID);
 
-        switch (package.package_specific.ChangeEvent.event)
+        switch (package.package_specific.changeEvent.event)
         {
         case FILE_DELETED:
             fprintf(fout, "FILE_DELETED, ");
@@ -302,8 +343,8 @@ void print_package(FILE *fout, bool sending, Package &package, std::vector<char>
             break;
         }
 
-        fprintf(fout, "%s, ", package.package_specific.ChangeEvent.filename1);
-        fprintf(fout, "%s", package.package_specific.ChangeEvent.filename2);
+        fprintf(fout, "%s, ", package.package_specific.changeEvent.filename1);
+        fprintf(fout, "%s", package.package_specific.changeEvent.filename2);
         break;
     case REQUEST_FILE:
         fprintf(fout, "Package(REQUEST_FILE, %s", package.package_specific.requestFile.filename);
@@ -317,6 +358,7 @@ void print_package(FILE *fout, bool sending, Package &package, std::vector<char>
             package.package_specific.fileContent.data_length,
             fileContentBuffer.size());
 
+        // Exibe conteúdo em hex caso desejado
 #if DEBUG_PACOTE_FILE_CONTENT
         for (auto i = 0; i < package.package_specific.fileContent.data_length; i++)
         {
@@ -356,7 +398,7 @@ void print_package(FILE *fout, bool sending, Package &package, std::vector<char>
         fprintf(fout, "Package(FILE_NOT_FOUND");
         break;
     default:
-        fprintf(fout, "Package(UNKOWN");
+        fprintf(fout, "Package(UNKOWN[0x%02x]", (uint8_t)package.package_type);
         break;
     }
 
