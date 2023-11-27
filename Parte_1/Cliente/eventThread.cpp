@@ -99,7 +99,7 @@ eventThread(void *)
     }
 
     // Observa diretório sync dir local
-    int wd = inotify_add_watch(fd, path_to_watch.c_str(), IN_CREATE | IN_MODIFY | IN_DELETE | IN_MOVED_FROM | IN_MOVED_TO);
+    int wd = inotify_add_watch(fd, path_to_watch.c_str(), IN_CREATE | IN_CLOSE_WRITE | IN_DELETE | IN_MOVED_FROM | IN_MOVED_TO);
 
     if (wd == -1)
     {
@@ -141,7 +141,7 @@ eventThread(void *)
             {
                 completeUserEvents.push_back({FILE_CREATED, std::string(event->name), std::string(""), 0});
             }
-            else if (event->mask & IN_MODIFY)
+            else if (event->mask & IN_CLOSE_WRITE)
             {
                 completeUserEvents.push_back({FILE_MODIFIED, std::string(event->name), std::string(""), 0});
             }
@@ -165,11 +165,15 @@ eventThread(void *)
                 //   de alteração enviado pelo servidor:
                 //   READ  Package(CHANGE_EVENT, 0x01, FILE_RENAME, teste, exemplo)  <- previousEvent
                 //   WRITE Package(CHANGE_EVENT, 0x02, FILE_RENAME, teste, exemplo)  <- changeEvent
-                if ((previousEvent.deviceID != changeEvent.deviceID) &&
-                    (previousEvent.event == changeEvent.event) &&
+                if ((previousEvent.event == changeEvent.event) &&
                     (!strcmp(previousEvent.filename1, changeEvent.filename1)) &&
                     (!strcmp(previousEvent.filename2, changeEvent.filename2)))
                 {
+                    // Limpa previousSyncedChangeEvent, se não fosse limpo eventos genuínos seriam
+                    //   ignorados
+                    pthread_mutex_lock(&previousSyncedChangeEventLock);
+                    previousSyncedChangeEvent = PackageChangeEvent((ChangeEvents)0xff, (uint8_t)0xff, "", "");
+                    pthread_mutex_unlock(&previousSyncedChangeEventLock);
                     continue;
                 }
 

@@ -8,8 +8,6 @@ syncThread e eventThread do cliente escrevem na mesma socket de eventos, para re
 
 Permitir múltiplas leituras dos arquivos do usuário no servidor.
 
-Corrigir alteração de mesmo arquivo em dois dispositivos sendo suprimida.
-
 ## Geral
 
 Toda escrita e leitura base de pacotes deverão ser feitas pelas funções são feitas pelas funções `read_package_from_socket` e `write_package_to_socket`. Essas funções irão exibir os pacotes recebidos e enviados no `stderr` caso a macro `DEBUG_PACOTE` sejá verdadeira.
@@ -163,16 +161,18 @@ for (auto userEvent : completeUserEvents)
     //   de alteração enviado pelo servidor:
     //   READ  Package(CHANGE_EVENT, 0x01, FILE_RENAME, teste, exemplo)  <- previousEvent
     //   WRITE Package(CHANGE_EVENT, 0x02, FILE_RENAME, teste, exemplo)  <- changeEvent
-    if ((previousEvent.deviceID != changeEvent.deviceID) &&
-        (previousEvent.event == changeEvent.event) &&
+    if ((previousEvent.event == changeEvent.event) &&
         (!strcmp(previousEvent.filename1, changeEvent.filename1)) &&
         (!strcmp(previousEvent.filename2, changeEvent.filename2)))
     {
+        // Limpa previousSyncedChangeEvent, se não fosse limpo eventos genuínos seriam
+        //   ignorados
+        pthread_mutex_lock(&previousSyncedChangeEventLock);
+        previousSyncedChangeEvent = PackageChangeEvent((ChangeEvents)0xff, (uint8_t)0xff, "", "");
+        pthread_mutex_unlock(&previousSyncedChangeEventLock);
         continue;
     }
 
     // ...
 }
 ```
-
-Porém, com isso perde-se a possibilidade de se alterar o mesmo arquivo em dois dispositivo, se o último evento foi uma modificação do x pelo dispositivo 1, alterações feitas pelo dispositivo 2 serão ignoradas.
