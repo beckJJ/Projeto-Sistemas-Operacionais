@@ -3,8 +3,10 @@
 #include <iostream>
 #include <string.h>
 
+#if DEBUG_PACOTE
 // Lock usado por print_package para exibir completamente um pacote
 extern pthread_mutex_t print_package_lock;
+#endif
 
 // Lê n bytes de um socket, caso sucesso o vetor terá o conteúdo lido
 std::optional<std::vector<char>>
@@ -277,7 +279,9 @@ int write_package_to_socket(int socket, Package &package, std::vector<char> &fil
 // Exibe informações sobre um pacote
 void print_package(FILE *fout, bool sending, Package &package, std::vector<char> &fileContentBuffer)
 {
+#if DEBUG_PACOTE
     pthread_mutex_lock(&print_package_lock);
+#endif
 
 #if DEBUG_PACOTE_TID
 #ifndef __APPLE__
@@ -410,5 +414,7 @@ void print_package(FILE *fout, bool sending, Package &package, std::vector<char>
 
     fprintf(fout, ")\n");
 
+#if DEBUG_PACOTE
     pthread_mutex_unlock(&print_package_lock);
+#endif
 }
