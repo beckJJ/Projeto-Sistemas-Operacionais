@@ -16,7 +16,6 @@
 #include "../Common/functions.hpp"
 #include <string.h>
 #include "serverLoop.hpp"
-#include "eventConnectionLoop.hpp"
 
 extern DeviceManager deviceManager;
 
