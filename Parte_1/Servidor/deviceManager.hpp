@@ -11,31 +11,35 @@
 #include <iostream>
 #include <optional>
 
+struct Device;
 struct User;
 
 // Dados retornados ao conectar-se em DeviceManager::connect_*
 struct DeviceConnectReturn
 {
+    // Dispositivo atual
+    Device *device;
     // Informações do usuário, é retornado para acessar locks e informações que devem ser
     //   compartilhadas entre dispositivos distintos
     User *user;
-    // Tipo da conexão
-    ConnectionType connectionType;
     // ID do dispositivo conectado
     uint8_t deviceID;
 
-    DeviceConnectReturn(User *user, ConnectionType connectionType, uint8_t deviceID);
+    DeviceConnectReturn(Device *device, User *user, uint8_t deviceID);
 };
 
 // Representa um dispositivo do usuário
 struct Device
 {
     // Socket da comunicação principal
-    int main_socket;
-    // Socket da comunicação de eventos
-    int event_socket;
+    int socket;
     // ID do dispositivo
     uint8_t deviceID;
+    // Lock que deve ser adiquirida antes de enviar pacotes para o usuário
+    pthread_mutex_t *socket_lock;
+
+    Device();
+    ~Device();
 
     // Termina conexão dos sockets
     void close_sockets(void);
@@ -51,19 +55,21 @@ struct User
     // Arquivos do usuário
     std::vector<File> *files;
     // Dispositivos atualmente conectados
-    std::vector<Device> *devices;
+    std::vector<Device *> *devices;
     // Para evitar um loop de propagação de eventos, verificamos qual foi o último eventos recebido,
     //   caso o atual seja o mesmo do anterior com deviceID diferente, então o evento foi propagado
     //   para outro dispositivo e esse evento deve ser ignorado
     PackageChangeEvent previousPackageChangeEvent;
+    // Nome do usuário
+    char username[USER_NAME_MAX_LENGTH];
 
     User();
     ~User();
 
     // Os métodos assumem que as locks já tenham sido obtidas
 
-    // Iniciliza files com a listagem de sync_dir_SERVER/<username>
-    int initialize_files(const char *username);
+    // Iniciliza campos que não foram possíveis inicializar no contrutos (files e username)
+    int init(const char *username);
 
     // Operações em files, sync_dir deverá ser alterado por quem chamar as funções abaixo
     std::optional<File> get_file(const char filename[NAME_MAX]);
@@ -90,10 +96,8 @@ public:
     DeviceManager();
     ~DeviceManager();
 
-    // Conecta thread como conexão principal
-    std::optional<DeviceConnectReturn> connect_main(int socket_id, std::string &user);
-    // Conecta thread como conexão de eventos
-    std::optional<DeviceConnectReturn> connect_event(int socket_id, std::string &user, uint8_t deviceID);
+    // Conecta thread como dispositivo
+    std::optional<DeviceConnectReturn> connect(int socket_id, std::string &user);
 
     // Desconecta determinado dispositivo de um usuário, os sockets serão fechados por
     //   device.close_sockets()

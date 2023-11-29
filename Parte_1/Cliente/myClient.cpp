@@ -11,8 +11,13 @@
 #include "eventThread.hpp"
 #include <unistd.h>
 #include "auxiliaresCliente.hpp"
-#include "syncThread.hpp"
+#include "readThread.hpp"
 #include <csignal>
+
+#if DEBUG_PACOTE
+// Lock usado por print_package para exibir completamente um pacote
+pthread_mutex_t print_package_lock = PTHREAD_MUTEX_INITIALIZER;
+#endif
 
 // Dados sobre a comunicação com o servidor
 DadosConexao dados_conexao;
@@ -40,14 +45,9 @@ void cancel_threads()
 // Fecha sockets que estejam abertos
 void close_sockets()
 {
-    if (dados_conexao.main_connection_socket != -1)
+    if (dados_conexao.socket != -1)
     {
-        close(dados_conexao.main_connection_socket);
-    }
-
-    if (dados_conexao.event_connection_socket != -1)
-    {
-        close(dados_conexao.event_connection_socket);
+        close(dados_conexao.socket);
     }
 }
 
@@ -75,8 +75,8 @@ int main(int argc, char *argv[])
     strcpy(dados_conexao.endereco_ip, argv[2]);
     strcpy(dados_conexao.numero_porta, argv[3]);
 
-    /* Inicia a conexao do dispositivo com o servidor, será obtido o socket principal. */
-    if (conecta_device(dados_conexao, true))
+    /* Inicia a conexao do dispositivo com o servidor. */
+    if (conecta_device(dados_conexao))
     {
         exit(EXIT_FAILURE);
     }
@@ -88,20 +88,14 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    /* Inicia a conexao do dispositivo com o servidor, será obtido o socket para eventos. */
-    if (conecta_device(dados_conexao, false))
-    {
-        exit(EXIT_FAILURE);
-    }
-
     pthread_t new_thread;
 
     // Inicia thread de eventos
     pthread_create(&new_thread, NULL, eventThread, NULL);
     dados_conexao.event_thread = new_thread;
 
-    // Inicia thread de sincronização
-    pthread_create(&new_thread, NULL, syncThread, NULL);
+    // Inicia thread de leitura
+    pthread_create(&new_thread, NULL, readThread, NULL);
     dados_conexao.sync_thread = new_thread;
 
     // A thread atual será responsável por ler comandos do usuário

@@ -3,7 +3,7 @@
 #include "../Common/package_functions.hpp"
 #include "../Common/package_file.hpp"
 
-void eventConnectionLoop(int socket_id, int tid, std::string &username, User *&user)
+void eventConnectionLoop(int socket_id, int tid, std::string &username, User *&user, Device *&device)
 {
     auto package = Package();
     std::vector<char> fileContentBuffer;

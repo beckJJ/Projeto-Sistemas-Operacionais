@@ -15,7 +15,7 @@
 #include "../Common/package_functions.hpp"
 #include "../Common/functions.hpp"
 #include <string.h>
-#include "mainConnectionLoop.hpp"
+#include "serverLoop.hpp"
 #include "eventConnectionLoop.hpp"
 
 extern DeviceManager deviceManager;
@@ -24,7 +24,7 @@ thread_local pid_t tid = 0;
 thread_local int socket_id = -1;
 
 // Processa pacotes iniciais de identificação
-int connectUser(int socket_id, ConnectionType &connectionType, std::string &username, User *&user, uint8_t &deviceID)
+int connectUser(int socket_id, std::string &username, User *&user, Device *&device, uint8_t &deviceID)
 {
     auto package = Package();
     std::vector<char> fileContentBuffer;
@@ -43,22 +43,12 @@ int connectUser(int socket_id, ConnectionType &connectionType, std::string &user
     }
 
     username = std::string(package.package_specific.userIdentification.user_name);
-    connectionType = package.package_specific.userIdentification.connectionType;
     deviceID = package.package_specific.userIdentification.deviceID;
 
     std::optional<DeviceConnectReturn> deviceConnectReturn;
 
-    // Conecta-se dependendo do tipo de conexão desejada
-    if (connectionType == MAIN_CONNECTION)
-    {
-        printf("[tid: %d] Connecting main device \n", tid);
-        deviceConnectReturn = deviceManager.connect_main(socket_id, username);
-    }
-    else
-    {
-        printf("[tid: %d] Connecting event device\n", tid);
-        deviceConnectReturn = deviceManager.connect_event(socket_id, username, deviceID);
-    }
+    // Tenta conectar como um dispositivo do usuário
+    deviceConnectReturn = deviceManager.connect(socket_id, username);
 
     // Conexão rejeitada
     if (!deviceConnectReturn.has_value())
@@ -73,9 +63,9 @@ int connectUser(int socket_id, ConnectionType &connectionType, std::string &user
 
     user = deviceConnectReturn.value().user;
     deviceID = deviceConnectReturn.value().deviceID;
-    connectionType = deviceConnectReturn.value().connectionType;
+    device = deviceConnectReturn.value().device;
 
-    printf("[tid: %d] Nova conexão do usuario \"%s\" no dispositivo 0x%02x.\n",
+    printf("[tid: %d] Nova conexão do usuario \"%s\", dispositivo: 0x%02x.\n",
            tid,
            username.c_str(),
            (uint8_t)deviceID);
@@ -98,8 +88,8 @@ void *serverThread(void *arg)
 
     std::string username;
     User *user;
+    Device *device;
     uint8_t deviceID = 0;
-    ConnectionType connectionType;
 
 #ifndef __APPLE__
     tid = gettid();
@@ -112,33 +102,20 @@ void *serverThread(void *arg)
 
     std::vector<char> fileContentBuffer;
 
-    // Tentar conectar-se como uma conexão de um dispositivo do usuário
-    if (connectUser(socket_id, connectionType, username, user, deviceID))
+    // Tentar conectar-se como um dispositivo do usuário
+    if (connectUser(socket_id, username, user, device, deviceID))
     {
         close(socket_id);
         return NULL;
     }
 
-    switch (connectionType)
-    {
-    case MAIN_CONNECTION:
-        printf("[tid: %d] Thread registrada como conexao principal.\n", tid);
-        mainConnectionLoop(socket_id, tid, username, user);
-        break;
-    case EVENT_CONNECTION:
-        printf("[tid: %d] Thread registrada como conexao de eventos.\n", tid);
-        eventConnectionLoop(socket_id, tid, username, user);
-        break;
-    default:
-        printf("[tid: %d] Unknown connection type: 0x%02x\n", tid, (uint8_t)connectionType);
-        break;
-    }
+    serverLoop(socket_id, tid, username, user, device);
 
+    // Desconecta o dispositivo atual, serverLoop só retorna no caso de não ser possível ler pacotes
     printf("[tid: %d] Thread disconnecting.\n", tid);
-
-    // Desconecta o dispositivo, mainConnectionLoop e eventConnectionLoop só retornam no caso de não
-    //   ser possível ler pacotes
     deviceManager.disconnect(username, deviceID);
+
+    // socket_id será fechado no destrutor de Device
 
     return NULL;
 }

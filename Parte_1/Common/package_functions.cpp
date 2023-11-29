@@ -3,8 +3,12 @@
 #include <iostream>
 #include <string.h>
 
+// Lock usado por print_package para exibir completamente um pacote
+extern pthread_mutex_t print_package_lock;
+
 // Lê n bytes de um socket, caso sucesso o vetor terá o conteúdo lido
-std::optional<std::vector<char>> read_n_bytes_from_socket(int socket, ssize_t size);
+std::optional<std::vector<char>>
+read_n_bytes_from_socket(int socket, ssize_t size);
 
 // Lê o tipo do pacote de um socket
 std::optional<PackageType> read_package_type_from_socket(int socket);
@@ -124,9 +128,8 @@ int read_package_from_socket(int socket, Package &package, std::vector<char> &fi
     {
     case INITAL_USER_INDENTIFICATION:
         package = Package(PackageUserIndentification(
-            *(ConnectionType *)buffer_data,
-            *(uint8_t *)&buffer_data[ALIGN_VALUE],
-            &buffer_data[2 * ALIGN_VALUE]));
+            *(uint8_t *)buffer_data,
+            &buffer_data[ALIGN_VALUE]));
         break;
     case USER_INDENTIFICATION_RESPONSE:
         package = Package(PackageUserIndentificationResponse(
@@ -274,6 +277,21 @@ int write_package_to_socket(int socket, Package &package, std::vector<char> &fil
 // Exibe informações sobre um pacote
 void print_package(FILE *fout, bool sending, Package &package, std::vector<char> &fileContentBuffer)
 {
+    pthread_mutex_lock(&print_package_lock);
+
+#if DEBUG_PACOTE_TID
+#ifndef __APPLE__
+    pid_t tid = gettid();
+#else
+    // macOS nao tem gettid()
+    uint64_t tid;
+    pthread_threadid_np(NULL, &tid);
+    pid_t tid = (pid_t)tid;
+#endif
+
+    fprintf(fout, "[tid: %d] ", tid);
+#endif
+
     if (sending)
     {
         fprintf(fout, "WRITE ");
@@ -286,22 +304,10 @@ void print_package(FILE *fout, bool sending, Package &package, std::vector<char>
     switch (package.package_type)
     {
     case INITAL_USER_INDENTIFICATION:
-        fprintf(fout, "Package(INITAL_USER_INDENTIFICATION, 0x%02x, ", (uint8_t)package.package_specific.userIdentification.deviceID);
-
-        switch (package.package_specific.userIdentification.connectionType)
-        {
-        case MAIN_CONNECTION:
-            fprintf(fout, "MAIN_CONNECTION");
-            break;
-        case EVENT_CONNECTION:
-            fprintf(fout, "EVENT_CONNECTION");
-            break;
-        default:
-            fprintf(fout, "UNKNOWN");
-            break;
-        }
-
-        fprintf(fout, ", %s", package.package_specific.userIdentification.user_name);
+        fprintf(fout,
+                "Package(INITAL_USER_INDENTIFICATION, 0x%02x, %s",
+                (uint8_t)package.package_specific.userIdentification.deviceID,
+                package.package_specific.userIdentification.user_name);
         break;
     case USER_INDENTIFICATION_RESPONSE:
         fprintf(fout, "Package(USER_INDENTIFICATION_RESPONSE, ");
@@ -403,4 +409,6 @@ void print_package(FILE *fout, bool sending, Package &package, std::vector<char>
     }
 
     fprintf(fout, ")\n");
+
+    pthread_mutex_unlock(&print_package_lock);
 }

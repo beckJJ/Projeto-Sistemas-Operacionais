@@ -6,6 +6,6 @@
 #include <string>
 #include "deviceManager.hpp"
 
-void eventConnectionLoop(int socket_id, int tid, std::string &username, User *&user);
+void eventConnectionLoop(int socket_id, int tid, std::string &username, User *&user, Device *&device);
 
 #endif

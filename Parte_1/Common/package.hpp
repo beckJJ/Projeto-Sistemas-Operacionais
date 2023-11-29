@@ -40,15 +40,6 @@ enum PackageType : char
     FILE_NOT_FOUND,
 };
 
-// Tipo da conexão
-enum ConnectionType : char
-{
-    // Conexão principal, onde os comandos do usuário serão enviados
-    MAIN_CONNECTION,
-    // Conexão de eventos, onde as notificações de alteração serão enviadas
-    EVENT_CONNECTION,
-};
-
 // Indica aceitação ou rejeição da conexão do dispositivo
 enum InitialUserIndentificationResponseStatus : char
 {
@@ -80,19 +71,19 @@ struct alignas(ALIGN_VALUE) File
 
     File();
     File(int64_t size, int64_t mtime, int64_t atime, int64_t ctime, const char _name[NAME_MAX]);
+
+    bool operator<(const File &a) const;
 };
 
 // Usado para que o usuário se identifique
 struct alignas(ALIGN_VALUE) PackageUserIndentification
 {
-    // Tipo da conexão desejada
-    alignas(ALIGN_VALUE) ConnectionType connectionType;
     // ID do dispositivo, usado caso connectionType == EVENT_CONNECTION
     alignas(ALIGN_VALUE) uint8_t deviceID;
     // Nome do usuário que deseja se conectar
     alignas(ALIGN_VALUE) char user_name[USER_NAME_MAX_LENGTH]{};
 
-    PackageUserIndentification(ConnectionType connectionType, uint8_t deviceID, const char _user_name[USER_NAME_MAX_LENGTH]);
+    PackageUserIndentification(uint8_t deviceID, const char _user_name[USER_NAME_MAX_LENGTH]);
 };
 
 // Resposta do servidor para identificação

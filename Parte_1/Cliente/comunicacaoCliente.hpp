@@ -19,7 +19,8 @@ void download(DadosConexao &dados_conexao);
 // Deleta um arquivo em sync_dir
 void delete_cmd(DadosConexao &dados_conexao);
 
-// Pede lista de arquivos para o servidor e exibe a lista
+// Pede lista de arquivos para o servidor e exibe a lista após a condição
+//   dados_conexao.is_file_list_readed ter sido completa pela thread de leitura
 void list_server(DadosConexao &dados_conexao);
 
 // Lista arquivos presentes no sync_dir local

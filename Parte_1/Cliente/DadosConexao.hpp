@@ -10,6 +10,8 @@
 #include <pthread.h>
 #include <cstdint>
 #include <optional>
+#include <vector>
+#include "../Common/package.hpp"
 
 /* Estrutura utilizada para conter todos os dados da conexao. */
 struct DadosConexao
@@ -21,13 +23,18 @@ struct DadosConexao
     char comando[DIMENSAO_COMANDO]; /* Armazena o comando da vez, escolhido pelo usuario. */
 
     // Armazena o socket sendo utilizado para comunicacao
-    int main_connection_socket;
-    // Armazena o socket sendo utilizado para eventos
-    int event_connection_socket;
-    // Lock para o socket
-    pthread_mutex_t *main_connection_socket_lock;
-    // Lock para socket de eventos, será usado tanto por eventThread quanto syncThread
-    pthread_mutex_t *event_connection_socket_lock;
+    int socket;
+    // Lock que deve ser adiquirida antes de ler e enviar pacotes para o servidor
+    pthread_mutex_t *socket_lock;
+    // Condição usada para esperar leitura da lista de arquivos que deve ser feita pela thread de
+    //   leitura
+    pthread_cond_t *file_list_cond;
+    // Lock para alterar file_list
+    pthread_mutex_t *file_list_lock;
+    // Deve ser verificado se já leu todo FileList
+    bool is_file_list_readed;
+    // Lista de arquivos do servidor, atualizada sempre que PackageFileList forem recebidos
+    std::vector<File> file_list;
     // Usado para cancelar a thread em execução
     std::optional<pthread_t> sync_thread;
     // Usado para cancelar a thread em execução

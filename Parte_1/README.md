@@ -2,11 +2,7 @@
 
 ## TODO
 
-O pacote do tipo UPLOAD_FILE é enviado pela conexão principal do usuário para o servidor?
-
-syncThread e eventThread do cliente escrevem na mesma socket de eventos, para remover a necessidade de mutex uma idéia seria ter um vetor de requisições a serem feitas pela socket principal.
-
-Permitir múltiplas leituras dos arquivos do usuário no servidor.
+Permitir múltiplas leituras dos arquivos do usuário no servidor (leitores/escritores, obter listagem de arquivos e um arquivo deve ser possível ocorrer ao mesmo).
 
 ## Geral
 
@@ -20,7 +16,7 @@ Há dois tipos de conexão para cada dispositivo: conexão principal e conexão 
 
 As tabelas demonstram a conexão em ordem, \[alt. nn\] representam alternativas.
 
-### Conexão principal
+### Comunicação dos pacotes
 
 Identificação:
 
@@ -47,6 +43,8 @@ Loop de pacotes servidor -> client:
 Não há
 
 ### Conexão de eventos
+
+DESATUALIZADO
 
 Identificação:
 
@@ -94,21 +92,23 @@ A leitura e modificação da map de usuários é protegida por uma mutex_lock.
 
 ## Cliente
 
-O myClient utiliza três threads: principal, evento e sincronização.
+O myClient utiliza três threads: principal, evento e leitura.
 
 A thread principal espera por comando digitados pelo usuario.
 
 A thread de eventos observa o diretório sync_dir local e envia os eventos gerados para o servidor.
 
-A thread de sincronização escuta pelos eventos enviados do servidor para o cliente indicando que determinado arquivo teve alguma alteração.
+A thread de leitura recebe pacotes do servidor, excepicionalmente o pacote PackageFileList envolve sinalização de condição, pois o comando list_server origina uma requisição para a listagem de arquivos no servidor. (*)
 
-A thread principal utiliza a socket principal, já a thread de eventos e sincronização compartilham a socket de eventos.
+A escrita na socket é protegida por mutex.
 
-A socket de eventos é protegida por um lock mutualmente exclusiva. (ver TODO)
+A escrita na socket é feita por apenas um thread, não é usado mutex.
+
+*: A condição que será sinalizada e aguardada é a condição de já ter recebido a listagem de arquivos, a thread que executa comandos do usuário enviará o pacote requisitando arquivos e então aguardará pelo sinal, com o sinal recebido a thread então exibirá a listagem dos arquivos. A thread de leitura deverá sinalizar que a leitura foi concluída quando terminar de ler os pacotes de listagem de arquivos.
 
 ### get_sync_dir
 
-Para implementar o get_sync_dir o diretório local é recursivamente removido, então é requisitado a lista de arquivos presentes no servidor, todos os arquivos são baixados para o diretório recém limpo.
+Para implementar o get_sync_dir o diretório local é recursivamente removido, então é requisitado a lista de arquivos presentes no servidor, todos os arquivos são baixados para o diretório recém limpo. Executado antes da inicialização da thread do inotifiy.
 
 ### upload
 
@@ -116,7 +116,7 @@ O arquivo do usuário é copiado para o diretório local, o envio é feito pela 
 
 ### download
 
-É feita uma requisição para obter o arquivo, caso bem-sucedido o arquivo será salvo.
+Arquivo presente no diretório sync_dir local é copiado para o cwd.
 
 ### delete
 
@@ -126,7 +126,7 @@ O arquivo é removido do diretório sync_dir local, o evento é enviado pela thr
 
 Lista arquivos do sync dir local.
 
-### delete
+### list_server
 
 Recebe listagem dos arquivos no servidor e os exibe.
 
@@ -134,7 +134,11 @@ Recebe listagem dos arquivos no servidor e os exibe.
 
 Para sincronização foram usadas mutexes, leituras são mutuamente exclusivas, há possibilidade de aperfeiçoamento.
 
+É usado cond_signal e cond_wait para leitura da listagem de arquivos no usuário.
+
 ## Problemas encontrados
+
+### Loop de notificações
 
 Com dois dispositivos era possível obter um loop de notificações de eventos:
 
@@ -149,7 +153,7 @@ Com dois dispositivos era possível obter um loop de notificações de eventos:
 3)  WRITE Package(CHANGE_EVENT, 0x02, FILE_RENAME, teste, exemplo)  <- Gerado pelo inotify, será propagado
 ```
 
-Para evitar isso o último evento de notificação enviado pelo servidor é armazenado no usuário, antes do usuário enviar o evento para o servidor é verificado se o evento é igual ao lido anteriormente (com exceção do id do dispositivo), se for o evento é ignorado. A verificação se encontra em Client/eventThread.cpp:164.
+Para evitar isso o último evento de notificação enviado pelo servidor é armazenado no usuário, antes do usuário enviar o evento para o servidor é verificado se o evento é igual ao lido anteriormente (com exceção do id do dispositivo), se for o evento é ignorado. A verificação se encontra em Client/eventThread.cpp:187.
 
 ```cpp
 // Envia eventos completados
@@ -174,5 +178,26 @@ for (auto userEvent : completeUserEvents)
     }
 
     // ...
+}
+```
+
+### IN_CLOSE_WRITE após IN_CREATE
+
+Para a criação de arquivos (foi recebido um evento FILE_CREATE do servidor) é usado `fopen(file, "w")`, a criação do arquivo file irá gerar dois eventos em seguida: IN_CREATE e IN_CLOSE_WRITE, o evento IN_CLOSE_WRITE enviará então o conteúdo atualizado para o servidor que salvará no lugar correto. O problema ocorre quando utiliza-se dois dispositivos e no dispositivo 1 um arquivo qualquer era copiado para o diretório sincronizado, o inotify enviaria os eventos corretamente e o arquivo seria salvo no servidor, porém o dispositivo 2 para aplicar os eventos criados criaria o arquivo file, o que geraria os eventos IN_CREATE e IN_CLOSE_WRITE, com esse segundo IN_CLOSE_WRITE o servidor receberia o conteúdo vazio do arquivo recém criado e substituiria o conteúdo que havia sido armazenado do dispositivo 1, o resultado é que qualquer arquivo adicionado não teria conteúdo algum.
+
+Para solucionar esse problema verifica-se antes de enviar para o servidor o evento FILE_MODIFIED se o eventos anterior era IN_CREATE do mesmo arquivo e se o arquivo modificado está vazio, essas verificações indicam que o evento IN_CLOSE_WRITE foi gerado pela chamada de `fopen(file, "w")`, nesse caso o evento não será enviado para o servidor. A verificação se encontra em Client/eventThread.cpp:163.
+
+```cpp
+// Adiciona FILE_MODIFIED caso IN_CLOSE_WRITE não seja disparado por criação de arquivo
+// Ver README
+if (
+    !(
+        // Evento anterior foi criação do arquivo modificado
+        (previousEvent.changeEvent == FILE_CREATED && previousEvent.movedFrom == filename) &&
+        // Arquivo modificado não tem conteúdo (fopen(file, "w"))
+        ((stat(path.c_str(), &st) == 0) && st.st_size == 0)))
+{
+    completeUserEvents.push_back({FILE_MODIFIED, filename, std::string(""), 0});
+    previousEvent = completeUserEvents.back();
 }
 ```

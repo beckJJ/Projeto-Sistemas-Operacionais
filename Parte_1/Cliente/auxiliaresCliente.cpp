@@ -104,9 +104,8 @@ void print_files(std::vector<File> files)
     }
 }
 
-// Faz requisição para conectar dispositivo, dependendo de is_main_connection estará conectando
-//   como socket principal ou socket de eventos, dadosConexao terá campo correspondente alterado
-int conecta_device(DadosConexao &dadosConexao, bool is_main_connection)
+// Faz requisição para conectar dispositivo, dadosConexao terá campo correspondente alterado
+int conecta_device(DadosConexao &dadosConexao)
 {
     // Obtém socket
     auto socket_opt = conecta_servidor(dadosConexao);
@@ -118,19 +117,10 @@ int conecta_device(DadosConexao &dadosConexao, bool is_main_connection)
 
     int current_socket = socket_opt.value();
 
-    // Armazena socket em dadosConexao
-    if (is_main_connection)
-    {
-        dadosConexao.main_connection_socket = current_socket;
-    }
-    else
-    {
-        dadosConexao.event_connection_socket = current_socket;
-    }
+    dadosConexao.socket = current_socket;
 
     // Envia pacote inicial de identificação, especificando dispositivo
     auto package = Package(PackageUserIndentification(
-        is_main_connection ? MAIN_CONNECTION : EVENT_CONNECTION,
         dadosConexao.deviceID,
         dadosConexao.nome_usuario));
     std::vector<char> fileContentBuffer;
@@ -161,26 +151,14 @@ int conecta_device(DadosConexao &dadosConexao, bool is_main_connection)
         return 1;
     }
 
-    // Se for a thread principal armazena o ID
-    if (is_main_connection)
-    {
-        dadosConexao.deviceID = package.package_specific.userIdentificationResponse.deviceID;
-        return 0;
-    }
-
-    // ID inconsistente
-    if (dadosConexao.deviceID != package.package_specific.userIdentificationResponse.deviceID)
-    {
-        printf("ID de dispositivo para socket de eventos e diferente do ID de dispositivo para thread principal.\n");
-        return 1;
-    }
+    dadosConexao.deviceID = package.package_specific.userIdentificationResponse.deviceID;
 
     return 0;
 }
 
 // Remove sync_dir_user local e baixa os arquivos presentes no servidor
-// Usará o socket principal para requisitar a slita de arquivos do servidor, então para cada arquivo
-//   dessa lista o arquivo será requisitado e salvo em sync_dir
+// Requisitará a lista de arquivos do servidor, então para cada arquivo dessa lista o arquivo será
+//   requisitado e salvo em sync_dir
 int get_sync_dir(DadosConexao &dadosConexao)
 {
     struct stat st;
@@ -209,13 +187,13 @@ int get_sync_dir(DadosConexao &dadosConexao)
     auto package = Package(PackageRequestFileList());
     std::vector<char> fileContentBuffer;
 
-    if (write_package_to_socket(dadosConexao.main_connection_socket, package, fileContentBuffer))
+    if (write_package_to_socket(dadosConexao.socket, package, fileContentBuffer))
     {
         printf("Erro ao pedir lista de arquivos ao servidor.\n");
         return 1;
     }
 
-    auto file_list = read_file_list(dadosConexao.main_connection_socket);
+    auto file_list = read_file_list(dadosConexao.socket);
 
     if (!file_list.has_value())
     {
@@ -231,7 +209,7 @@ int get_sync_dir(DadosConexao &dadosConexao)
         file_path.append(file.name);
 
         // Pede arquivo do servidor e salva em sync_dir
-        switch (download_file(dadosConexao.main_connection_socket, file.name, file_path.c_str()))
+        switch (download_file(dadosConexao.socket, file.name, file_path.c_str()))
         {
         case SUCCESS:
         case DOWNLOAD_FILE_FILE_NOT_FOUND: // Pode ter sido removido por outro dispostivo

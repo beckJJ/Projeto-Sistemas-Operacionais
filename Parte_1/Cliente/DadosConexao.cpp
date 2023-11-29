@@ -2,21 +2,24 @@
 
 DadosConexao::DadosConexao()
 {
-    main_connection_socket = -1;
-    event_connection_socket = -1;
+    socket = -1;
 
-    main_connection_socket_lock = new pthread_mutex_t;
-    event_connection_socket_lock = new pthread_mutex_t;
+    socket_lock = new pthread_mutex_t;
+    file_list_lock = new pthread_mutex_t;
+    file_list_cond = new pthread_cond_t;
 
-    pthread_mutex_init(main_connection_socket_lock, NULL);
-    pthread_mutex_init(event_connection_socket_lock, NULL);
+    pthread_mutex_init(socket_lock, NULL);
+    pthread_mutex_init(file_list_lock, NULL);
+    pthread_cond_init(file_list_cond, NULL);
 }
 
 DadosConexao::~DadosConexao()
 {
-    pthread_mutex_destroy(main_connection_socket_lock);
-    pthread_mutex_destroy(event_connection_socket_lock);
+    pthread_mutex_destroy(socket_lock);
+    pthread_mutex_destroy(file_list_lock);
+    pthread_cond_destroy(file_list_cond);
 
-    delete main_connection_socket_lock;
-    delete event_connection_socket_lock;
+    delete socket_lock;
+    delete file_list_lock;
+    delete file_list_cond;
 }

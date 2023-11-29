@@ -13,8 +13,13 @@ File::File(int64_t size, int64_t mtime, int64_t atime, int64_t ctime, const char
     strncpy(name, _name, NAME_MAX - 1);
 }
 
-PackageUserIndentification::PackageUserIndentification(ConnectionType connectionType, uint8_t deviceID, const char _user_name[USER_NAME_MAX_LENGTH])
-    : connectionType(connectionType), deviceID(deviceID)
+bool File::operator<(const File &a) const
+{
+    return strcmp(name, a.name) < 0;
+}
+
+PackageUserIndentification::PackageUserIndentification(uint8_t deviceID, const char _user_name[USER_NAME_MAX_LENGTH])
+    : deviceID(deviceID)
 {
     strncpy(user_name, _user_name, USER_NAME_MAX_LENGTH - 1);
 }

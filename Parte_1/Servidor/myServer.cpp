@@ -19,6 +19,11 @@
 #include "config.hpp"
 #include <signal.h>
 
+#if DEBUG_PACOTE
+// Lock usado por print_package para exibir completamente um pacote
+pthread_mutex_t print_package_lock = PTHREAD_MUTEX_INITIALIZER;
+#endif
+
 DeviceManager deviceManager = DeviceManager();
 int main_thread_socket = -1;
 

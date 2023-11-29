@@ -20,10 +20,11 @@ CFLAGS:=$(HARDENING) -g -O2 -Wall -Wextra -pthread
 
 # Configuração disponível por defines:
 #   DEBUG_PACOTE:              Imprime pacotes recebidos e escritos em stderr
+#   DEBUG_PACOTE_TID:          Exibe [tid: xxx] ao debugar pacotes
 #   DEBUG_PACOTE_FILE_CONTENT: Imprime conteúdo do arquivo enviado no pacote em hex
 #   LIMPA_TELA_NOOP:           Função limpatela() não limpará a tela
 
-DEFINES:=-DDEBUG_PACOTE=true -DLIMPA_TELA_NOOP=true
+DEFINES:=-DDEBUG_PACOTE=true -DDEBUG_PACOTE_TID=true -DLIMPA_TELA_NOOP=true
 # DEFINES:=-DDEBUG_PACOTE=true
 
 default: all
@@ -31,8 +32,8 @@ default: all
 all: myClient myServer
 
 
-myClient: Cliente/myClient.cpp auxiliaresCliente interfaceCliente comunicacaoCliente package functions package_file package_functions eventThread syncThread DadosConexao
-	$(CC) $(CFLAGS) $(DEFINES) -o myClient Cliente/myClient.cpp Cliente/auxiliaresCliente.o Cliente/interfaceCliente.o Cliente/comunicacaoCliente.o Cliente/eventThread.o Cliente/syncThread.o Cliente/DadosConexao.o Common/package.o Common/functions.o Common/package_file.o Common/package_functions.o
+myClient: Cliente/myClient.cpp auxiliaresCliente interfaceCliente comunicacaoCliente package functions package_file package_functions eventThread readThread DadosConexao
+	$(CC) $(CFLAGS) $(DEFINES) -o myClient Cliente/myClient.cpp Cliente/auxiliaresCliente.o Cliente/interfaceCliente.o Cliente/comunicacaoCliente.o Cliente/eventThread.o Cliente/readThread.o Cliente/DadosConexao.o Common/package.o Common/functions.o Common/package_file.o Common/package_functions.o
 
 auxiliaresCliente: Cliente/auxiliaresCliente.cpp
 	$(CC) $(CFLAGS) $(DEFINES) -c -o Cliente/auxiliaresCliente.o Cliente/auxiliaresCliente.cpp
@@ -46,15 +47,15 @@ comunicacaoCliente: Cliente/comunicacaoCliente.cpp
 eventThread: Cliente/eventThread.cpp
 	$(CC) $(CFLAGS) $(DEFINES) -c -o Cliente/eventThread.o Cliente/eventThread.cpp
 
-syncThread: Cliente/syncThread.cpp
-	$(CC) $(CFLAGS) $(DEFINES) -c -o Cliente/syncThread.o Cliente/syncThread.cpp
+readThread: Cliente/readThread.cpp
+	$(CC) $(CFLAGS) $(DEFINES) -c -o Cliente/readThread.o Cliente/readThread.cpp
 
 DadosConexao: Cliente/DadosConexao.cpp
 	$(CC) $(CFLAGS) $(DEFINES) -c -o Cliente/DadosConexao.o Cliente/DadosConexao.cpp
 
 
-myServer: Servidor/myServer.cpp serverThread deviceManager mainConnectionLoop eventConnectionLoop package functions package_file package_functions
-	$(CC) $(CFLAGS) $(DEFINES) -o myServer Servidor/myServer.cpp Servidor/serverThread.o Servidor/deviceManager.o Servidor/mainConnectionLoop.o Servidor/eventConnectionLoop.o Common/package.o Common/functions.o Common/package_file.o Common/package_functions.o
+myServer: Servidor/myServer.cpp serverThread deviceManager serverLoop package functions package_file package_functions
+	$(CC) $(CFLAGS) $(DEFINES) -o myServer Servidor/myServer.cpp Servidor/serverThread.o Servidor/deviceManager.o Servidor/serverLoop.o Common/package.o Common/functions.o Common/package_file.o Common/package_functions.o
 
 deviceManager: Servidor/deviceManager.cpp
 	$(CC) $(CFLAGS) $(DEFINES) -c -o Servidor/deviceManager.o Servidor/deviceManager.cpp
@@ -62,11 +63,8 @@ deviceManager: Servidor/deviceManager.cpp
 serverThread: Servidor/serverThread.cpp
 	$(CC) $(CFLAGS) $(DEFINES) -c -o Servidor/serverThread.o Servidor/serverThread.cpp
 
-mainConnectionLoop: Servidor/mainConnectionLoop.cpp
-	$(CC) $(CFLAGS) $(DEFINES) -c -o Servidor/mainConnectionLoop.o Servidor/mainConnectionLoop.cpp
-
-eventConnectionLoop: Servidor/eventConnectionLoop.cpp
-	$(CC) $(CFLAGS) $(DEFINES) -c -o Servidor/eventConnectionLoop.o Servidor/eventConnectionLoop.cpp
+serverLoop: Servidor/serverLoop.cpp
+	$(CC) $(CFLAGS) $(DEFINES) -c -o Servidor/serverLoop.o Servidor/serverLoop.cpp
 
 
 package: Common/package.cpp

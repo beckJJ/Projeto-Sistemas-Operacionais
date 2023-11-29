@@ -6,6 +6,8 @@
 #include <string>
 #include <cstring>
 #include <strings.h>
+#include <optional>
+#include <algorithm>
 #include <libgen.h>
 #include <iostream>
 #include "../Common/package.hpp"
@@ -52,6 +54,51 @@ std::optional<int> conecta_servidor(DadosConexao &dados_conexao)
     return socket_id;
 }
 
+int copy_file(const char *path_orig, const char *path_dest)
+{
+    int ret = 0;
+    char buffer[MAX_DATA_SIZE];
+    FILE *fin = fopen(path_orig, "rb");
+
+    if (!fin)
+    {
+        return 1;
+    }
+
+    FILE *fout = fopen(path_dest, "wb");
+
+    if (!fout)
+    {
+        fclose(fin);
+        return 1;
+    }
+
+    // Lê todo arquivo fin e escreve o conteúdo em fout
+    while (!feof(fin))
+    {
+        auto total_read = fread(buffer, sizeof(char), MAX_DATA_SIZE, fin);
+
+        if (ferror(fin))
+        {
+            ret = 1;
+            break;
+        }
+
+        fwrite(buffer, sizeof(char), total_read, fout);
+
+        if (ferror(fout))
+        {
+            ret = 1;
+            break;
+        }
+    }
+
+    fclose(fin);
+    fclose(fout);
+
+    return ret;
+}
+
 // Copia o arquivo informado pelo usuário para o diretório sync_dir local, thread de eventos que
 //   observa eventos do inotify deverá gerar os eventos apropriados
 void upload(DadosConexao &dados_conexao)
@@ -66,75 +113,34 @@ void upload(DadosConexao &dados_conexao)
     char *filename = basename(strings[1]);
     path_out.append(filename);
 
-    char buffer[MAX_DATA_SIZE];
-
-    bool success = true;
-
-    FILE *fin = fopen(path_in.c_str(), "rb");
-
-    if (!fin)
-    {
-        printf("Nao foi possivel abrir arquivo \"%s\" para leitura.\n", path_in.c_str());
-    }
-
-    FILE *fout = fopen(path_out.c_str(), "wb");
-
-    if (!fout)
-    {
-        printf("Nao foi possivel abrir arquivo \"%s\" para escrita.\n", path_out.c_str());
-    }
-
-    // Lê todo arquivo fin e escreve o conteúdo em fout
-    while (!feof(fin))
-    {
-        auto total_read = fread(buffer, sizeof(char), MAX_DATA_SIZE, fin);
-
-        if (ferror(fin))
-        {
-            success = false;
-            break;
-        }
-
-        fwrite(buffer, sizeof(char), total_read, fout);
-
-        if (ferror(fout))
-        {
-            success = false;
-            break;
-        }
-    }
-
-    fclose(fin);
-    fclose(fout);
-
-    if (success)
-    {
-        printf("Arquivo \"%s\" copiado para sync dir local com sucesso.\n", path_in.c_str());
-    }
-    else
+    if (copy_file(path_in.c_str(), path_out.c_str()))
     {
         printf("Algum erro ocorreu durante a copia do arquivo \"%s\".\n", path_in.c_str());
     }
+    else
+    {
+        printf("Arquivo \"%s\" copiado para sync dir local com sucesso, sera enviado apos evento.\n", path_in.c_str());
+    }
 }
 
-// Pede arquivo do servidor, caso esteja disponível, será salvo no cwd atual
+// Copia arquivo do sync_dir local para cwd
 void download(DadosConexao &dados_conexao)
 {
     auto strings = splitComando(dados_conexao.comando);
     std::string filename = strings[1];
+    std::string path_sync_dir = PREFIXO_DIRETORIO;
+    path_sync_dir.append(dados_conexao.nome_usuario);
+    path_sync_dir.append("/");
+    path_sync_dir.append(filename);
 
-    switch (download_file(dados_conexao.main_connection_socket, filename.c_str(), filename.c_str()))
+    // O sync_dir local deve estar sincronizado
+    if (copy_file(path_sync_dir.c_str(), filename.c_str()))
     {
-    case SUCCESS:
-        printf("Arquivo \"%s\" baixado do servidor com sucesso.\n", filename.c_str());
-        break;
-    case DOWNLOAD_FILE_FILE_NOT_FOUND:
-        printf("Arquivo \"%s\" nao existe no servidor.\n", filename.c_str());
-        break;
-    case DOWNLOAD_FILE_ERROR:
-    default:
-        printf("Erro ao baixar arquivo \"%s\" do servidor (pode nao existir).\n", filename.c_str());
-        break;
+        printf("Nao foi possivel copiar o arquivo \"%s\" do sync dir local para pasta atual.\n", filename.c_str());
+    }
+    else
+    {
+        printf("Arquivo \"%s\" copiado para diretorio atual com sucesso.\n", filename.c_str());
     }
 }
 
@@ -157,29 +163,44 @@ void delete_cmd(DadosConexao &dados_conexao)
     printf("Arquivo \"%s\" deletado do diretorio local com sucesso.\n", filename.c_str());
 }
 
-// Pede lista de arquivos para o servidor e exibe a lista
+// Pede lista de arquivos para o servidor e exibe a lista após a condição
+//   dados_conexao.is_file_list_readed ter sido completa pela thread de leitura
 void list_server(DadosConexao &dados_conexao)
 {
     Package package = Package(PackageRequestFileList());
     std::vector<char> fileContentBuffer;
 
+    // Socket será usado
+    pthread_mutex_lock(dados_conexao.socket_lock);
+
     // Pede listagem de arquivos do servidor
-    if (write_package_to_socket(dados_conexao.main_connection_socket, package, fileContentBuffer))
+    int ret = write_package_to_socket(dados_conexao.socket, package, fileContentBuffer);
+
+    pthread_mutex_unlock(dados_conexao.socket_lock);
+
+    if (ret)
     {
         printf("Erro ao enviar pacote para pedir listagem do servidor.\n");
         return;
     }
 
-    auto files = read_file_list(dados_conexao.main_connection_socket);
+    // Leremos a lista de arquivos
+    pthread_mutex_lock(dados_conexao.file_list_lock);
 
-    if (!files.has_value())
+    dados_conexao.is_file_list_readed = false;
+
+    // Espera que a thread de leitura leia os pacotes PackageFileList que devem ser enviados em
+    //   resposta a requisição feita acima
+    while (!dados_conexao.is_file_list_readed)
     {
-        printf("Nao foi possivel receber listagem de arquivos.\n");
-        return;
+        pthread_cond_wait(dados_conexao.file_list_cond, dados_conexao.file_list_lock);
     }
 
-    // Exibe listagem recebida
-    print_files(files.value());
+    // Ordena para melhor exibição
+    std::sort(dados_conexao.file_list.begin(), dados_conexao.file_list.end());
+    print_files(dados_conexao.file_list);
+
+    pthread_mutex_unlock(dados_conexao.file_list_lock);
 }
 
 // Lista arquivos presentes no sync_dir local
@@ -197,5 +218,7 @@ void list_client(DadosConexao &dados_conexao)
         return;
     }
 
+    // Ordena para melhor exibição
+    std::sort(files.value().begin(), files.value().end());
     print_files(files.value());
 }

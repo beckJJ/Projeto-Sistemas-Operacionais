@@ -4,23 +4,36 @@
 #include "../Common/functions.hpp"
 #include <string.h>
 #include "../Common/package_functions.hpp"
+#include <algorithm>
+#include "../Common/package_file.hpp"
 
-DeviceConnectReturn::DeviceConnectReturn(User *user, ConnectionType connectionType, uint8_t deviceID)
-    : user(user), connectionType(connectionType), deviceID(deviceID) {}
+DeviceConnectReturn::DeviceConnectReturn(Device *device, User *user, uint8_t deviceID)
+    : device(device), user(user), deviceID(deviceID) {}
+
+Device::Device()
+{
+    socket = -1;
+    socket_lock = new pthread_mutex_t;
+
+    pthread_mutex_init(socket_lock, NULL);
+}
+
+Device::~Device()
+{
+    close_sockets();
+
+    pthread_mutex_destroy(socket_lock);
+
+    delete socket_lock;
+}
 
 // Termina conexão dos sockets
 void Device::close_sockets(void)
 {
-    if (main_socket != -1)
+    if (socket != -1)
     {
-        close(main_socket);
-        main_socket = -1;
-    }
-
-    if (event_socket != -1)
-    {
-        close(event_socket);
-        event_socket = -1;
+        close(socket);
+        socket = -1;
     }
 }
 
@@ -29,7 +42,7 @@ User::User()
     previousPackageChangeEvent = PackageChangeEvent((ChangeEvents)0xff, (uint8_t)0xff, "", "");
 
     files = new std::vector<File>();
-    devices = new std::vector<Device>();
+    devices = new std::vector<Device *>();
 
     devices_lock = new pthread_mutex_t;
     files_lock = new pthread_mutex_t;
@@ -43,18 +56,26 @@ User::~User()
     pthread_mutex_destroy(devices_lock);
     pthread_mutex_destroy(files_lock);
 
+    for (auto device : *devices)
+    {
+        delete device;
+    }
+
     delete devices;
     delete files;
     delete devices_lock;
     delete files_lock;
 }
 
-// Iniciliza files com a listagem de sync_dir_SERVER/<username>
-int User::initialize_files(const char *username)
+// Iniciliza campos que não foram possíveis inicializar no contrutos (files e username)
+int User::init(const char *username)
 {
     std::string path = PREFIXO_DIRETORIO_SERVIDOR;
     path.append("/");
     path.append(username);
+
+    // Copia nome do usuário
+    strncpy(this->username, username, USER_NAME_MAX_LENGTH - 1);
 
     // Garante que o diretório existe
     if (create_dir_if_not_exists(path.c_str()))
@@ -95,17 +116,25 @@ void User::create_file(const char filename[NAME_MAX])
 
 void User::rename_file(const char old_filename[NAME_MAX], const char new_filename[NAME_MAX])
 {
+    if (!get_file(old_filename).has_value())
+    {
+        return;
+    }
+
+    if (get_file(new_filename).has_value())
+    {
+        remove_file(new_filename);
+    }
+
     for (size_t index = 0; index < (*files).size(); index++)
     {
         if (!strcmp((*files)[index].name, old_filename))
         {
             strncpy((*files)[index].name, new_filename, NAME_MAX - 1);
+            remove_file(new_filename);
             break;
         }
     }
-
-    // Pode existir um arquivo com o nome antigo
-    remove_file(old_filename);
 }
 
 void User::remove_file(const char filename[NAME_MAX])
@@ -151,26 +180,48 @@ void User::propagate_event(PackageChangeEvent packageChangeEvent)
 {
     auto package = Package(packageChangeEvent);
     std::vector<char> fileContentBuffer;
+    std::string path = PREFIXO_DIRETORIO_SERVIDOR;
+    path.append("/");
+    path.append(username);
+    path.append("/");
+    path.append(package.package_specific.changeEvent.filename1);
 
     for (auto userDevice : *devices)
     {
         // Não envia evento para dispositivo que originou o evento
-        if (userDevice.deviceID == packageChangeEvent.deviceID)
+        if (userDevice->deviceID == packageChangeEvent.deviceID)
         {
             continue;
         }
 
         // Conexão de eventos ainda não foi estabelecida
-        if (userDevice.event_socket == -1)
+        if (userDevice->socket == -1)
         {
             continue;
         }
 
+        pthread_mutex_lock(userDevice->socket_lock);
+
         // Envia evento
-        if (write_package_to_socket(userDevice.event_socket, package, fileContentBuffer))
+        if (write_package_to_socket(userDevice->socket, package, fileContentBuffer))
         {
-            printf("Erro ao propagar evento para dispositivo com ID 0%02x.\n", (uint8_t)userDevice.deviceID);
+            printf("Erro ao propagar evento para dispositivo com ID 0%02x.\n", (uint8_t)userDevice->deviceID);
         }
+
+        // Envia conteúdo do arquivo caso o evento seja FILE_MODIFIED
+        if (package.package_specific.changeEvent.event == FILE_MODIFIED)
+        {
+            // Envia o arquivo modificado
+            if (send_file_from_path(userDevice->socket,
+                                    path.c_str(),
+                                    package.package_specific.changeEvent.filename1))
+            {
+                printf("Erro ao enviar conteudo do arquivo \"%s\" modificado.\n",
+                       package.package_specific.changeEvent.filename1);
+            }
+        }
+
+        pthread_mutex_unlock(userDevice->socket_lock);
     }
 }
 
@@ -183,7 +234,7 @@ DeviceManager::~DeviceManager()
 }
 
 // Conecta thread como conexão principal
-std::optional<DeviceConnectReturn> DeviceManager::connect_main(int socket_id, std::string &user)
+std::optional<DeviceConnectReturn> DeviceManager::connect(int socket_id, std::string &user)
 {
     uint8_t deviceID;
 
@@ -199,8 +250,8 @@ std::optional<DeviceConnectReturn> DeviceManager::connect_main(int socket_id, st
         usuarios[user] = new User();
         usuario = usuarios[user];
 
-        // Inicializa lista de arquivos do usuário
-        if (usuario->initialize_files(user.c_str()))
+        // Inicializa campos
+        if (usuario->init(user.c_str()))
         {
             // Não foi possível ler arquivos do usuário, remove usuario
             delete usuario;
@@ -224,13 +275,13 @@ std::optional<DeviceConnectReturn> DeviceManager::connect_main(int socket_id, st
     else if (usuario->devices->size() == 1)
     {
         // Obtém o próximo ID, garante que não haja saturação em UINT8_MAX
-        if (usuario->devices->at(0).deviceID == UINT8_MAX)
+        if (usuario->devices->at(0)->deviceID == UINT8_MAX)
         {
             deviceID = 0;
         }
         else
         {
-            deviceID = usuario->devices->at(0).deviceID + 1;
+            deviceID = usuario->devices->at(0)->deviceID + 1;
         }
     }
     else
@@ -240,55 +291,14 @@ std::optional<DeviceConnectReturn> DeviceManager::connect_main(int socket_id, st
     }
 
     // Registra dispositivo
-    usuario->devices->push_back({socket_id, -1, deviceID});
+    Device *device = new Device();
+    device->deviceID = deviceID;
+    device->socket = socket_id;
+    usuario->devices->push_back(device);
 
     pthread_mutex_unlock(usuario->devices_lock);
 
-    return DeviceConnectReturn(usuario, MAIN_CONNECTION, deviceID);
-}
-
-// Conecta thread como conexão de eventos
-std::optional<DeviceConnectReturn> DeviceManager::connect_event(int socket_id, std::string &user, uint8_t deviceID)
-{
-    // Evita alteração enquanto lê
-    pthread_mutex_lock(&usuarios_lock);
-
-    auto usuario = usuarios[user];
-
-    // usuario já deveria existir, só pode ser criado em connect_main
-    if (usuario == nullptr)
-    {
-        pthread_mutex_unlock(&usuarios_lock);
-        return std::nullopt;
-    }
-
-    pthread_mutex_unlock(&usuarios_lock);
-
-    bool found = false;
-
-    // Precisamos garantir que não haja alteração da lista de dispositivos
-    pthread_mutex_lock(usuario->devices_lock);
-
-    // Procura pelo dispositivo por deviceID e registra como thread de eventos caso encontre
-    for (size_t i = 0; i < usuario->devices->size(); i++)
-    {
-        if ((*usuario->devices)[i].deviceID == deviceID)
-        {
-            (*usuario->devices)[i].event_socket = socket_id;
-            found = true;
-            break;
-        }
-    }
-
-    pthread_mutex_unlock(usuario->devices_lock);
-
-    // Não encontrou dispositivo com determinado ID
-    if (!found)
-    {
-        return std::nullopt;
-    }
-
-    return DeviceConnectReturn(usuario, EVENT_CONNECTION, deviceID);
+    return DeviceConnectReturn(device, usuario, deviceID);
 }
 
 // Desconecta determinado dispositivo de um usuário, os sockets serão fechados por
@@ -305,7 +315,7 @@ void DeviceManager::disconnect(std::string &user, uint8_t id)
         return;
     }
 
-    Device device;
+    Device *device;
     size_t index;
     bool found = false;
 
@@ -314,7 +324,7 @@ void DeviceManager::disconnect(std::string &user, uint8_t id)
 
     for (index = 0; index < usuario->devices->size(); index++)
     {
-        if (usuario->devices->at(index).deviceID == id)
+        if (usuario->devices->at(index)->deviceID == id)
         {
             device = usuario->devices->at(index);
             found = true;
@@ -333,7 +343,8 @@ void DeviceManager::disconnect(std::string &user, uint8_t id)
     usuario->devices->erase(usuario->devices->begin() + index);
 
     // Encerra sockets do dispositivo
-    device.close_sockets();
+    device->close_sockets();
+    delete device;
 
     pthread_mutex_unlock(usuario->devices_lock);
 }
@@ -346,11 +357,6 @@ void DeviceManager::disconnect_all(void)
 
     for (auto usuario : usuarios)
     {
-        for (auto device : *usuario.second->devices)
-        {
-            device.close_sockets();
-        }
-
         // User foi dinamicamente alocado
         delete usuario.second;
     }

@@ -25,13 +25,12 @@ std::vector<char *> splitComando(char *comando);
 // Imprime uma lista de File's
 void print_files(std::vector<File> files);
 
-// Faz requisição para conectar dispositivo, dependendo de is_main_connection estará conectando
-//   como socket principal ou socket de eventos, dadosConexao terá campo correspondente alterado
-int conecta_device(DadosConexao &dadosConexao, bool is_main_connection);
+// Faz requisição para conectar dispositivo, dadosConexao terá campo correspondente alterado
+int conecta_device(DadosConexao &dadosConexao);
 
 // Remove sync_dir_user local e baixa os arquivos presentes no servidor
-// Usará o socket principal para requisitar a slita de arquivos do servidor, então para cada arquivo
-//   dessa lista o arquivo será requisitado e salvo em sync_dir
+// Requisitará a lista de arquivos do servidor, então para cada arquivo dessa lista o arquivo será
+//   requisitado e salvo em sync_dir
 int get_sync_dir(DadosConexao &dadosConexao);
 
 // Remove path e seus filhos recursivamente
