@@ -8,7 +8,7 @@ Permitir múltiplas leituras dos arquivos do usuário no servidor (leitores/escr
 
 Toda escrita e leitura base de pacotes deverão ser feitas pelas funções são feitas pelas funções `read_package_from_socket` e `write_package_to_socket`. Essas funções irão exibir os pacotes recebidos e enviados no `stderr` caso a macro `DEBUG_PACOTE` sejá verdadeira.
 
-Os pacotes antes de serem enviados são convertido para big-endian, na leitura esses são convertidos para a representação local. As duas funções acima executam as conversões automaticamente. Os pacotes são declarados com todos os seus campos com alingas(8) para ter um padding bem definido e simples de calcular.
+Os pacotes antes de serem enviados são convertido para big-endian, na leitura esses são convertidos para a representação local. As duas funções acima executam as conversões automaticamente. Os pacotes são declarados com todos os seus campos com alignas(8) para ter um padding bem definido e simples de calcular.
 
 ## Conexão
 
@@ -24,7 +24,7 @@ Para simplificar a comunicação, após um evento FILE_MODIFIED o conteúdo do a
 
 ### Comunicação dos pacotes
 
-A comunicação é iniciada com a identificação do usuário, um usuário deve informar seu nome e o servidor irá responder com o ID do dispotivo no caso de sucesso, ou rejeitará a conexão no caso de já existirem dois dispositivos conectados.
+A comunicação é iniciada com a identificação do usuário, um usuário deve informar seu nome e o servidor irá responder com o ID do dispositivo no caso de sucesso, ou rejeitará a conexão no caso de já existirem dois dispositivos conectados.
 
 As tabelas demonstram os pacotes enviados em ordem, \[alt. n\] representam alternativas.
 
@@ -53,7 +53,7 @@ Loop de pacotes servidor -> cliente:
 
 | Agente                | Pacote                           | Descrição                                                                                           |
 | --------------------- | -------------------------------- | --------------------------------------------------------------------------------------------------- |
-| \[alt. 1\] servidor   | PackageFileList                  | Item da lista de arquivo (enviado apenas como responsta a requisição PackageRequestFileList prévia) |
+| \[alt. 1\] servidor   | PackageFileList                  | Item da lista de arquivo (enviado apenas como resposta à requisição PackageRequestFileList prévia) |
 | \[alt. 2\] servidor   | PackageChangeEvent FILE_DELETED  | Outro dispositivo removeu o arquivo filename1 de seu diretório sync dir local                       |
 | \[alt. 3\] servidor   | PackageChangeEvent FILE_CREATED  | Outro dispositivo criou o arquivo filename1 em seu diretório sync dir local                         |
 | \[alt. 4\] servidor   | PackageChangeEvent FILE_MODIFIED | Outro dispositivo modificou o arquivo filename1 em seu diretório sync dir local                     |
