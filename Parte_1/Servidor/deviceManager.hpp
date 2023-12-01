@@ -96,7 +96,7 @@ public:
     DeviceManager();
     ~DeviceManager();
 
-    // Conecta thread como dispositivo
+    // Conecta thread como dispositivo de determinado usuário
     std::optional<DeviceConnectReturn> connect(int socket_id, std::string &user);
 
     // Desconecta determinado dispositivo de um usuário, os sockets serão fechados por

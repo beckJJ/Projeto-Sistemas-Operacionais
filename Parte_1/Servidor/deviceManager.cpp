@@ -233,7 +233,7 @@ DeviceManager::~DeviceManager()
     disconnect_all();
 }
 
-// Conecta thread como conexão principal
+// Conecta thread como dispositivo de determinado usuário
 std::optional<DeviceConnectReturn> DeviceManager::connect(int socket_id, std::string &user)
 {
     uint8_t deviceID;
