@@ -31,15 +31,13 @@ void handleChangeEvent(int socket_id, int tid, PackageChangeEvent &changeEvent, 
             break;
         }
 
-        pthread_mutex_unlock(user->files_lock);
-
         if (!remove(path1.c_str()))
         {
-            pthread_mutex_lock(user->files_lock);
             user->remove_file(changeEvent.filename1);
-            pthread_mutex_unlock(user->files_lock);
             propagate_event = true;
         }
+
+        pthread_mutex_unlock(user->files_lock);
 
         break;
     case FILE_CREATED:
@@ -54,31 +52,31 @@ void handleChangeEvent(int socket_id, int tid, PackageChangeEvent &changeEvent, 
             break;
         }
 
-        pthread_mutex_unlock(user->files_lock);
-
         fp = fopen(path1.c_str(), "w");
 
         if (fp)
         {
-            pthread_mutex_lock(user->files_lock);
             user->update_file_info(path1.c_str(), changeEvent.filename1);
-            pthread_mutex_unlock(user->files_lock);
             fclose(fp);
             propagate_event = true;
         }
+
+        pthread_mutex_unlock(user->files_lock);
 
         break;
     case FILE_MODIFIED:
         path1.append(changeEvent.filename1);
 
+        pthread_mutex_lock(user->files_lock);
+
         // Após o evento FILE_MODIFIED haverá pacotes de upload de arquivo
         if (!read_upload_file_and_save(socket_id, path1.c_str()))
         {
-            pthread_mutex_lock(user->files_lock);
             user->update_file_info(path1.c_str(), changeEvent.filename1);
-            pthread_mutex_unlock(user->files_lock);
             propagate_event = true;
         }
+
+        pthread_mutex_unlock(user->files_lock);
 
         break;
     case FILE_RENAME:
@@ -94,16 +92,14 @@ void handleChangeEvent(int socket_id, int tid, PackageChangeEvent &changeEvent, 
             break;
         }
 
-        pthread_mutex_unlock(user->files_lock);
-
         if (!rename(path1.c_str(), path2.c_str()))
         {
-            pthread_mutex_lock(user->files_lock);
             user->rename_file(changeEvent.filename1, changeEvent.filename2);
             user->update_file_info(path2.c_str(), changeEvent.filename2);
-            pthread_mutex_unlock(user->files_lock);
             propagate_event = true;
         }
+
+        pthread_mutex_unlock(user->files_lock);
 
         break;
     default:
@@ -178,7 +174,6 @@ void serverLoop(int socket_id, int tid, std::string &username, User *&user, Devi
             path.append(package.package_specific.uploadFile.name);
 
             pthread_mutex_lock(user->files_lock);
-            pthread_mutex_lock(device->socket_lock);
 
             if (read_file_and_save(socket_id, path.c_str()))
             {
@@ -189,7 +184,6 @@ void serverLoop(int socket_id, int tid, std::string &username, User *&user, Devi
                 user->add_file_or_replace(package.package_specific.uploadFile);
             }
 
-            pthread_mutex_unlock(device->socket_lock);
             pthread_mutex_unlock(user->files_lock);
 
             break;
