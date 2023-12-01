@@ -12,71 +12,55 @@ Os pacotes antes de serem enviados são convertido para big-endian, na leitura e
 
 ## Conexão
 
-Há dois tipos de conexão para cada dispositivo: conexão principal e conexão de eventos. A conexão principal espera pelos pacotes que são enviados pelos comandos que o usuário digita. A conexão de eventos é onde o servidor espera por pacotes do tipo CHANGE_EVENT, indicando modificações nos arquivos, no caso de um evento FILE_MODIFIED o conteúdo é enviado em seguida.
+A conexão foi desenvolvida com a expectativa que ao se iniciar uma sequência de pacotes a mesma continuará sendo enviada até o fim, em outras palavras o envio de um arquivo impedirá o envio de eventos. Essa medida foi adotada para simplificar a comunicação entre cliente e servidor.
 
-As tabelas demonstram a conexão em ordem, \[alt. nn\] representam alternativas.
+Para o cliente, há três threads (todas as threads) com acesso ao socket, para impedir múltiplas escritas é usada uma mutex. Não é necessário sincronização na leitura, pois é a leitura é feita por apenas uma thread.
+
+A thread de eventThread, responsável por escutar eventos do inotify do sync_dir local, acessa o socket para escrita, o evento FILE_MODIFIED será seguido do conteúdo modificado, o envio é protegido por um mutex_lock. A thread de readThread, responsável por receber os pacotes enviados pelo servidor para o cliente, ficará lendo pacotes enviados do servidor, esses pacotes são tanto pacotes de eventos quanto pacotes associados a respostas de requisições feitas pelo usuário (há um `pthread_cond_t` associado a pacotes de listagem de arquivos). A thread em myClient, responsável por ler os comandos digitados pelo usuário, utiliza a mesma mutex_lock da thread eventThread para enviar as requisições para o servidor.
+
+No servidor há: Usuários, usuário e dispositivo. Usuários é um `std::map` associando o nome de usuário a uma estrutura de usuário, alterações em usuários é protegido por mutex_lock. Um usuário é uma estrutura que tem informações sobre os dispositivos e listagem de arquivo em memória, para alterar os dispositivos utiliza-se uma mutex lock, para alterar os arquivos usa-se outra mutex_lock. Um dispositivo é uma conexão específica de um usuário, um dispositivo tem uma `pthread_t` que é a thread atualmente empregada a comunicar-se com o usuário (é usado para cancelar a thread), tendo também associado a socket usada e uma mutex lock para protegê-la, a mutex lock é adiquirida tanto para eventos quanto para resposta de requisições que foram geradas pela interface.
+
+Para simplificar a comunicação, após um evento FILE_MODIFIED o conteúdo do arquivo vem logo em seguida.
 
 ### Comunicação dos pacotes
 
-Identificação:
+A comunicação é iniciada com a identificação do usuário, um usuário deve informar seu nome e o servidor irá responder com o ID do dispotivo no caso de sucesso, ou rejeitará a conexão no caso de já existirem dois dispositivos conectados.
 
-Agente|Pacote|Descrição
--|-|-
-cliente|PackageUserIndentification|Identificação inicial do usuário, deverá conter seu nome e indicar tipo de conexão como principal
-servidor|PackageUserIndentificationResponse|Indica se conexão foi aceita ou rejeitada, caso aceita deverá conter o ID do dispositivo
+As tabelas demonstram os pacotes enviados em ordem, \[alt. n\] representam alternativas.
 
-Loop de pacotes cliente -> servidor:
+Identificação (primeira etapa):
 
-Agente|Pacote|Descrição
--|-|-
-\[alt. 1\] cliente|PackageRequestFile|Usuário deseja receber um arquivo do servidor
-\[alt. 1-1\] servidor|PackageFileNotFound|Arquivo não encontrado na lista de arquivos do usuário
-\[alt. 1-2\] servidor|PackageUploadFile|Indica que será feito upload do arquivo arquivo indicado pelo pacote
-\[alt. 1-2\] servidor|PackageFileContent|Conteúdo do arquivo requisitado
-\[alt. 2\] cliente|PackageRequestFileList|Usuário deseja receber a lista de arquivos presentes no servidor
-\[alt. 2\] servidor|PackageFileList|Item da lista de arquivo (campo de tamanho para quantos pacotes precisa ler, considera que já leu o primeiro)
-\[alt. 3\] cliente|PackageUploadFile|Usuário vai enviar um arquivo que deve ser salvo
-\[alt. 3\] cliente|PackageFileContent|Conteúdo de um arquivo (previamente definido sobre qual se trata)
-
-Loop de pacotes servidor -> client:
-
-Não há
-
-### Conexão de eventos
-
-DESATUALIZADO
-
-Identificação:
-
-Agente|Pacote|Descrição
--|-|-
-cliente|PackageUserIndentification|Identificação inicial do usuário, deverá conter seu nome, ID do dispositivo e indicar tipo de conexão como de evento
-servidor|PackageUserIndentificationResponse|Indica se conexão foi aceita ou rejeitada, caso aceita deverá conter o ID do dispositivo
+| Agente   | Pacote                             | Descrição                                                                                         |
+| -------- | ---------------------------------- | ------------------------------------------------------------------------------------------------- |
+| cliente  | PackageUserIndentification         | Identificação inicial do usuário, deverá conter seu nome e indicar tipo de conexão como principal |
+| servidor | PackageUserIndentificationResponse | Indica se conexão foi aceita ou rejeitada, caso aceita deverá conter o ID do dispositivo          |
 
 Loop de pacotes cliente -> servidor:
 
-Agente|Pacote|Descrição
--|-|-
-\[alt. 1\] cliente|PackageChangeEvent FILE_DELETED|Usuário removeu o arquivo filename1 de seu diretório sync dir local
-\[alt. 2\] cliente|PackageChangeEvent FILE_CREATED|Usuário criou o arquivo filename1 em seu diretório sync dir local
-\[alt. 3\] cliente|PackageChangeEvent FILE_MODIFIED|Usuário modificou o arquivo filename1 em seu diretório sync dir local
-\[alt. 3-1\] cliente|PackageFileNotFound|Usuário iria enviar o arquivo modificado, mas não foi possível acessá-lo
-\[alt. 3-2\] cliente|PackageUploadFile|Usuário enviará o conteúdo do arquivo modificado
-\[alt. 3-2\] cliente|PackageFileContent|Conteúdo do arquivo modificado
-\[alt. 4\] cliente|PackageChangeEvent FILE_RENAME|Usuário renomeou o arquivo filename1 para filename2 em seu diretório sync dir local
+| Agente                             | Pacote                           | Descrição                                                                                                     |
+| ---------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| \[alt. 1\] cliente   (interface)   | PackageRequestFileList           | Usuário deseja receber a lista de arquivos presentes no servidor                                              |
+| \[alt. 1\] servidor                | PackageFileList                  | Item da lista de arquivo (campo de tamanho para quantos pacotes precisa ler, considera que já leu o primeiro) |
+| \[alt. 2\] cliente   (eventThread) | PackageChangeEvent FILE_DELETED  | Usuário removeu o arquivo filename1 de seu diretório sync dir local                                           |
+| \[alt. 3\] cliente   (eventThread) | PackageChangeEvent FILE_CREATED  | Usuário criou o arquivo filename1 em seu diretório sync dir local                                             |
+| \[alt. 4\] cliente   (eventThread) | PackageChangeEvent FILE_MODIFIED | Usuário modificou o arquivo filename1 em seu diretório sync dir local                                         |
+| \[alt. 4-1\] cliente (eventThread) | PackageFileNotFound              | Usuário iria enviar o arquivo modificado, mas não foi possível acessá-lo                                      |
+| \[alt. 4-2\] cliente (eventThread) | PackageUploadFile                | Usuário enviará o conteúdo do arquivo modificado                                                              |
+| \[alt. 4-2\] cliente (eventThread) | PackageFileContent               | Conteúdo do arquivo modificado                                                                                |
+| \[alt. 5\] cliente   (eventThread) | PackageChangeEvent FILE_RENAME   | Usuário renomeou o arquivo filename1 para filename2 em seu diretório sync dir local                           |
 
-Loop de pacotes servidor -> client:
+Loop de pacotes servidor -> cliente:
 
-Agente|Pacote|Descrição
--|-|-
-\[alt. 1\] servidor|PackageChangeEvent FILE_DELETED|Outro dispositivo removeu o arquivo filename1 de seu diretório sync dir local
-\[alt. 2\] servidor|PackageChangeEvent FILE_CREATED|Outro dispositivo criou o arquivo filename1 em seu diretório sync dir local
-\[alt. 3\] servidor|PackageChangeEvent FILE_MODIFIED|Outro dispositivo modificou o arquivo filename1 em seu diretório sync dir local
-\[alt. 3\] cliente|PackageRequestFile|Pede para que o servidor envie o arquivo modificado
-\[alt. 3-1\] servidor|PackageFileNotFound|O arquivo seria enviado, mas não foi possível acessá-lo
-\[alt. 3-2\] servidor|PackageUploadFile|Conteúdo do arquivo modificado será enviado
-\[alt. 3-2\] servidor|PackageFileContent|Conteúdo do arquivo modificado
-\[alt. 4\] servidor|PackageChangeEvent FILE_RENAME|Outro dispositivo renomeou o arquivo filename1 para filename2 em seu diretório sync dir local
+| Agente                | Pacote                           | Descrição                                                                                           |
+| --------------------- | -------------------------------- | --------------------------------------------------------------------------------------------------- |
+| \[alt. 1\] servidor   | PackageFileList                  | Item da lista de arquivo (enviado apenas como responsta a requisição PackageRequestFileList prévia) |
+| \[alt. 2\] servidor   | PackageChangeEvent FILE_DELETED  | Outro dispositivo removeu o arquivo filename1 de seu diretório sync dir local                       |
+| \[alt. 3\] servidor   | PackageChangeEvent FILE_CREATED  | Outro dispositivo criou o arquivo filename1 em seu diretório sync dir local                         |
+| \[alt. 4\] servidor   | PackageChangeEvent FILE_MODIFIED | Outro dispositivo modificou o arquivo filename1 em seu diretório sync dir local                     |
+| \[alt. 4-1\] servidor | PackageFileNotFound              | O arquivo seria enviado, mas não foi possível acessá-lo                                             |
+| \[alt. 4-2\] servidor | PackageUploadFile                | Conteúdo do arquivo modificado será enviado                                                         |
+| \[alt. 4-2\] servidor | PackageFileContent               | Conteúdo do arquivo modificado                                                                      |
+| \[alt. 5\] servidor   | PackageChangeEvent FILE_RENAME   | Outro dispositivo renomeou o arquivo filename1 para filename2 em seu diretório sync dir local       |
 
 ## Servidor
 

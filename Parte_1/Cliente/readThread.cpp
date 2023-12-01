@@ -162,18 +162,9 @@ void *readThread(void *)
             dados_conexao.is_file_list_readed = true;
 
             pthread_mutex_unlock(dados_conexao.file_list_lock);
+
+            // Sinaliza condição
             pthread_cond_signal(dados_conexao.file_list_cond);
-            break;
-        // Resposta de PackageRequestFile, informa que não foi possível baixar
-        case FILE_NOT_FOUND:
-            printf("Arquivo requisitado nao existe.\n");
-            break;
-        // Resposta de PackageRequestFile, salva o conteúdo no cwd
-        case UPLOAD_FILE:
-            if (read_file_and_save(dados_conexao.socket, package.package_specific.uploadFile.name))
-            {
-                printf("Erro ao receber arquivo \"%s\".\n", package.package_specific.uploadFile.name);
-            }
             break;
         // Houve alguma alteração nos arquivos do servidor
         case CHANGE_EVENT:
