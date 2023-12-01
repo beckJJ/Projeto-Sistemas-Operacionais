@@ -104,16 +104,11 @@ void handleChangeEvent(PackageChangeEvent &changeEvent, std::string &path_base)
         path = path_base;
         path.append(changeEvent.filename1);
 
-        // Evita que usuário escreva pacotes enquanto o conteúdo do arquivo é recebido
-        pthread_mutex_lock(dados_conexao.socket_lock);
-
         // Após o evento FILE_MODIFIED haverá pacotes de upload de arquivo
         if (read_upload_file_and_save(dados_conexao.socket, path.c_str()))
         {
             printf("Nao foi possivel baixar versao modificada do arquivo \"%s\".\n", changeEvent.filename1);
         }
-
-        pthread_mutex_unlock(dados_conexao.socket_lock);
 
         break;
     // Renomeia arquivo no sync dir local

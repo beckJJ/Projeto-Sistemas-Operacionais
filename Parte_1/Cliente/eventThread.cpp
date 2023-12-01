@@ -18,7 +18,6 @@
 extern DadosConexao dados_conexao;
 extern PackageChangeEvent previousSyncedChangeEvent;
 extern pthread_mutex_t previousSyncedChangeEventLock;
-extern pthread_mutex_t socket_lock;
 thread_local int fd = -1;
 
 // Encerra thread
