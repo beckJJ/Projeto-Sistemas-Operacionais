@@ -76,13 +76,13 @@ A thread principal espera por comando digitados pelo usuario.
 
 A thread de eventos observa o diretório sync_dir local e envia os eventos gerados para o servidor.
 
-A thread de leitura recebe pacotes do servidor. Excepicionalmente o pacote PackageFileList envolve sinalização de condição, pois o comando list_server origina uma requisição para a listagem de arquivos no servidor. (*)
+A thread de leitura recebe pacotes do servidor. Excepcionalmente o pacote PackageFileList envolve sinalização de condição, pois o comando list_server origina uma requisição para a listagem de arquivos no servidor. (*)
 
 A escrita no socket é protegida por mutex.
 
 A escrita no socket é feita por apenas um thread (não utilizamos mutex).
 
-*: A condição que será sinalizada e aguardada é a condição de já ter recebido a listagem de arquivos, a thread que executa comandos do usuário enviará o pacote requisitando arquivos e então aguardará pelo sinal, com o sinal recebido a thread então exibirá a listagem dos arquivos. A thread de leitura deverá sinalizar que a leitura foi concluída quando terminar de ler os pacotes de listagem de arquivos.
+*: A condição que será sinalizada e aguardada é a condição de já ter recebido a listagem de arquivos. Nesse caso, a thread que executa comandos do usuário enviará o pacote requisitando arquivos, e então aguardará pelo sinal. Com o sinal recebido, a thread então exibirá a listagem dos arquivos. A thread de leitura deverá sinalizar que a leitura foi concluída, no momento do término da leitura dos pacotes da listagem de arquivos.
 
 ### get_sync_dir
 
