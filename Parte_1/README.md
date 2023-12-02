@@ -60,15 +60,13 @@ Loop de pacotes servidor -> cliente:
 
 ## Servidor
 
-Cada usuário terá no máximo dois dispositivos.
+Assume-se que cada usuário poderá conectar, simultaneamente ao servidor, no máximo dois dispositivos. Cada dispositivo tem um número identificador para diferenciá-los. Eventos gerados por um dispositivo não serão reenviados para esse mesmo dispositivo (ou seja, existe um controle baseado no número identificador do dispositivo). 
 
-Cada dispositivo tem um ID para diferenciá-los, eventos gerados por um dispositivo não serão reenviados para esse mesmo dispositivo, verifica-se o ID do mesmo.
+A leitura e modificação da lista de arquivos em memória é protegida por uma mutex_lock (para cada usuário, dispositivos a compartilham). 
 
-A leitura e modificação da lista de arquivos em memória é protegida por uma mutex_lock (para cada usuário, dispositivos a compartilham).
+A leitura e modificação da lista de dispositivos é protegida por uma mutex_lock (para cada usuário, dispositivos a compartilham). 
 
-A leitura e modificação da lista de dispositivos é protegida por uma mutex_lock (para cada usuário, dispositivos a compartilham).
-
-A leitura e modificação da map de usuários é protegida por uma mutex_lock.
+A leitura e modificação da estrutura map de usuários é protegida por uma mutex_lock. 
 
 ## Cliente
 
