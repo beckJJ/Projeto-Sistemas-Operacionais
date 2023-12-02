@@ -124,7 +124,7 @@ Para sincronização foram usadas mutexes, leituras são mutuamente exclusivas, 
 
 ### Loop de notificações
 
-Com dois dispositivos era possível obter um loop de notificações de eventos:
+Nos casos em que existiam dois dispositivos de um mesmo usuário conectados ao servidor, havia a possibilidade de ocorrer um loop de notificações, da forma exemplificada abaixo. 
 
 ```text
 [id=0x01] Dispositivo atual onde o arquivo 'teste' foi renomeado para 'exemplo':
@@ -137,7 +137,7 @@ Com dois dispositivos era possível obter um loop de notificações de eventos:
 3)  WRITE Package(CHANGE_EVENT, 0x02, FILE_RENAME, teste, exemplo)  <- Gerado pelo inotify, será propagado
 ```
 
-Para evitar isso o último evento de notificação enviado pelo servidor é armazenado no usuário, antes do usuário enviar o evento para o servidor é verificado se o evento é igual ao lido anteriormente (com exceção do id do dispositivo), se for o evento é ignorado. A verificação se encontra em Client/eventThread.cpp:187.
+Para garantir que isso seja evitado, o último evento de notificação é armazenado no usuário. Antes do usuário enviar o evento para o servidor, verifica-se se o evento em questão é igual ao que já foi lido anteriormente. Caso seja, o evento é ignorado. O código referente à essa verificação encontra-se em Cliente/eventThread.cpp:188.
 
 ```cpp
 // Envia eventos completados
@@ -167,9 +167,9 @@ for (auto userEvent : completeUserEvents)
 
 ### IN_CLOSE_WRITE após IN_CREATE
 
-Para a criação de arquivos (foi recebido um evento FILE_CREATE do servidor) é usado `fopen(file, "w")`, a criação do arquivo file irá gerar dois eventos em seguida: IN_CREATE e IN_CLOSE_WRITE, o evento IN_CLOSE_WRITE enviará então o conteúdo atualizado para o servidor que salvará no lugar correto. O problema ocorre quando utiliza-se dois dispositivos e no dispositivo 1 um arquivo qualquer era copiado para o diretório sincronizado, o inotify enviaria os eventos corretamente e o arquivo seria salvo no servidor, porém o dispositivo 2 para aplicar os eventos criados criaria o arquivo file, o que geraria os eventos IN_CREATE e IN_CLOSE_WRITE, com esse segundo IN_CLOSE_WRITE o servidor receberia o conteúdo vazio do arquivo recém criado e substituiria o conteúdo que havia sido armazenado do dispositivo 1, o resultado é que qualquer arquivo adicionado não teria conteúdo algum.
+Para a criação de arquivos (ou seja, nos casos em que é recebido um evento FILE_CREATE do servidor), utiliza-se fopen(file, "w"). A criação do arquivo file irá gerar dois eventos em seguida: IN_CREATE e IN_CLOSE_WRITE. O evento IN_CLOSE_WRITE enviará, então, o conteúdo atualizado para o servidor, que o salvará no lugar correto. O problema ocorre quando são utilizados dois dispositivos A e B por um mesmo usuário e, no dispositivo A, um arquivo qualquer é copiado para o diretório sincronizado. Nesse caso, normalmente o inotify enviaria os eventos corretamente, e o arquivo seria salvo no servidor. Porém, para aplicar os eventos criados, o dispositivo B criaria o arquivo file, o que geraria os eventos IN_CREATE e IN_CLOSE_WRITE.  Assim, temos um segundo IN_CLOSE_WRITE. Com isso, o servidor receberia o conteúdo vazio do arquivo recém-criado, e substituiria o conteúdo que havia sido armazenado do dispositivo A. Como resultado, qualquer arquivo adicionado não teria conteúdo algum. 
 
-Para solucionar esse problema verifica-se antes de enviar para o servidor o evento FILE_MODIFIED se o eventos anterior era IN_CREATE do mesmo arquivo e se o arquivo modificado está vazio, essas verificações indicam que o evento IN_CLOSE_WRITE foi gerado pela chamada de `fopen(file, "w")`, nesse caso o evento não será enviado para o servidor. A verificação se encontra em Client/eventThread.cpp:163.
+Para solucionar esse problema, é feita uma verificação para analisar (antes de realizar o envio da notificação do evento FILE_MODIFIED para o servidor) se o evento anterior correspondia a um IN_CREATE do mesmo arquivo, e se o arquivo modificado está vazio. Essas verificações indicam que o evento IN_CLOSE_WRITE foi gerado pela chamada de fopen(file, "w"). Nesse caso o evento não será enviado para o servidor. A verificação se encontra em Client/eventThread.cpp:164. 
 
 ```cpp
 // Adiciona FILE_MODIFIED caso IN_CLOSE_WRITE não seja disparado por criação de arquivo
