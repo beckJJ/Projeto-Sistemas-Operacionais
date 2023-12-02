@@ -20,7 +20,7 @@ Para simplificar a comunicação, após um evento FILE_MODIFIED, o conteúdo do 
 
 ### Comunicação dos pacotes
 
-A comunicação é iniciada com a identificação do usuário, um usuário deve informar seu nome e o servidor irá responder com o ID do dispositivo no caso de sucesso, ou rejeitará a conexão no caso de já existirem dois dispositivos conectados.
+A comunicação é iniciada com a identificação do usuário, que deve informar o seu nome. O servidor irá responder com o ID do dispositivo no caso de sucesso de conexão, ou rejeitará a conexão no caso de já existirem dois dispositivos conectados, que correspondam ao usuário em questão.
 
 As tabelas demonstram os pacotes enviados em ordem, \[alt. n\] representam alternativas.
 
