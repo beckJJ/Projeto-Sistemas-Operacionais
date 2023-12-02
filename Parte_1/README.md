@@ -60,7 +60,7 @@ Loop de pacotes servidor -> cliente:
 
 ## Servidor
 
-Assume-se que cada usuário poderá conectar, simultaneamente ao servidor, no máximo dois dispositivos. Cada dispositivo tem um número identificador para diferenciá-los. Eventos gerados por um dispositivo não serão reenviados para esse mesmo dispositivo (ou seja, existe um controle baseado no número identificador do dispositivo). 
+Assume-se que cada usuário poderá conectar, simultaneamente ao servidor, no máximo dois dispositivos. Cada dispositivo possui um número identificador para diferenciá-los. Eventos gerados por um dispositivo não serão reenviados para esse mesmo dispositivo (ou seja, existe um controle baseado no número identificador do dispositivo). 
 
 A leitura e modificação da lista de arquivos em memória é protegida por uma mutex_lock (para cada usuário, dispositivos a compartilham). 
 
