@@ -16,7 +16,7 @@ CC:=g++
 	-fsanitize=address \
 	-fsanitize=undefined
 
-CFLAGS:=$(HARDENING) -g -O2 -Wall -Wextra -pthread
+CFLAGS:=$(HARDENING) -g -O2 -Wall -Wextra -pthread -std=c++17
 
 # Configuração disponível por defines:
 #   DEBUG_PACOTE:              Imprime pacotes recebidos e escritos em stderr

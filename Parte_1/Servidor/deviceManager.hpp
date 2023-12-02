@@ -10,6 +10,7 @@
 #include <pthread.h>
 #include <iostream>
 #include <optional>
+#include <unistd.h>
 
 struct Device;
 struct User;
