@@ -22,41 +22,41 @@ Para simplificar a comunicação, após um evento FILE_MODIFIED, o conteúdo do 
 
 A comunicação é iniciada com a identificação do usuário, que deve informar o seu nome. O servidor irá responder com o ID do dispositivo no caso de sucesso de conexão, ou rejeitará a conexão no caso de já existirem dois dispositivos conectados, que correspondam ao usuário em questão.
 
-As tabelas demonstram os pacotes enviados em ordem, \[alt. n\] representam alternativas.
+As tabelas demonstram os pacotes enviados em ordem. \[alt. n\] representam alternativas.
 
 Identificação (primeira etapa):
 
 | Agente   | Pacote                             | Descrição                                                                                         |
 | -------- | ---------------------------------- | ------------------------------------------------------------------------------------------------- |
-| cliente  | PackageUserIndentification         | Identificação inicial do usuário, deverá conter seu nome e indicar tipo de conexão como principal |
-| servidor | PackageUserIndentificationResponse | Indica se conexão foi aceita ou rejeitada, caso aceita deverá conter o ID do dispositivo          |
+| cliente  | PackageUserIndentification         | Identificação inicial do usuário. Deverá conter seu nome e indicar tipo de conexão como principal. |
+| servidor | PackageUserIndentificationResponse | Indica se conexão foi aceita ou rejeitada. Caso seja aceita, deverá conter o ID do dispositivo conectado.          |
 
 Loop de pacotes cliente -> servidor:
 
 | Agente                             | Pacote                           | Descrição                                                                                                     |
 | ---------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| \[alt. 1\] cliente   (interface)   | PackageRequestFileList           | Usuário deseja receber a lista de arquivos presentes no servidor                                              |
-| \[alt. 1\] servidor                | PackageFileList                  | Item da lista de arquivo (campo de tamanho para quantos pacotes precisa ler, considera que já leu o primeiro) |
-| \[alt. 2\] cliente   (eventThread) | PackageChangeEvent FILE_DELETED  | Usuário removeu o arquivo filename1 de seu diretório sync dir local                                           |
-| \[alt. 3\] cliente   (eventThread) | PackageChangeEvent FILE_CREATED  | Usuário criou o arquivo filename1 em seu diretório sync dir local                                             |
-| \[alt. 4\] cliente   (eventThread) | PackageChangeEvent FILE_MODIFIED | Usuário modificou o arquivo filename1 em seu diretório sync dir local                                         |
-| \[alt. 4-1\] cliente (eventThread) | PackageFileNotFound              | Usuário iria enviar o arquivo modificado, mas não foi possível acessá-lo                                      |
-| \[alt. 4-2\] cliente (eventThread) | PackageUploadFile                | Usuário enviará o conteúdo do arquivo modificado                                                              |
-| \[alt. 4-2\] cliente (eventThread) | PackageFileContent               | Conteúdo do arquivo modificado                                                                                |
-| \[alt. 5\] cliente   (eventThread) | PackageChangeEvent FILE_RENAME   | Usuário renomeou o arquivo filename1 para filename2 em seu diretório sync dir local                           |
+| \[alt. 1\] cliente   (interface)   | PackageRequestFileList           | Usuário deseja receber a lista de arquivos presentes no servidor.                                        |
+| \[alt. 1\] servidor                | PackageFileList                  | Item da lista de arquivo (campo de tamanho para quantos pacotes precisa ler, considera que já leu o primeiro). |
+| \[alt. 2\] cliente   (eventThread) | PackageChangeEvent FILE_DELETED  | Usuário removeu o arquivo filename1 de seu diretório sync dir local                                          |
+| \[alt. 3\] cliente   (eventThread) | PackageChangeEvent FILE_CREATED  | Usuário criou o arquivo filename1 em seu diretório sync dir local.                                             |
+| \[alt. 4\] cliente   (eventThread) | PackageChangeEvent FILE_MODIFIED | Usuário modificou o arquivo filename1 em seu diretório sync dir local.                                         |
+| \[alt. 4-1\] cliente (eventThread) | PackageFileNotFound              | Usuário iria enviar o arquivo modificado, mas não foi possível acessá-lo.                                      |
+| \[alt. 4-2\] cliente (eventThread) | PackageUploadFile                | Usuário enviará o conteúdo do arquivo modificado.                                                            |
+| \[alt. 4-2\] cliente (eventThread) | PackageFileContent               | Conteúdo do arquivo modificado.                                                                                |
+| \[alt. 5\] cliente   (eventThread) | PackageChangeEvent FILE_RENAME   | Usuário renomeou o arquivo filename1 para filename2 em seu diretório sync dir local.                           |
 
 Loop de pacotes servidor -> cliente:
 
 | Agente                | Pacote                           | Descrição                                                                                           |
 | --------------------- | -------------------------------- | --------------------------------------------------------------------------------------------------- |
-| \[alt. 1\] servidor   | PackageFileList                  | Item da lista de arquivo (enviado apenas como resposta à requisição PackageRequestFileList prévia) |
-| \[alt. 2\] servidor   | PackageChangeEvent FILE_DELETED  | Outro dispositivo removeu o arquivo filename1 de seu diretório sync dir local                       |
-| \[alt. 3\] servidor   | PackageChangeEvent FILE_CREATED  | Outro dispositivo criou o arquivo filename1 em seu diretório sync dir local                         |
-| \[alt. 4\] servidor   | PackageChangeEvent FILE_MODIFIED | Outro dispositivo modificou o arquivo filename1 em seu diretório sync dir local                     |
-| \[alt. 4-1\] servidor | PackageFileNotFound              | O arquivo seria enviado, mas não foi possível acessá-lo                                             |
-| \[alt. 4-2\] servidor | PackageUploadFile                | Conteúdo do arquivo modificado será enviado                                                         |
-| \[alt. 4-2\] servidor | PackageFileContent               | Conteúdo do arquivo modificado                                                                      |
-| \[alt. 5\] servidor   | PackageChangeEvent FILE_RENAME   | Outro dispositivo renomeou o arquivo filename1 para filename2 em seu diretório sync dir local       |
+| \[alt. 1\] servidor   | PackageFileList                  | Item da lista de arquivo (enviado apenas como resposta à requisição PackageRequestFileList prévia). |
+| \[alt. 2\] servidor   | PackageChangeEvent FILE_DELETED  | Outro dispositivo removeu o arquivo filename1 de seu diretório sync dir local.                       |
+| \[alt. 3\] servidor   | PackageChangeEvent FILE_CREATED  | Outro dispositivo criou o arquivo filename1 em seu diretório sync dir local.                         |
+| \[alt. 4\] servidor   | PackageChangeEvent FILE_MODIFIED | Outro dispositivo modificou o arquivo filename1 em seu diretório sync dir local.                    |
+| \[alt. 4-1\] servidor | PackageFileNotFound              | O arquivo seria enviado, mas não foi possível acessá-lo.                                           |
+| \[alt. 4-2\] servidor | PackageUploadFile                | Conteúdo do arquivo modificado será enviado.                                                         |
+| \[alt. 4-2\] servidor | PackageFileContent               | Conteúdo do arquivo modificado.                                                                    |
+| \[alt. 5\] servidor   | PackageChangeEvent FILE_RENAME   | Outro dispositivo renomeou o arquivo filename1 para filename2 em seu diretório sync dir local.       |
 
 ## Servidor
 
@@ -64,7 +64,7 @@ Cada usuário terá no máximo dois dispositivos.
 
 Cada dispositivo tem um ID para diferenciá-los, eventos gerados por um dispositivo não serão reenviados para esse mesmo dispositivo, verifica-se o ID do mesmo.
 
-A leitura e modificação da lista de arquivos em memória é protegida por uma mutex_lock (para cada usuário, dispositivos a compartilham). (ver TODO)
+A leitura e modificação da lista de arquivos em memória é protegida por uma mutex_lock (para cada usuário, dispositivos a compartilham).
 
 A leitura e modificação da lista de dispositivos é protegida por uma mutex_lock (para cada usuário, dispositivos a compartilham).
 
@@ -78,11 +78,11 @@ A thread principal espera por comando digitados pelo usuario.
 
 A thread de eventos observa o diretório sync_dir local e envia os eventos gerados para o servidor.
 
-A thread de leitura recebe pacotes do servidor, excepicionalmente o pacote PackageFileList envolve sinalização de condição, pois o comando list_server origina uma requisição para a listagem de arquivos no servidor. (*)
+A thread de leitura recebe pacotes do servidor. Excepicionalmente o pacote PackageFileList envolve sinalização de condição, pois o comando list_server origina uma requisição para a listagem de arquivos no servidor. (*)
 
-A escrita na socket é protegida por mutex.
+A escrita no socket é protegida por mutex.
 
-A escrita na socket é feita por apenas um thread, não é usado mutex.
+A escrita no socket é feita por apenas um thread (não utilizamos mutex).
 
 *: A condição que será sinalizada e aguardada é a condição de já ter recebido a listagem de arquivos, a thread que executa comandos do usuário enviará o pacote requisitando arquivos e então aguardará pelo sinal, com o sinal recebido a thread então exibirá a listagem dos arquivos. A thread de leitura deverá sinalizar que a leitura foi concluída quando terminar de ler os pacotes de listagem de arquivos.
 
