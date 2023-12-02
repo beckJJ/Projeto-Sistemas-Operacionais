@@ -133,7 +133,7 @@ Nos casos em que existiam dois dispositivos de um mesmo usuário conectados ao s
 3)  WRITE Package(CHANGE_EVENT, 0x02, FILE_RENAME, teste, exemplo)  <- Gerado pelo inotify, será propagado
 ```
 
-Para garantir que isso seja evitado, o último evento de notificação é armazenado no usuário. Antes do usuário enviar o evento para o servidor, verifica-se se o evento em questão é igual ao que já foi lido anteriormente. Caso seja, o evento é ignorado. O código referente à essa verificação encontra-se em Cliente/eventThread.cpp:188.
+Para garantir que isso seja evitado, o último evento de notificação é armazenado no usuário. Antes do usuário enviar o evento para o servidor, verifica-se se o evento em questão é igual ao que já foi lido anteriormente. Caso seja, o evento é ignorado. O código referente à essa verificação encontra-se em Cliente/eventThread.cpp:187.
 
 ```cpp
 // Envia eventos completados
