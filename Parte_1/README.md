@@ -1,26 +1,22 @@
 # Projeto Sistemas Operacionais II - Parte 1
 
-## TODO
-
-Permitir múltiplas leituras dos arquivos do usuário no servidor (leitores/escritores, obter listagem de arquivos e um arquivo deve ser possível ocorrer ao mesmo).
-
 ## Geral
 
-Toda escrita e leitura base de pacotes deverão ser feitas pelas funções são feitas pelas funções `read_package_from_socket` e `write_package_to_socket`. Essas funções irão exibir os pacotes recebidos e enviados no `stderr` caso a macro `DEBUG_PACOTE` sejá verdadeira.
+As operações de leitura e escrita de pacotes deverão ser feitas pelas funções `read_package_from_socket` e `write_package_to_socket`. Essas funções irão exibir os pacotes recebidos e enviados no `stderr`, caso a macro `DEBUG_PACOTE` seja verdadeira.
 
-Os pacotes antes de serem enviados são convertido para big-endian, na leitura esses são convertidos para a representação local. As duas funções acima executam as conversões automaticamente. Os pacotes são declarados com todos os seus campos com alignas(8) para ter um padding bem definido e simples de calcular.
+Antes de serem enviados, o conteúdo dos pacotes é convertido para o formato big-endian. Ao serem recebidos por um destinatário (cliente ou servidor), o conteúdo é convertido para a representação local, utilizada no sistema do destinatário. Todos os campos dos pacotes são declarados com utilização da primitiva alignas(), dessa forma garantindo um padding bem definido e simples de calcular. 
 
 ## Conexão
 
-A conexão foi desenvolvida com a expectativa que ao se iniciar uma sequência de pacotes a mesma continuará sendo enviada até o fim, em outras palavras o envio de um arquivo impedirá o envio de eventos. Essa medida foi adotada para simplificar a comunicação entre cliente e servidor.
+A conexão foi desenvolvida com a expectativa de que ao iniciarmos o envio de uma sequência de pacotes, essa sequência continuará sendo enviada até o fim. Em suma, o envio de um arquivo impedirá o envio de eventos. Essa medida foi adotada para simplificar a comunicação entre cliente e servidor.
 
-Para o cliente, há três threads (todas as threads) com acesso ao socket, para impedir múltiplas escritas é usada uma mutex. Não é necessário sincronização na leitura, pois é a leitura é feita por apenas uma thread.
+Para o cliente, há três threads (que representam todas as threads utilizadas na aplicação cliente) com acesso ao socket. Para impedir que ocorram múltiplas escritas ao mesmo tempo, usamos mutexes. Não é necessário sincronização na leitura, pois é a leitura é feita por apenas uma thread.
 
-A thread de eventThread, responsável por escutar eventos do inotify do sync_dir local, acessa o socket para escrita, o evento FILE_MODIFIED será seguido do conteúdo modificado, o envio é protegido por um mutex_lock. A thread de readThread, responsável por receber os pacotes enviados pelo servidor para o cliente, ficará lendo pacotes enviados do servidor, esses pacotes são tanto pacotes de eventos quanto pacotes associados a respostas de requisições feitas pelo usuário (há um `pthread_cond_t` associado a pacotes de listagem de arquivos). A thread em myClient, responsável por ler os comandos digitados pelo usuário, utiliza a mesma mutex_lock da thread eventThread para enviar as requisições para o servidor.
+A thread de eventThread, responsável por escutar eventos do inotify do sync_dir local, acessa o socket para escrita. Em seguida, o evento FILE_MODIFIED será seguido do conteúdo modificado, e o envio é protegido por um mutex_lock. A thread de readThread, responsável por receber os pacotes enviados pelo servidor para o cliente, ficará lendo pacotes enviados do servidor. Esses pacotes podem ser pacotes de eventos ou pacotes associados às respostas de requisições feitas pelo usuário (há um `pthread_cond_t` associado aos pacotes de listagem dos arquivos). A thread em myClient, responsável por ler os comandos digitados pelo usuário, utiliza a mesma mutex_lock da thread eventThread, para enviar as requisições para o servidor.
 
-No servidor há: Usuários, usuário e dispositivo. Usuários é um `std::map` associando o nome de usuário a uma estrutura de usuário, alterações em usuários é protegido por mutex_lock. Um usuário é uma estrutura que tem informações sobre os dispositivos e listagem de arquivo em memória, para alterar os dispositivos utiliza-se uma mutex lock, para alterar os arquivos usa-se outra mutex_lock. Um dispositivo é uma conexão específica de um usuário, um dispositivo tem uma `pthread_t` que é a thread atualmente empregada a comunicar-se com o usuário (é usado para cancelar a thread), tendo também associado a socket usada e uma mutex lock para protegê-la, a mutex lock é adiquirida tanto para eventos quanto para resposta de requisições que foram geradas pela interface.
+No servidor existem as seguintes definições: Usuários, usuário e dispositivo. Usuários é um `std::map` associando o nome de usuário a uma estrutura de usuário, alterações em usuários é protegido por mutex_lock. Um usuário é uma estrutura que tem informações sobre os dispositivos e listagem dos arquivos em memória. Para alterar os dispositivos, usamos uma mutex lock. Para alterar os arquivos usamos outra mutex_lock. Um dispositivo é uma conexão específica de um usuário, e cada dispositivo possui uma `pthread_t`, sendo a thread atualmente empregada a comunicar-se com o usuário, também sendo realizada uma associação com o socket utilizado e uma mutex lock para protegê-la. A mutex lock é adquirida tanto para eventos quanto para resposta de requisições, geradas pela interface.
 
-Para simplificar a comunicação, após um evento FILE_MODIFIED o conteúdo do arquivo vem logo em seguida.
+Para simplificar a comunicação, após um evento FILE_MODIFIED, o conteúdo do arquivo modificado é recebido logo em seguida.
 
 ### Comunicação dos pacotes
 
