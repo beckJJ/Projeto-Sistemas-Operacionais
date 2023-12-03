@@ -24,7 +24,7 @@ CFLAGS:=$(HARDENING) -g -O2 -Wall -Wextra -pthread -std=c++17
 #   DEBUG_PACOTE_FILE_CONTENT: Imprime conteúdo do arquivo enviado no pacote em hex
 #   LIMPA_TELA_NOOP:           Função limpatela() não limpará a tela
 
-DEFINES:=-DDEBUG_PACOTE=true -DDEBUG_PACOTE_TID=true -DLIMPA_TELA_NOOP=false
+DEFINES:=-DDEBUG_PACOTE=false -DDEBUG_PACOTE_TID=false -DLIMPA_TELA_NOOP=false
 # DEFINES:=-DDEBUG_PACOTE=true
 
 default: all
