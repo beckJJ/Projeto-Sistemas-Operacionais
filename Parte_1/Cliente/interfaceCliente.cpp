@@ -25,57 +25,85 @@ int limpaTela() /* Limpa o conteudo do terminal que executa a aplicacao. */
 #endif
 }
 
-void menu_help() /* Exibe uma lista de comandos possiveis de serem executados, informando a sua sintaxe e a sua utilidade. */
+void menu_help_comandos()
 {
     limpaTela();
-    printf("\nLISTA DE COMANDOS:\n");
+    printf("\nPara uma explicacao sobre cada comando, digite \"help <comando>\"\n\n");
+    printf("COMANDOS DISPONIVEIS:\n\n");
+    printf("1.  upload <path/filename.ext>\n");
+    printf("2.  download <filename.ext>\n");
+    printf("3.  delete <filename.ext>\n");
+    printf("4.  list_server\n");
+    printf("5.  list_client\n");
+    printf("6.  exit\n");
+    printf("7.  help\n");
+}
 
-    printf("\n------------------------------------------------------------------------------\n");
-
-    printf("\nCOMANDO 1:");
-    printf("\n\nSINTAXE:\nupload <path/filename.ext>");
-    printf("\n\nDESCRICAO:\n");
-    printf("Envia o arquivo filename.ext para o servidor, colocando-o no 'sync_dir' do\n");
-    printf("servidor e propagando-o para todos os dispositivos do usuario.\n");
-    printf("e.g. upload /home/user/MyFolder/filename.ext\n");
-
-    printf("\n------------------------------------------------------------------------------\n");
-
-    printf("\nCOMANDO 2:");
-    printf("\n\nSINTAXE:\ndownload <filename.ext>");
-    printf("\n\nDESCRICAO:\n");
-    printf("Faz uma copia nao sincronizada do arquivo filename.ext do servidor para\n");
-    printf("o diretorio local (de onde o servidor foi chamado).\n");
-    printf("e.g. download mySpreadsheet.xlsx\n");
-
-    printf("\n------------------------------------------------------------------------------\n");
-
-    printf("\nCOMANDO 3:");
-    printf("\n\nSINTAXE:\ndelete <filename.ext>");
-    printf("\n\nDESCRICAO:\n");
-    printf("Exclui o arquivo <filename.ext> de 'sync_dir'.\n");
-
-    printf("\n------------------------------------------------------------------------------\n");
-
-    printf("\nCOMANDO 4:");
-    printf("\n\nSINTAXE:\nlist_server");
-    printf("\n\nDESCRICAO:\n");
-    printf("Lista os arquivos salvos no servidor, associados ao usuario.\n");
-
-    printf("\n------------------------------------------------------------------------------\n");
-
-    printf("\nCOMANDO 5:");
-    printf("\n\nSINTAXE:\nlist_client");
-    printf("\n\nDESCRICAO:\n");
-    printf("Lista os arquivos salvos no diretorio 'sync_dir'\n, do dispositivo local do usuario.\n");
-
-    printf("\n------------------------------------------------------------------------------\n");
-
-    printf("\nCOMANDO 6:");
-    printf("\n\nSINTAXE:\nexit");
-    printf("\n\nDESCRICAO:\n");
-    printf("Fecha a sessao com o servidor.\n");
-
+void menu_help(int comando_id) /* Exibe uma lista de comandos possiveis de serem executados, informando a sua sintaxe e a sua utilidade. */
+{
+    limpaTela();
+        printf("\n------------------------------------------------------------------------------\n");
+    switch(comando_id) {
+    case 1:
+        printf("\nCOMANDO 1:");
+        printf("\n\nSINTAXE:\nupload <path/filename.ext>");
+        printf("\n\nDESCRICAO:\n");
+        printf("Envia o arquivo filename.ext para o servidor, colocando-o no 'sync_dir' do\n");
+        printf("servidor e propagando-o para todos os dispositivos do usuario.\n");
+        printf("e.g. upload /home/user/MyFolder/filename.ext\n");
+        break;
+    case 2:
+        printf("\nCOMANDO 2:");
+        printf("\n\nSINTAXE:\ndownload <filename.ext>");
+        printf("\n\nDESCRICAO:\n");
+        printf("Faz uma copia nao sincronizada do arquivo filename.ext do servidor para\n");
+        printf("o diretorio local (de onde o servidor foi chamado).\n");
+        printf("e.g. download mySpreadsheet.xlsx\n");
+        break;
+    case 3:
+        printf("\nCOMANDO 3:");
+        printf("\n\nSINTAXE:\ndelete <filename.ext>");
+        printf("\n\nDESCRICAO:\n");
+        printf("Exclui o arquivo <filename.ext> de 'sync_dir'.\n");
+        break;
+    case 4:
+        printf("\nCOMANDO 4:");
+        printf("\n\nSINTAXE:\nlist_server");
+        printf("\n\nDESCRICAO:\n");
+        printf("Lista os arquivos salvos no servidor, associados ao usuario.\n");
+        break;
+    case 5:    
+        printf("\nCOMANDO 5:");
+        printf("\n\nSINTAXE:\nlist_client");
+        printf("\n\nDESCRICAO:\n");
+        printf("Lista os arquivos salvos no diretorio 'sync_dir' do dispositivo local do usuario.\n");
+        break;
+    case 6:
+        printf("\nCOMANDO 6:");
+        printf("\n\nSINTAXE:\nexit");
+        printf("\n\nDESCRICAO:\n");
+        printf("Fecha a sessao com o servidor.\n");
+        break;
+    case 7:
+        printf("\nCOMANDO 7:");
+        printf("\n\nSINTAXE:\nhelp <comando>");
+        printf("\n\nDESCRICAO:\n");
+        printf("Imprime na tela uma explicacao de como utilizar o comando informado.\n");
+        printf("Pode ser informado tanto o nome do comando quanto o id do comando.\n");
+        printf("e.g. help upload\n");
+        break;
+    default:
+        printf("\nCOMANDO NAO ENCONTRADO!");
+        printf("\n\nCOMANDOS DISPONIVEIS:\n\n");
+        printf("1.  upload <path/filename.ext>\n");
+        printf("2.  download <filename.ext>\n");
+        printf("3.  delete <filename.ext>\n");
+        printf("4.  list_server\n");
+        printf("5.  list_client\n");
+        printf("6.  exit\n");
+        printf("7.  help <comando>\n");
+        break;
+    }
     printf("\n------------------------------------------------------------------------------\n");
 }
 
@@ -133,8 +161,33 @@ int executa_comando(DadosConexao &dados_conexao)
         return 1;
     }
 
-    else if (strcmp(dados_conexao.comando, COMANDO_HELP) == 0)
-        menu_help(); /* Exibe uma lista de comandos possiveis de serem executados, informando a sua sintaxe e a sua utilidade. */
+    else if (strncmp(dados_conexao.comando, COMANDO_HELP, 4) == 0) {
+        std::vector<char*> strings = splitComando(dados_conexao.comando);
+        if (strings.size() > 1) {
+            char *help_comando = strings[1];
+            int id_comando;
+            if (strcmp(help_comando, COMANDO_UPLOAD) == 0) {
+                id_comando = ID_COMANDO_UPLOAD;
+            } else if (strcmp(help_comando, COMANDO_DOWNLOAD) == 0) {
+                id_comando = ID_COMANDO_DOWNLOAD;
+            } else if (strcmp(help_comando, COMANDO_DELETE) == 0) {
+                id_comando = ID_COMANDO_DELETE;
+            } else if (strcmp(help_comando, COMANDO_LISTSERVER) == 0) {
+                id_comando = ID_COMANDO_LISTSERVER;
+            } else if (strcmp(help_comando, COMANDO_LISTCLIENT) == 0) {
+                id_comando = ID_COMANDO_LISTCLIENT;
+            } else if (strcmp(help_comando, COMANDO_EXIT) == 0) {
+                id_comando = ID_COMANDO_EXIT;
+            } else if (strcmp(help_comando, COMANDO_HELP) == 0) {
+                id_comando = ID_COMANDO_HELP;
+            } else {
+                id_comando = atoi(help_comando);
+            }
+            menu_help(id_comando);
+        } else {
+            menu_help_comandos();   
+        }
+    }
 
     else
         printf("\nComando invalido!\n");
