@@ -27,6 +27,12 @@ PackageUserIndentification::PackageUserIndentification(uint8_t deviceID, const c
 PackageUserIndentificationResponse::PackageUserIndentificationResponse(InitialUserIndentificationResponseStatus status, uint8_t deviceID)
     : status(status), deviceID(deviceID) {}
 
+PackageReplicaManagerIndentification::PackageReplicaManagerIndentification(uint8_t replicaManagerID) 
+    : replicaManagerID(replicaManagerID) {}
+
+PackageReplicaManagerIndentificationResponse::PackageReplicaManagerIndentificationResponse(InitialReplicaManagerIndentificationResponseStatus status, uint8_t replicaManagerID)
+    : status(status), replicaManagerID(replicaManagerID) {}
+
 PackageChangeEvent::PackageChangeEvent() : event((ChangeEvents)0), deviceID(0)
 {
     filename1[0] = '\0';
@@ -103,6 +109,12 @@ Package::Package(const Package &&rhs)
     case USER_INDENTIFICATION_RESPONSE:
         package_specific.userIdentificationResponse = std::move(rhs.package_specific.userIdentificationResponse);
         break;
+    case INITIAL_REPLICA_MANAGER_IDENTIFICATION:
+        package_specific.replicaManagerIdentification = std::move(rhs.package_specific.replicaManagerIdentification);
+        break;
+    case REPLICA_MANAGER_INDENTIFICATION_RESPONSE:
+        package_specific.replicaManagerIdentificationResponse = std::move(rhs.package_specific.replicaManagerIdentificationResponse);
+        break;
     case CHANGE_EVENT:
         package_specific.changeEvent = std::move(rhs.package_specific.changeEvent);
         break;
@@ -146,6 +158,11 @@ Package &Package::operator=(const Package &rhs)
     case USER_INDENTIFICATION_RESPONSE:
         package_specific.userIdentificationResponse = rhs.package_specific.userIdentificationResponse;
         break;
+    case INITIAL_REPLICA_MANAGER_IDENTIFICATION:
+        package_specific.replicaManagerIdentification = rhs.package_specific.replicaManagerIdentification;
+        break;
+    case REPLICA_MANAGER_INDENTIFICATION_RESPONSE:
+        package_specific.replicaManagerIdentificationResponse = rhs.package_specific.replicaManagerIdentificationResponse;
     case CHANGE_EVENT:
         package_specific.changeEvent = rhs.package_specific.changeEvent;
         break;
