@@ -22,7 +22,7 @@ enum PackageType : char
 {
     // Usado para que o usuário se identifique
     INITAL_USER_INDENTIFICATION,
-    // Resposta do servidor para identificação
+    // Resposta do servidor para identificação do usuario
     USER_INDENTIFICATION_RESPONSE,
     // Indica mudança nos arquivos, tanto cliente->servidor quanto servidor->cliente
     CHANGE_EVENT,
@@ -38,10 +38,21 @@ enum PackageType : char
     UPLOAD_FILE,
     // Indica que um arquivo que seria enviado não foi encontrado
     FILE_NOT_FOUND,
+    // Usado para que um novo RM se identifique
+    INITIAL_REPLICA_MANAGER_IDENTIFICATION,
+    // Resposta do servidor para identificação do replica manager
+    REPLICA_MANAGER_INDENTIFICATION_RESPONSE
 };
 
 // Indica aceitação ou rejeição da conexão do dispositivo
 enum InitialUserIndentificationResponseStatus : char
+{
+    ACCEPTED,
+    REJECTED,
+};
+
+// Indica aceitação ou rejeição da conexão do Replica Manager
+enum InitialReplicaManagerIndentificationResponseStatus : char
 {
     ACCEPTED,
     REJECTED,
@@ -86,7 +97,7 @@ struct alignas(ALIGN_VALUE) PackageUserIndentification
     PackageUserIndentification(uint8_t deviceID, const char _user_name[USER_NAME_MAX_LENGTH]);
 };
 
-// Resposta do servidor para identificação
+// Resposta do servidor para identificação do usuário
 struct alignas(ALIGN_VALUE) PackageUserIndentificationResponse
 {
     // Indica se foi aceita ou rejeitada a conexão
@@ -95,6 +106,26 @@ struct alignas(ALIGN_VALUE) PackageUserIndentificationResponse
     alignas(ALIGN_VALUE) uint8_t deviceID;
 
     PackageUserIndentificationResponse(InitialUserIndentificationResponseStatus status, uint8_t deviceID);
+};
+
+// Usado para que o Replica Manager se identifique
+struct alignas(ALIGN_VALUE) PackageReplicaManagerIndentification
+{
+    // ID do RM, usado caso connectionType == EVENT_CONNECTION
+    alignas(ALIGN_VALUE) uint8_t replicaManagerID;
+
+    PackageReplicaManagerIndentification(uint8_t replicaManagerID);
+};
+
+// Resposta do servidor para identificação do Replica Manager
+struct alignas(ALIGN_VALUE) PackageReplicaManagerIndentificationResponse
+{
+    // Indica se foi aceita ou rejeitada a conexão
+    alignas(ALIGN_VALUE) ReplicaManagerIndentificationResponseStatus status;
+    // ID do dispositivo
+    alignas(ALIGN_VALUE) uint8_t replicaManagerIDID;
+
+    PackageReplicaManagerIndentificationResponse(ReplicaManagerIndentificationResponseStatus status, uint8_t replicaManagerID);
 };
 
 // Indica mudança nos arquivos
@@ -172,6 +203,8 @@ union alignas(ALIGN_VALUE) PackageSpecific
 {
     alignas(ALIGN_VALUE) PackageUserIndentification userIdentification;
     alignas(ALIGN_VALUE) PackageUserIndentificationResponse userIdentificationResponse;
+    alignas(ALIGN_VALUE) PackageReplicaManagerIndentification replicaManagerIdentification;
+    alignas(ALIGN_VALUE) PackageReplicaManagerIndentificationResponse replicaManagerIdentificationResponse;
     alignas(ALIGN_VALUE) PackageChangeEvent changeEvent;
     alignas(ALIGN_VALUE) PackageRequestFile requestFile;
     alignas(ALIGN_VALUE) PackageFileContent fileContent;
@@ -183,6 +216,8 @@ union alignas(ALIGN_VALUE) PackageSpecific
     PackageSpecific();
     PackageSpecific(PackageUserIndentification userIdentification);
     PackageSpecific(PackageUserIndentificationResponse userIdentificationResponse);
+    PackageSpecific(PackageReplicaManagerIndentification replicaManagerIdentification);
+    PackageSpecific(PackageReplicaManagerIndentificationResponse replicaManagerIdentificationResponse);  
     PackageSpecific(PackageChangeEvent ChangeEvent);
     PackageSpecific(PackageRequestFile requestFile);
     PackageSpecific(PackageFileContent fileContent);
@@ -211,6 +246,8 @@ struct alignas(ALIGN_VALUE) Package
     // Inicializa package_type dependendo do tipo do pacote base
     Package(PackageUserIndentification userIdentification);
     Package(PackageUserIndentificationResponse userIdentificationResponse);
+    Package(PackageReplicaManagerIndentification replicaManagerIdentification);
+    Package(PackageReplicaManagerIndentificationResponse replicaManagerIdentificationResponse);
     Package(PackageChangeEvent ChangeEvent);
     Package(PackageRequestFile requestFile);
     Package(PackageFileContent fileContent);
