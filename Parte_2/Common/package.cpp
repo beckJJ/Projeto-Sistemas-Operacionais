@@ -163,6 +163,7 @@ Package &Package::operator=(const Package &rhs)
         break;
     case REPLICA_MANAGER_INDENTIFICATION_RESPONSE:
         package_specific.replicaManagerIdentificationResponse = rhs.package_specific.replicaManagerIdentificationResponse;
+        break;
     case CHANGE_EVENT:
         package_specific.changeEvent = rhs.package_specific.changeEvent;
         break;
@@ -226,6 +227,8 @@ void Package::htobe(void)
     // Não há campo para converter
     case INITAL_USER_INDENTIFICATION:
     case USER_INDENTIFICATION_RESPONSE:
+    case INITIAL_REPLICA_MANAGER_IDENTIFICATION:
+    case REPLICA_MANAGER_INDENTIFICATION_RESPONSE:
     case CHANGE_EVENT:
     case REQUEST_FILE:
     case REQUEST_FILE_LIST:
