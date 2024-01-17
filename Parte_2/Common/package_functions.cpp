@@ -75,6 +75,10 @@ std::optional<ssize_t> sizeof_base_package(PackageType package_type)
         return sizeof(PackageUserIndentification);
     case USER_INDENTIFICATION_RESPONSE:
         return sizeof(PackageUserIndentificationResponse);
+    case INITIAL_REPLICA_MANAGER_IDENTIFICATION:
+        return sizeof(PackageReplicaManagerIndentification);
+    case REPLICA_MANAGER_INDENTIFICATION_RESPONSE:
+        return sizeof(PackageReplicaManagerIndentificationResponse);
     case CHANGE_EVENT:
         return sizeof(PackageChangeEvent);
     case REQUEST_FILE:
