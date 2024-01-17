@@ -54,8 +54,8 @@ enum InitialUserIndentificationResponseStatus : char
 // Indica aceitação ou rejeição da conexão do Replica Manager
 enum InitialReplicaManagerIndentificationResponseStatus : char
 {
-    ACCEPTED,
-    REJECTED,
+    ACCEPTED_RM,
+    REJECTED_RM,
 };
 
 // Modificações que ocorreram em determinado arquivo, enviado pelo cliente com base no inotify e
@@ -121,11 +121,11 @@ struct alignas(ALIGN_VALUE) PackageReplicaManagerIndentification
 struct alignas(ALIGN_VALUE) PackageReplicaManagerIndentificationResponse
 {
     // Indica se foi aceita ou rejeitada a conexão
-    alignas(ALIGN_VALUE) ReplicaManagerIndentificationResponseStatus status;
+    alignas(ALIGN_VALUE) InitialReplicaManagerIndentificationResponseStatus status;
     // ID do dispositivo
-    alignas(ALIGN_VALUE) uint8_t replicaManagerIDID;
+    alignas(ALIGN_VALUE) uint8_t replicaManagerID;
 
-    PackageReplicaManagerIndentificationResponse(ReplicaManagerIndentificationResponseStatus status, uint8_t replicaManagerID);
+    PackageReplicaManagerIndentificationResponse(InitialReplicaManagerIndentificationResponseStatus status, uint8_t replicaManagerID);
 };
 
 // Indica mudança nos arquivos
