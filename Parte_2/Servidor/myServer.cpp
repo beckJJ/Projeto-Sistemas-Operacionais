@@ -13,6 +13,7 @@
 #include <netdb.h>
 #include <pthread.h>
 #include <vector>
+#include <arpa/inet.h>
 
 #include "serverThread.hpp"
 #include "../Common/functions.hpp"
@@ -116,6 +117,11 @@ int main(int argc, char *argv[])
         }
 
         printf("Nova conexao estabelecida.\n");
+        char clientIP[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &(cli_addr.sin_addr), clientIP, INET_ADDRSTRLEN);
+        printf("%s\t", clientIP);
+        printf("%d\n", ntohs(cli_addr.sin_port));
+
 
         // Cria thread para lidar com a conexão estabelecida
         pthread_create(&thread, NULL, serverThread, &thread_arg);

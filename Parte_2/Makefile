@@ -80,6 +80,6 @@ package_functions: Common/package_functions.cpp
 	$(CC) $(CFLAGS) $(DEFINES) -c -o Common/package_functions.o Common/package_functions.cpp
 
 clean:
-	rm -f myClient myServer Cliente/*.o Servidor/*.o
+	rm -f myClient myServer Cliente/*.o Servidor/*.o Common/*.o
 	rm -rf myClient.dSYM myServer.dSYM
 
