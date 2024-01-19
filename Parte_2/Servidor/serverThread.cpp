@@ -34,8 +34,8 @@ int connectUser(int socket_id, std::string &username, User *&user, Device *&devi
         return 1;
     }
 
-    // O primeiro pacote enviado pelo usuário deve ser INITAL_USER_INDENTIFICATION
-    if (package.package_type != INITAL_USER_INDENTIFICATION)
+    // O primeiro pacote enviado pelo usuário deve ser INITAL_USER_IDENTIFICATION
+    if (package.package_type != INITAL_USER_IDENTIFICATION)
     {
         printf("[tid: %d] Pacote inicial do usuario nao e identificacao: 0x%02x\n", tid, (uint8_t)package.package_type);
         return 1;
@@ -55,7 +55,7 @@ int connectUser(int socket_id, std::string &username, User *&user, Device *&devi
         printf("[tid: %d] Nova conexao do usuario \"%s\" rejeitada.\n", tid, username.c_str());
 
         // Responde ao usuário indicando rejeição da conexão
-        package = Package(PackageUserIndentificationResponse(REJECTED, 0));
+        package = Package(PackageUserIdentificationResponse(REJECTED, 0));
         write_package_to_socket(socket_id, package, fileContentBuffer);
         return 1;
     }
@@ -70,7 +70,7 @@ int connectUser(int socket_id, std::string &username, User *&user, Device *&devi
            (uint8_t)deviceID);
 
     // Responde ao usuário indicando sucesso da conexão
-    package = Package(PackageUserIndentificationResponse(ACCEPTED, deviceID));
+    package = Package(PackageUserIdentificationResponse(ACCEPTED, deviceID));
 
     if (write_package_to_socket(socket_id, package, fileContentBuffer))
     {

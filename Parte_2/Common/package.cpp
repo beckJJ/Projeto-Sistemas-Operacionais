@@ -18,19 +18,19 @@ bool File::operator<(const File &a) const
     return strcmp(name, a.name) < 0;
 }
 
-PackageUserIndentification::PackageUserIndentification(uint8_t deviceID, const char _user_name[USER_NAME_MAX_LENGTH])
+PackageUserIdentification::PackageUserIdentification(uint8_t deviceID, const char _user_name[USER_NAME_MAX_LENGTH])
     : deviceID(deviceID)
 {
     strncpy(user_name, _user_name, USER_NAME_MAX_LENGTH - 1);
 }
 
-PackageUserIndentificationResponse::PackageUserIndentificationResponse(InitialUserIndentificationResponseStatus status, uint8_t deviceID)
+PackageUserIdentificationResponse::PackageUserIdentificationResponse(InitialUserIdentificationResponseStatus status, uint8_t deviceID)
     : status(status), deviceID(deviceID) {}
 
-PackageReplicaManagerIndentification::PackageReplicaManagerIndentification(uint8_t replicaManagerID) 
+PackageReplicaManagerIdentification::PackageReplicaManagerIdentification(uint8_t replicaManagerID) 
     : replicaManagerID(replicaManagerID) {}
 
-PackageReplicaManagerIndentificationResponse::PackageReplicaManagerIndentificationResponse(InitialReplicaManagerIndentificationResponseStatus status, uint8_t replicaManagerID)
+PackageReplicaManagerIdentificationResponse::PackageReplicaManagerIdentificationResponse(InitialReplicaManagerIdentificationResponseStatus status, uint8_t replicaManagerID)
     : status(status), replicaManagerID(replicaManagerID) {}
 
 PackageChangeEvent::PackageChangeEvent() : event((ChangeEvents)0), deviceID(0)
@@ -65,10 +65,10 @@ PackageFileNotFound::PackageFileNotFound() {}
 
 PackageSpecific::PackageSpecific() {}
 
-PackageSpecific::PackageSpecific(PackageUserIndentification userIdentification)
+PackageSpecific::PackageSpecific(PackageUserIdentification userIdentification)
     : userIdentification(userIdentification) {}
 
-PackageSpecific::PackageSpecific(PackageUserIndentificationResponse userIdentificationResponse)
+PackageSpecific::PackageSpecific(PackageUserIdentificationResponse userIdentificationResponse)
     : userIdentificationResponse(userIdentificationResponse) {}
 
 PackageSpecific::PackageSpecific(PackageChangeEvent ChangeEvent)
@@ -103,16 +103,16 @@ Package::Package(const Package &&rhs)
     // Move dependendo do tipo
     switch (package_type)
     {
-    case INITAL_USER_INDENTIFICATION:
+    case INITAL_USER_IDENTIFICATION:
         package_specific.userIdentification = std::move(rhs.package_specific.userIdentification);
         break;
-    case USER_INDENTIFICATION_RESPONSE:
+    case USER_IDENTIFICATION_RESPONSE:
         package_specific.userIdentificationResponse = std::move(rhs.package_specific.userIdentificationResponse);
         break;
     case INITIAL_REPLICA_MANAGER_IDENTIFICATION:
         package_specific.replicaManagerIdentification = std::move(rhs.package_specific.replicaManagerIdentification);
         break;
-    case REPLICA_MANAGER_INDENTIFICATION_RESPONSE:
+    case REPLICA_MANAGER_IDENTIFICATION_RESPONSE:
         package_specific.replicaManagerIdentificationResponse = std::move(rhs.package_specific.replicaManagerIdentificationResponse);
         break;
     case CHANGE_EVENT:
@@ -152,16 +152,16 @@ Package &Package::operator=(const Package &rhs)
     // Cópia dependendo do tipo
     switch (package_type)
     {
-    case INITAL_USER_INDENTIFICATION:
+    case INITAL_USER_IDENTIFICATION:
         package_specific.userIdentification = rhs.package_specific.userIdentification;
         break;
-    case USER_INDENTIFICATION_RESPONSE:
+    case USER_IDENTIFICATION_RESPONSE:
         package_specific.userIdentificationResponse = rhs.package_specific.userIdentificationResponse;
         break;
     case INITIAL_REPLICA_MANAGER_IDENTIFICATION:
         package_specific.replicaManagerIdentification = rhs.package_specific.replicaManagerIdentification;
         break;
-    case REPLICA_MANAGER_INDENTIFICATION_RESPONSE:
+    case REPLICA_MANAGER_IDENTIFICATION_RESPONSE:
         package_specific.replicaManagerIdentificationResponse = rhs.package_specific.replicaManagerIdentificationResponse;
         break;
     case CHANGE_EVENT:
@@ -192,11 +192,11 @@ Package &Package::operator=(const Package &rhs)
     return *this;
 }
 
-Package::Package(PackageUserIndentification userIdentification)
-    : package_type(INITAL_USER_INDENTIFICATION), package_specific(userIdentification) {}
+Package::Package(PackageUserIdentification userIdentification)
+    : package_type(INITAL_USER_IDENTIFICATION), package_specific(userIdentification) {}
 
-Package::Package(PackageUserIndentificationResponse userIdentificationResponse)
-    : package_type(USER_INDENTIFICATION_RESPONSE), package_specific(userIdentificationResponse) {}
+Package::Package(PackageUserIdentificationResponse userIdentificationResponse)
+    : package_type(USER_IDENTIFICATION_RESPONSE), package_specific(userIdentificationResponse) {}
 
 Package::Package(PackageChangeEvent ChangeEvent)
     : package_type(CHANGE_EVENT), package_specific(ChangeEvent) {}
@@ -225,10 +225,10 @@ void Package::htobe(void)
     switch (this->package_type)
     {
     // Não há campo para converter
-    case INITAL_USER_INDENTIFICATION:
-    case USER_INDENTIFICATION_RESPONSE:
+    case INITAL_USER_IDENTIFICATION:
+    case USER_IDENTIFICATION_RESPONSE:
     case INITIAL_REPLICA_MANAGER_IDENTIFICATION:
-    case REPLICA_MANAGER_INDENTIFICATION_RESPONSE:
+    case REPLICA_MANAGER_IDENTIFICATION_RESPONSE:
     case CHANGE_EVENT:
     case REQUEST_FILE:
     case REQUEST_FILE_LIST:
@@ -263,8 +263,8 @@ void Package::betoh(void)
     switch (this->package_type)
     {
     // Não há campo para converter
-    case INITAL_USER_INDENTIFICATION:
-    case USER_INDENTIFICATION_RESPONSE:
+    case INITAL_USER_IDENTIFICATION:
+    case USER_IDENTIFICATION_RESPONSE:
     case CHANGE_EVENT:
     case REQUEST_FILE:
     case REQUEST_FILE_LIST:

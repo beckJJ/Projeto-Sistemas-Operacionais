@@ -28,8 +28,8 @@ Identificação (primeira etapa):
 
 | Agente   | Pacote                             | Descrição                                                                                         |
 | -------- | ---------------------------------- | ------------------------------------------------------------------------------------------------- |
-| cliente  | PackageUserIndentification         | Identificação inicial do usuário. Deverá conter seu nome e indicar tipo de conexão como principal. |
-| servidor | PackageUserIndentificationResponse | Indica se conexão foi aceita ou rejeitada. Caso seja aceita, deverá conter o ID do dispositivo conectado.          |
+| cliente  | PackageUserIdentification         | Identificação inicial do usuário. Deverá conter seu nome e indicar tipo de conexão como principal. |
+| servidor | PackageUserIdentificationResponse | Indica se conexão foi aceita ou rejeitada. Caso seja aceita, deverá conter o ID do dispositivo conectado.          |
 
 Loop de pacotes cliente -> servidor:
 

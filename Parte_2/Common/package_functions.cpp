@@ -71,14 +71,14 @@ std::optional<ssize_t> sizeof_base_package(PackageType package_type)
 {
     switch (package_type)
     {
-    case INITAL_USER_INDENTIFICATION:
-        return sizeof(PackageUserIndentification);
-    case USER_INDENTIFICATION_RESPONSE:
-        return sizeof(PackageUserIndentificationResponse);
+    case INITAL_USER_IDENTIFICATION:
+        return sizeof(PackageUserIdentification);
+    case USER_IDENTIFICATION_RESPONSE:
+        return sizeof(PackageUserIdentificationResponse);
     case INITIAL_REPLICA_MANAGER_IDENTIFICATION:
-        return sizeof(PackageReplicaManagerIndentification);
-    case REPLICA_MANAGER_INDENTIFICATION_RESPONSE:
-        return sizeof(PackageReplicaManagerIndentificationResponse);
+        return sizeof(PackageReplicaManagerIdentification);
+    case REPLICA_MANAGER_IDENTIFICATION_RESPONSE:
+        return sizeof(PackageReplicaManagerIdentificationResponse);
     case CHANGE_EVENT:
         return sizeof(PackageChangeEvent);
     case REQUEST_FILE:
@@ -132,14 +132,14 @@ int read_package_from_socket(int socket, Package &package, std::vector<char> &fi
     // Cria Package dependendo tipo, aplicando bexxtoh conforme necessário
     switch (package_type.value())
     {
-    case INITAL_USER_INDENTIFICATION:
-        package = Package(PackageUserIndentification(
+    case INITAL_USER_IDENTIFICATION:
+        package = Package(PackageUserIdentification(
             *(uint8_t *)buffer_data,
             &buffer_data[ALIGN_VALUE]));
         break;
-    case USER_INDENTIFICATION_RESPONSE:
-        package = Package(PackageUserIndentificationResponse(
-            *(InitialUserIndentificationResponseStatus *)buffer_data,
+    case USER_IDENTIFICATION_RESPONSE:
+        package = Package(PackageUserIdentificationResponse(
+            *(InitialUserIdentificationResponseStatus *)buffer_data,
             *(uint8_t *)&buffer_data[ALIGN_VALUE]));
         break;
     case CHANGE_EVENT:
@@ -311,14 +311,14 @@ void print_package(FILE *fout, bool sending, Package &package, std::vector<char>
 
     switch (package.package_type)
     {
-    case INITAL_USER_INDENTIFICATION:
+    case INITAL_USER_IDENTIFICATION:
         fprintf(fout,
-                "Package(INITAL_USER_INDENTIFICATION, 0x%02x, %s",
+                "Package(INITAL_USER_IDENTIFICATION, 0x%02x, %s",
                 (uint8_t)package.package_specific.userIdentification.deviceID,
                 package.package_specific.userIdentification.user_name);
         break;
-    case USER_INDENTIFICATION_RESPONSE:
-        fprintf(fout, "Package(USER_INDENTIFICATION_RESPONSE, ");
+    case USER_IDENTIFICATION_RESPONSE:
+        fprintf(fout, "Package(USER_IDENTIFICATION_RESPONSE, ");
 
         switch (package.package_specific.userIdentificationResponse.status)
         {

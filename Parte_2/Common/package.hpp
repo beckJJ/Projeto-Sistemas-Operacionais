@@ -21,9 +21,9 @@
 enum PackageType : char
 {
     // Usado para que o usuário se identifique
-    INITAL_USER_INDENTIFICATION,
+    INITAL_USER_IDENTIFICATION,
     // Resposta do servidor para identificação do usuario
-    USER_INDENTIFICATION_RESPONSE,
+    USER_IDENTIFICATION_RESPONSE,
     // Indica mudança nos arquivos, tanto cliente->servidor quanto servidor->cliente
     CHANGE_EVENT,
     // Requisita um arquivo
@@ -41,18 +41,18 @@ enum PackageType : char
     // Usado para que um novo RM se identifique
     INITIAL_REPLICA_MANAGER_IDENTIFICATION,
     // Resposta do servidor para identificação do replica manager
-    REPLICA_MANAGER_INDENTIFICATION_RESPONSE
+    REPLICA_MANAGER_IDENTIFICATION_RESPONSE
 };
 
 // Indica aceitação ou rejeição da conexão do dispositivo
-enum InitialUserIndentificationResponseStatus : char
+enum InitialUserIdentificationResponseStatus : char
 {
     ACCEPTED,
     REJECTED,
 };
 
 // Indica aceitação ou rejeição da conexão do Replica Manager
-enum InitialReplicaManagerIndentificationResponseStatus : char
+enum InitialReplicaManagerIdentificationResponseStatus : char
 {
     ACCEPTED_RM,
     REJECTED_RM,
@@ -87,45 +87,45 @@ struct alignas(ALIGN_VALUE) File
 };
 
 // Usado para que o usuário se identifique
-struct alignas(ALIGN_VALUE) PackageUserIndentification
+struct alignas(ALIGN_VALUE) PackageUserIdentification
 {
     // ID do dispositivo, usado caso connectionType == EVENT_CONNECTION
     alignas(ALIGN_VALUE) uint8_t deviceID;
     // Nome do usuário que deseja se conectar
     alignas(ALIGN_VALUE) char user_name[USER_NAME_MAX_LENGTH]{};
 
-    PackageUserIndentification(uint8_t deviceID, const char _user_name[USER_NAME_MAX_LENGTH]);
+    PackageUserIdentification(uint8_t deviceID, const char _user_name[USER_NAME_MAX_LENGTH]);
 };
 
 // Resposta do servidor para identificação do usuário
-struct alignas(ALIGN_VALUE) PackageUserIndentificationResponse
+struct alignas(ALIGN_VALUE) PackageUserIdentificationResponse
 {
     // Indica se foi aceita ou rejeitada a conexão
-    alignas(ALIGN_VALUE) InitialUserIndentificationResponseStatus status;
+    alignas(ALIGN_VALUE) InitialUserIdentificationResponseStatus status;
     // ID do dispositivo
     alignas(ALIGN_VALUE) uint8_t deviceID;
 
-    PackageUserIndentificationResponse(InitialUserIndentificationResponseStatus status, uint8_t deviceID);
+    PackageUserIdentificationResponse(InitialUserIdentificationResponseStatus status, uint8_t deviceID);
 };
 
 // Usado para que o Replica Manager se identifique
-struct alignas(ALIGN_VALUE) PackageReplicaManagerIndentification
+struct alignas(ALIGN_VALUE) PackageReplicaManagerIdentification
 {
     // ID do RM, usado caso connectionType == EVENT_CONNECTION
     alignas(ALIGN_VALUE) uint8_t replicaManagerID;
 
-    PackageReplicaManagerIndentification(uint8_t replicaManagerID);
+    PackageReplicaManagerIdentification(uint8_t replicaManagerID);
 };
 
 // Resposta do servidor para identificação do Replica Manager
-struct alignas(ALIGN_VALUE) PackageReplicaManagerIndentificationResponse
+struct alignas(ALIGN_VALUE) PackageReplicaManagerIdentificationResponse
 {
     // Indica se foi aceita ou rejeitada a conexão
-    alignas(ALIGN_VALUE) InitialReplicaManagerIndentificationResponseStatus status;
+    alignas(ALIGN_VALUE) InitialReplicaManagerIdentificationResponseStatus status;
     // ID do dispositivo
     alignas(ALIGN_VALUE) uint8_t replicaManagerID;
 
-    PackageReplicaManagerIndentificationResponse(InitialReplicaManagerIndentificationResponseStatus status, uint8_t replicaManagerID);
+    PackageReplicaManagerIdentificationResponse(InitialReplicaManagerIdentificationResponseStatus status, uint8_t replicaManagerID);
 };
 
 // Indica mudança nos arquivos
@@ -201,10 +201,10 @@ struct alignas(ALIGN_VALUE) PackageFileNotFound
 // União de todos os pacotes
 union alignas(ALIGN_VALUE) PackageSpecific
 {
-    alignas(ALIGN_VALUE) PackageUserIndentification userIdentification;
-    alignas(ALIGN_VALUE) PackageUserIndentificationResponse userIdentificationResponse;
-    alignas(ALIGN_VALUE) PackageReplicaManagerIndentification replicaManagerIdentification;
-    alignas(ALIGN_VALUE) PackageReplicaManagerIndentificationResponse replicaManagerIdentificationResponse;
+    alignas(ALIGN_VALUE) PackageUserIdentification userIdentification;
+    alignas(ALIGN_VALUE) PackageUserIdentificationResponse userIdentificationResponse;
+    alignas(ALIGN_VALUE) PackageReplicaManagerIdentification replicaManagerIdentification;
+    alignas(ALIGN_VALUE) PackageReplicaManagerIdentificationResponse replicaManagerIdentificationResponse;
     alignas(ALIGN_VALUE) PackageChangeEvent changeEvent;
     alignas(ALIGN_VALUE) PackageRequestFile requestFile;
     alignas(ALIGN_VALUE) PackageFileContent fileContent;
@@ -214,10 +214,10 @@ union alignas(ALIGN_VALUE) PackageSpecific
     alignas(ALIGN_VALUE) PackageFileNotFound fileNotFound;
 
     PackageSpecific();
-    PackageSpecific(PackageUserIndentification userIdentification);
-    PackageSpecific(PackageUserIndentificationResponse userIdentificationResponse);
-    PackageSpecific(PackageReplicaManagerIndentification replicaManagerIdentification);
-    PackageSpecific(PackageReplicaManagerIndentificationResponse replicaManagerIdentificationResponse);  
+    PackageSpecific(PackageUserIdentification userIdentification);
+    PackageSpecific(PackageUserIdentificationResponse userIdentificationResponse);
+    PackageSpecific(PackageReplicaManagerIdentification replicaManagerIdentification);
+    PackageSpecific(PackageReplicaManagerIdentificationResponse replicaManagerIdentificationResponse);  
     PackageSpecific(PackageChangeEvent ChangeEvent);
     PackageSpecific(PackageRequestFile requestFile);
     PackageSpecific(PackageFileContent fileContent);
@@ -244,10 +244,10 @@ struct alignas(ALIGN_VALUE) Package
     Package &operator=(const Package &rhs);
 
     // Inicializa package_type dependendo do tipo do pacote base
-    Package(PackageUserIndentification userIdentification);
-    Package(PackageUserIndentificationResponse userIdentificationResponse);
-    Package(PackageReplicaManagerIndentification replicaManagerIdentification);
-    Package(PackageReplicaManagerIndentificationResponse replicaManagerIdentificationResponse);
+    Package(PackageUserIdentification userIdentification);
+    Package(PackageUserIdentificationResponse userIdentificationResponse);
+    Package(PackageReplicaManagerIdentification replicaManagerIdentification);
+    Package(PackageReplicaManagerIdentificationResponse replicaManagerIdentificationResponse);
     Package(PackageChangeEvent ChangeEvent);
     Package(PackageRequestFile requestFile);
     Package(PackageFileContent fileContent);

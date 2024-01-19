@@ -120,7 +120,7 @@ int conecta_device(DadosConexao &dadosConexao)
     dadosConexao.socket = current_socket;
 
     // Envia pacote inicial de identificação, especificando dispositivo
-    auto package = Package(PackageUserIndentification(
+    auto package = Package(PackageUserIdentification(
         dadosConexao.deviceID,
         dadosConexao.nome_usuario));
     std::vector<char> fileContentBuffer;
@@ -138,7 +138,7 @@ int conecta_device(DadosConexao &dadosConexao)
     }
 
     // Resposta inválida
-    if (package.package_type != USER_INDENTIFICATION_RESPONSE)
+    if (package.package_type != USER_IDENTIFICATION_RESPONSE)
     {
         printf("Resposta invalida do servidor.\n");
         return 1;
