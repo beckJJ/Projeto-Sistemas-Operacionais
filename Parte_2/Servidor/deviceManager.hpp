@@ -11,6 +11,7 @@
 #include <iostream>
 #include <optional>
 #include <unistd.h>
+#include "connections.hpp"
 
 struct Device;
 struct User;
@@ -98,11 +99,11 @@ public:
     ~DeviceManager();
 
     // Conecta thread como dispositivo de determinado usuário
-    std::optional<DeviceConnectReturn> connect(int socket_id, std::string &user);
+    std::optional<DeviceConnectReturn> connect(Client_t client, std::string &user);
 
     // Desconecta determinado dispositivo de um usuário, os sockets serão fechados por
     //   device.close_sockets()
-    void disconnect(std::string &user, uint8_t id);
+    void disconnect(std::string &user, uint8_t id, Client_t client);
 
     // Desconecta todas os usuários
     void disconnect_all(void);

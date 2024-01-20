@@ -19,6 +19,7 @@
 #include "../Common/functions.hpp"
 #include "config.hpp"
 #include <signal.h>
+#include "connections.hpp"
 
 #if DEBUG_PACOTE
 // Lock usado por print_package para exibir completamente um pacote
@@ -27,6 +28,7 @@ pthread_mutex_t print_package_lock = PTHREAD_MUTEX_INITIALIZER;
 
 DeviceManager deviceManager = DeviceManager();
 int main_thread_socket = -1;
+ActiveConnections_t activeConnections;
 
 void sigint_handler_main(int)
 {
@@ -105,6 +107,8 @@ int main(int argc, char *argv[])
 
     clilen = sizeof(struct sockaddr_in);
 
+    activeConnections.lock = new pthread_mutex_t;
+
     while (1)
     {
         ServerThreadArg thread_arg; // { };
@@ -115,14 +119,20 @@ int main(int argc, char *argv[])
             printf("Erro! Nao foi possivel realizar conexao com o cliente!\n");
             break;
         }
+        thread_arg.socket_address = cli_addr;
 
         printf("Nova conexao estabelecida.\n");
-        char clientIP[INET_ADDRSTRLEN];
-        inet_ntop(AF_INET, &(cli_addr.sin_addr), clientIP, INET_ADDRSTRLEN);
-        printf("%s\t", clientIP);
-        printf("%d\n", ntohs(cli_addr.sin_port));
+/*
+        printf("Clientes conectados:\n");
+        for (sockaddr_in c : activeConnections.clients) {
+            char clientIP[INET_ADDRSTRLEN];
+            inet_ntop(AF_INET, &(c.sin_addr), clientIP, INET_ADDRSTRLEN);
+            printf("%s\t", clientIP);
+            printf("%d\n", ntohs(c.sin_port));
 
-
+        }
+        printf("\n");
+*/
         // Cria thread para lidar com a conexão estabelecida
         pthread_create(&thread, NULL, serverThread, &thread_arg);
     }

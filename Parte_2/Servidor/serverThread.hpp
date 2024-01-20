@@ -5,11 +5,13 @@
 //   do dispositivo de usuário, dependendo da conexão então executará eventLoop ou MainLoop
 
 #include "deviceManager.hpp"
+#include <netinet/in.h>
 
 struct ServerThreadArg
 {
     // socket que a thread usará
     int socket_id;
+    sockaddr_in socket_address;
 };
 
 void *serverThread(void *arg);

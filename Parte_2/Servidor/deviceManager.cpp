@@ -6,6 +6,9 @@
 #include "../Common/package_functions.hpp"
 #include <algorithm>
 #include "../Common/package_file.hpp"
+#include <arpa/inet.h>
+
+extern ActiveConnections_t activeConnections;
 
 DeviceConnectReturn::DeviceConnectReturn(Device *device, User *user, uint8_t deviceID)
     : device(device), user(user), deviceID(deviceID) {}
@@ -234,7 +237,7 @@ DeviceManager::~DeviceManager()
 }
 
 // Conecta thread como dispositivo de determinado usuário
-std::optional<DeviceConnectReturn> DeviceManager::connect(int socket_id, std::string &user)
+std::optional<DeviceConnectReturn> DeviceManager::connect(Client_t client, std::string &user)
 {
     uint8_t deviceID;
 
@@ -293,17 +296,33 @@ std::optional<DeviceConnectReturn> DeviceManager::connect(int socket_id, std::st
     // Registra dispositivo
     Device *device = new Device();
     device->deviceID = deviceID;
-    device->socket = socket_id;
+    device->socket = client.socket_id;
     usuario->devices->push_back(device);
 
     pthread_mutex_unlock(usuario->devices_lock);
+
+    // adicionar cliente na lista de clientes conectados
+    pthread_mutex_lock(activeConnections.lock);
+    activeConnections.clients.push_back(client);
+    printf("Clientes conectados:\n");
+    for (Client_t c : activeConnections.clients) {
+        char clientIP[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &(c.address.sin_addr), clientIP, INET_ADDRSTRLEN);
+        printf("%s\t", clientIP);
+        printf("%d\t", ntohs(c.address.sin_port));
+        printf("%d\n", c.socket_id);
+
+    }
+    printf("\n");
+    pthread_mutex_unlock(activeConnections.lock);
+
 
     return DeviceConnectReturn(device, usuario, deviceID);
 }
 
 // Desconecta determinado dispositivo de um usuário, os sockets serão fechados por
 //   device.close_sockets()
-void DeviceManager::disconnect(std::string &user, uint8_t id)
+void DeviceManager::disconnect(std::string &user, uint8_t id, Client_t client)
 {
     // Evita alteração enquanto lê
     pthread_mutex_lock(&usuarios_lock);
@@ -347,6 +366,33 @@ void DeviceManager::disconnect(std::string &user, uint8_t id)
     delete device;
 
     pthread_mutex_unlock(usuario->devices_lock);
+
+    // remove cliente da lista de clientes conectados
+    pthread_mutex_lock(activeConnections.lock);
+
+    int i = 0;
+    while (client.socket_id != activeConnections.clients[i].socket_id && i < (int)activeConnections.clients.size()) {
+        i++;
+    }
+    if (i >= (int)activeConnections.clients.size()) {
+        // deu algum erro
+        printf("Erro ao tentar remover cliente que nao estava conectado da lista de clientes conectados!\n");
+    } else {
+        activeConnections.clients.erase(activeConnections.clients.begin()+i);
+    }
+
+    printf("Clientes conectados:\n");
+    for (Client_t c : activeConnections.clients) {
+        char clientIP[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &(c.address.sin_addr), clientIP, INET_ADDRSTRLEN);
+        printf("%s\t", clientIP);
+        printf("%d\t", ntohs(c.address.sin_port));
+        printf("%d\n", c.socket_id);
+
+    }
+    printf("\n");
+
+    pthread_mutex_unlock(activeConnections.lock);
 }
 
 // Desconecta todas os usuários
