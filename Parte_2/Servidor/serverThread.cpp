@@ -24,10 +24,31 @@ extern ActiveConnections_t activeConnections;
 extern bool backup;
 
 thread_local pid_t tid = 0;
-thread_local Client_t client = {-1, {0, 0, 0, 0}};
+thread_local Connection_t client = {-1, {0, 0, 0, 0}};
+
+int connectToServer(Connection_t connection, std::string &username, User *&user, Device *&device, uint8_t &deviceID)
+{
+    auto package = Package();
+    std::vector<char> fileContentBuffer;
+
+    if (read_package_from_socket(connection.socket_id, package, fileContentBuffer)) {
+        printf("[tid: %d] Erro ao ler primeiro pacote da conexao\n", tid);
+        return 1;
+    }
+    
+    switch (package.package_type) {
+        case INITIAL_USER_IDENTIFICATION:
+            return connectUser(connection, username, user, device, deviceID, package, fileContentBuffer);
+        case INITIAL_REPLICA_MANAGER_IDENTIFICATION:
+            return connectBackup(connection);
+        default: 
+            printf("[tid: %d] Pacote inicial da conexao nao e identificacao: 0x%02x\n", tid, (uint8_t)package.package_type);
+            return 1;
+    }
+}
 
 // Função para receber conexões de servidores de backup 
-int connectBackup(Server_t server)
+int connectBackup(Connection_t server, std::string &username, User *&user, Device *&device, uint8_t &deviceID, Package &package, std::vector<char> fileContentBuffer)
 {
     auto package = Package();
     std::vector<char> fileContentBuffer;
@@ -41,28 +62,14 @@ int connectBackup(Server_t server)
         printf("[tid: %d] Pacote inicial do backup nao e identificacao: 0x%02x\n", tid, (uint8_t)package.package_type);
         return 1;
     }
+
+    
     return 0;
 }
 
 // Processa pacotes iniciais de identificação
-int connectUser(Client_t client, std::string &username, User *&user, Device *&device, uint8_t &deviceID)
+int connectUser(Connection_t client, std::string &username, User *&user, Device *&device, uint8_t &deviceID, Package &package, std::vector<char> fileContentBuffer)
 {
-    auto package = Package();
-    std::vector<char> fileContentBuffer;
-
-    if (read_package_from_socket(client.socket_id, package, fileContentBuffer))
-    {
-        printf("[tid: %d] Erro ao ler primeiro pacote do usuario\n", tid);
-        return 1;
-    }
-
-    // O primeiro pacote enviado pelo usuário deve ser INITIAL_USER_IDENTIFICATION
-    if (package.package_type != INITIAL_USER_IDENTIFICATION)
-    {
-        printf("[tid: %d] Pacote inicial do usuario nao e identificacao: 0x%02x\n", tid, (uint8_t)package.package_type);
-        return 1;
-    }
-
     username = std::string(package.package_specific.userIdentification.user_name);
     deviceID = package.package_specific.userIdentification.deviceID;
 
@@ -125,7 +132,7 @@ void *serverThread(void *arg)
     std::vector<char> fileContentBuffer;
 
     // Tentar conectar-se como um dispositivo do usuário
-    if (connectUser(client, username, user, device, deviceID))
+    if (connectToServer(client, username, user, device, deviceID))
     {
         close(client.socket_id);
         return NULL;

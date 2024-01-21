@@ -237,7 +237,7 @@ DeviceManager::~DeviceManager()
 }
 
 // Conecta thread como dispositivo de determinado usuário
-std::optional<DeviceConnectReturn> DeviceManager::connect(Client_t client, std::string &user)
+std::optional<DeviceConnectReturn> DeviceManager::connect(Connection_t client, std::string &user)
 {
     uint8_t deviceID;
 
@@ -305,7 +305,7 @@ std::optional<DeviceConnectReturn> DeviceManager::connect(Client_t client, std::
     pthread_mutex_lock(activeConnections.lock);
     activeConnections.clients.push_back(client);
     printf("Clientes conectados:\n");
-    for (Client_t c : activeConnections.clients) {
+    for (Connection_t c : activeConnections.clients) {
         char clientIP[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, &(c.address.sin_addr), clientIP, INET_ADDRSTRLEN);
         printf("%s\t", clientIP);
@@ -322,7 +322,7 @@ std::optional<DeviceConnectReturn> DeviceManager::connect(Client_t client, std::
 
 // Desconecta determinado dispositivo de um usuário, os sockets serão fechados por
 //   device.close_sockets()
-void DeviceManager::disconnect(std::string &user, uint8_t id, Client_t client)
+void DeviceManager::disconnect(std::string &user, uint8_t id, Connection_t client)
 {
     // Evita alteração enquanto lê
     pthread_mutex_lock(&usuarios_lock);
@@ -382,7 +382,7 @@ void DeviceManager::disconnect(std::string &user, uint8_t id, Client_t client)
     }
 
     printf("Clientes conectados:\n");
-    for (Client_t c : activeConnections.clients) {
+    for (Connection_t c : activeConnections.clients) {
         char clientIP[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, &(c.address.sin_addr), clientIP, INET_ADDRSTRLEN);
         printf("%s\t", clientIP);

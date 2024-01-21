@@ -14,6 +14,10 @@ struct ServerThreadArg
     sockaddr_in socket_address;
 };
 
+int connectToServer(Connection_t connection, std::string &username, User *&user, Device *&device, uint8_t &deviceID);
+int connectBackup(Connection_t server);
+int connectUser(Connection_t client, std::string &username, User *&user, Device *&device, uint8_t &deviceID, Package &package, std::vector<char> fileContentBuffer);
+
 void *serverThread(void *arg);
 
 #endif

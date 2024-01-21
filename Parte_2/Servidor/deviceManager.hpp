@@ -47,7 +47,7 @@ struct Device
     void close_sockets(void);
 };
 
-// Representação um usuário, contém informação sobre seus arquivos e dispositivos
+// Representação de um usuário, contém informação sobre seus arquivos e dispositivos
 struct User
 {
     // Lock para alterar os dispositivos conectados
@@ -99,11 +99,11 @@ public:
     ~DeviceManager();
 
     // Conecta thread como dispositivo de determinado usuário
-    std::optional<DeviceConnectReturn> connect(Client_t client, std::string &user);
+    std::optional<DeviceConnectReturn> connect(Connection_t client, std::string &user);
 
     // Desconecta determinado dispositivo de um usuário, os sockets serão fechados por
     //   device.close_sockets()
-    void disconnect(std::string &user, uint8_t id, Client_t client);
+    void disconnect(std::string &user, uint8_t id, Connection_t client);
 
     // Desconecta todas os usuários
     void disconnect_all(void);
