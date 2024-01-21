@@ -184,7 +184,9 @@ int main(int argc, char *argv[])
                 break;
             }
 
-            inet_ntop(AF_INET, &cli_addr, thread_arg.endereco_ip, INET_ADDRSTRLEN);
+            //char clientIP[INET_ADDRSTRLEN] = {0};
+            inet_ntop(AF_INET, &(cli_addr.sin_addr), thread_arg.endereco_ip, INET_ADDRSTRLEN);
+          //  strcpy(, clientIP);
 
             printf("Nova conexao estabelecida.\n");
 

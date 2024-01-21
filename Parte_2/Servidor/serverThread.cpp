@@ -129,8 +129,9 @@ int connectUser(Connection_t client, std::string &username, User *&user, Device 
 
 void *serverThread(void *arg)
 {
-    client.socket_id = ((ServerThreadArg *)arg)->socket_id;
-    //client.address = ((ServerThreadArg *)arg)->socket_address;
+    client.socket_id    = ((ServerThreadArg *)arg)->socket_id;
+    strcpy(client.endereco_ip, ((ServerThreadArg *)arg)->endereco_ip);
+    strcpy(client.numero_porta, ((ServerThreadArg *)arg)->numero_porta);
 
     std::string username;
     User *user;
