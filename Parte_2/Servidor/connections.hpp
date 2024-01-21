@@ -3,9 +3,12 @@
 #include <netinet/in.h>
 #include <string>
 
+#define DIMENSAO_GERAL 100
+
 typedef struct {
+    char numero_porta[DIMENSAO_GERAL]; // Porta que o cliente/backup aguardam novas conexões
+    char endereco_ip[DIMENSAO_GERAL];
     int socket_id;
-    sockaddr_in address;
 } Connection_t;
 
 // struct que guarda todas as conexões ativas do servidor principal

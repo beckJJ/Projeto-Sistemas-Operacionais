@@ -46,7 +46,8 @@ std::optional<int> conecta_servidor(DadosConexao &dadosConexao)
     return socket_id;
 }
 
-int conecta_backup(DadosConexao &dadosConexao)
+// Conecta backup ao servidor principal (função do backup)
+int conecta_backup_main(DadosConexao &dadosConexao)
 {
     std::optional<int> socket_opt = conecta_servidor(dadosConexao);
     if (!socket_opt.has_value()) {

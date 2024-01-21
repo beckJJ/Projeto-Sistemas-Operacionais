@@ -78,8 +78,7 @@ int handleMove(std::vector<UserChangeEvent> &incompleteEvents, std::vector<UserC
     return 0;
 }
 
-void *
-eventThread(void *)
+void *eventThread(void *)
 {
     //  Vetor usado para registrar eventos MOVED_ ainda não resolvido para renomeações, quando
     //    completado o evento será removido e adicionado ao vetor completeUserEvents

@@ -7,4 +7,4 @@
 
 
 std::optional<int> conecta_servidor(DadosConexao &dadosConexao);
-int conecta_backup(DadosConexao &dadosConexao);
+int conecta_backup_main(DadosConexao &dadosConexao);

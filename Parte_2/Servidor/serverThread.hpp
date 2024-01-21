@@ -11,8 +11,11 @@ struct ServerThreadArg
 {
     // socket que a thread usará
     int socket_id;
-    sockaddr_in socket_address;
+    char numero_porta[DIMENSAO_GERAL]; // Porta que o cliente/backup aguardam novas conexões
+    char endereco_ip[DIMENSAO_GERAL];
 };
+
+//typedef struct BackupThreadArg ;
 
 int connectToServer(Connection_t connection, std::string &username, User *&user, Device *&device, uint8_t &deviceID);
 int connectBackup(Connection_t server, uint8_t &deviceID, Package &package, std::vector<char> fileContentBuffer);

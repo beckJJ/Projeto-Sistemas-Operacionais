@@ -23,6 +23,7 @@
 #include "../Common/DadosConexao.hpp"
 #include "replicaManager.hpp"
 #include "../Common/package_file.hpp"
+#include "backupThread.hpp"
 
 #if DEBUG_PACOTE
 // Lock usado por print_package para exibir completamente um pacote
@@ -100,7 +101,7 @@ int main(int argc, char *argv[])
         }
         printf("Conectando no servidor principal %s:%s\n", dadosConexao.endereco_ip, dadosConexao.numero_porta);
 
-        if (conecta_backup(dadosConexao)) {
+        if (conecta_backup_main(dadosConexao)) {
             exit(EXIT_FAILURE);
         } else {
             printf("Handshake succeeded\n");
@@ -144,10 +145,18 @@ int main(int argc, char *argv[])
 
     while (1)
     {
-        ServerThreadArg thread_arg; // { };
-        pthread_t thread;
-
         if (backup) {
+            ServerThreadArg backup_thread_arg;
+
+            strcpy(backup_thread_arg.endereco_ip, dadosConexao.endereco_ip);
+            strcpy(backup_thread_arg.numero_porta, dadosConexao.numero_porta);
+
+            pthread_t new_thread;
+            
+            // Inicia thread para ficar aguardando novas conexões no servidor principal 
+            pthread_create(&new_thread, NULL, backupThread, &backup_thread_arg);
+            
+            // Thread atual fica enviando pings para o servidor principal e recebendo ACKs
             while (true) {
                 send_ping_to_main(dadosConexao.socket);
                 std::vector<char> fileContentBuffer;
@@ -155,16 +164,27 @@ int main(int argc, char *argv[])
                 if (read_package_from_socket(dadosConexao.socket, package, fileContentBuffer)) {
                     printf("Erro ao ler pacote do servidor.\n");
                     exit(0);
+                    // algoritmo de seleção 
+                    // setar backup = false para o escolhido
                 }
+                // Resposta inválida
+                if (package.package_type != REPLICA_MANAGER_PING_RESPONSE) {
+                    printf("Resposta invalida do servidor.\n");
+                    exit(0);
+                }
+                printf("ACK RECEBIDO\n");
                 sleep(1);
             }
         } else {
+            ServerThreadArg thread_arg; // { };
+            pthread_t thread;
 
             if ((thread_arg.socket_id = accept(main_thread_socket, (struct sockaddr *)&cli_addr, &clilen)) == -1) {
                 printf("Erro! Nao foi possivel realizar conexao com o cliente!\n");
                 break;
             }
-            thread_arg.socket_address = cli_addr;
+
+            inet_ntop(AF_INET, &cli_addr, thread_arg.endereco_ip, INET_ADDRSTRLEN);
 
             printf("Nova conexao estabelecida.\n");
 

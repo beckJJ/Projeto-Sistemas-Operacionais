@@ -238,12 +238,16 @@ DeviceManager::~DeviceManager()
 
 std::optional<DeviceConnectReturn> DeviceManager::connect(Connection_t connection, std::string &username)
 {
+    std::optional<DeviceConnectReturn> returnValue;
     if (username == "backup") {
-        return connectBackup(connection);
+        returnValue = connectBackup(connection);
     }
     else {
-        return connectClient(connection, username);
+        returnValue = connectClient(connection, username);
     }
+    // enviar conexões novas para os backups
+    //
+    return returnValue;
 }
 
 // Conecta thread do servidor principal com servidor de backup
@@ -265,18 +269,14 @@ std::optional<DeviceConnectReturn> DeviceManager::connectBackup(Connection_t bac
 
     printf("Clientes conectados:\n");
     for (Connection_t c : activeConnections.clients) {
-        char clientIP[INET_ADDRSTRLEN];
-        inet_ntop(AF_INET, &(c.address.sin_addr), clientIP, INET_ADDRSTRLEN);
-        printf("%s\t", clientIP);
-        printf("%d\t", ntohs(c.address.sin_port));
+        printf("%s\t", c.endereco_ip);
+        printf("%s\t", c.numero_porta);
         printf("%d\n", c.socket_id);
     }
     printf("Backups conectados:\n");
     for (Connection_t c : activeConnections.backups) {
-        char clientIP[INET_ADDRSTRLEN];
-        inet_ntop(AF_INET, &(c.address.sin_addr), clientIP, INET_ADDRSTRLEN);
-        printf("%s\t", clientIP);
-        printf("%d\t", ntohs(c.address.sin_port));
+        printf("%s\t", c.endereco_ip);
+        printf("%s\t", c.numero_porta);
         printf("%d\n", c.socket_id);
     }
     printf("\n");
@@ -357,10 +357,14 @@ std::optional<DeviceConnectReturn> DeviceManager::connectClient(Connection_t cli
     activeConnections.clients.push_back(client);
     printf("Clientes conectados:\n");
     for (Connection_t c : activeConnections.clients) {
-        char clientIP[INET_ADDRSTRLEN];
-        inet_ntop(AF_INET, &(c.address.sin_addr), clientIP, INET_ADDRSTRLEN);
-        printf("%s\t", clientIP);
-        printf("%d\t", ntohs(c.address.sin_port));
+        printf("%s\t", c.endereco_ip);
+        printf("%s\t", c.numero_porta);
+        printf("%d\n", c.socket_id);
+    }
+    printf("Backups conectados:\n");
+    for (Connection_t c : activeConnections.backups) {
+        printf("%s\t", c.endereco_ip);
+        printf("%s\t", c.numero_porta);
         printf("%d\n", c.socket_id);
     }
     printf("\n");
@@ -406,21 +410,16 @@ void DeviceManager::disconnectBackup(uint8_t id, Connection_t backup)
 
     printf("Clientes conectados:\n");
     for (Connection_t c : activeConnections.clients) {
-        char clientIP[INET_ADDRSTRLEN];
-        inet_ntop(AF_INET, &(c.address.sin_addr), clientIP, INET_ADDRSTRLEN);
-        printf("%s\t", clientIP);
-        printf("%d\t", ntohs(c.address.sin_port));
+        printf("%s\t", c.endereco_ip);
+        printf("%s\t", c.numero_porta);
         printf("%d\n", c.socket_id);
     }
     printf("Backups conectados:\n");
     for (Connection_t c : activeConnections.backups) {
-        char clientIP[INET_ADDRSTRLEN];
-        inet_ntop(AF_INET, &(c.address.sin_addr), clientIP, INET_ADDRSTRLEN);
-        printf("%s\t", clientIP);
-        printf("%d\t", ntohs(c.address.sin_port));
+        printf("%s\t", c.endereco_ip);
+        printf("%s\t", c.numero_porta);
         printf("%d\n", c.socket_id);
     }
-    
     printf("\n");
 
     pthread_mutex_unlock(activeConnections.lock);
@@ -489,12 +488,15 @@ void DeviceManager::disconnectClient(std::string &user, uint8_t id, Connection_t
 
     printf("Clientes conectados:\n");
     for (Connection_t c : activeConnections.clients) {
-        char clientIP[INET_ADDRSTRLEN];
-        inet_ntop(AF_INET, &(c.address.sin_addr), clientIP, INET_ADDRSTRLEN);
-        printf("%s\t", clientIP);
-        printf("%d\t", ntohs(c.address.sin_port));
+        printf("%s\t", c.endereco_ip);
+        printf("%s\t", c.numero_porta);
         printf("%d\n", c.socket_id);
-
+    }
+    printf("Backups conectados:\n");
+    for (Connection_t c : activeConnections.backups) {
+        printf("%s\t", c.endereco_ip);
+        printf("%s\t", c.numero_porta);
+        printf("%d\n", c.socket_id);
     }
     printf("\n");
 

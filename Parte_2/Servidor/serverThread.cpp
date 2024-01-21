@@ -24,7 +24,7 @@ extern ActiveConnections_t activeConnections;
 extern bool backup;
 
 thread_local pid_t tid = 0;
-thread_local Connection_t client = {-1, {0, 0, 0, 0}};
+thread_local Connection_t client = {{0}, {0}, -1};
 
 int connectToServer(Connection_t connection, std::string &username, User *&user, Device *&device, uint8_t &deviceID)
 {
@@ -130,7 +130,7 @@ int connectUser(Connection_t client, std::string &username, User *&user, Device 
 void *serverThread(void *arg)
 {
     client.socket_id = ((ServerThreadArg *)arg)->socket_id;
-    client.address = ((ServerThreadArg *)arg)->socket_address;
+    //client.address = ((ServerThreadArg *)arg)->socket_address;
 
     std::string username;
     User *user;
