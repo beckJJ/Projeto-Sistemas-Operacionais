@@ -164,7 +164,7 @@ void delete_cmd(DadosConexao &dados_conexao)
 }
 
 // Pede lista de arquivos para o servidor e exibe a lista após a condição
-//   dados_conexao.is_file_list_readed ter sido completa pela thread de leitura
+//   dados_conexao.is_file_list_read ter sido completa pela thread de leitura
 void list_server(DadosConexao &dados_conexao)
 {
     Package package = Package(PackageRequestFileList());
@@ -187,11 +187,11 @@ void list_server(DadosConexao &dados_conexao)
     // Leremos a lista de arquivos
     pthread_mutex_lock(dados_conexao.file_list_lock);
 
-    dados_conexao.is_file_list_readed = false;
+    dados_conexao.is_file_list_read = false;
 
     // Espera que a thread de leitura leia os pacotes PackageFileList que devem ser enviados em
     //   resposta a requisição feita acima
-    while (!dados_conexao.is_file_list_readed)
+    while (!dados_conexao.is_file_list_read)
     {
         pthread_cond_wait(dados_conexao.file_list_cond, dados_conexao.file_list_lock);
     }

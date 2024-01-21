@@ -121,18 +121,42 @@ void handleChangeEvent(int socket_id, int tid, PackageChangeEvent &changeEvent, 
 void serverLoop(int socket_id, int tid, std::string &username, User *&user, Device *&device)
 {
     if (username == "backup") {
-        serverLoopBackup();
+        serverLoopBackup(socket_id, tid);
     } else {
         serverLoopClient(socket_id, tid, username, user, device);
     }
 }
 
-void serverLoopBackup()
+// thread do servidor principal, que se comunica com os backups
+void serverLoopBackup(int socket_id, int tid)
 {
+    // backups enviam pacotes de ping para o servidor principal e esperam resposta
+    Package package = Package();
+    std::vector<char> fileContentBuffer;
+
+    while (true) {
+        if (read_package_from_socket(socket_id, package, fileContentBuffer)) {
+            printf("[tid: %d] Nao foi possivel ler pacote.\n", tid);
+            break;
+        }
+
+        switch (package.package_type) {
+        // Recebe pacote de ping do backup
+        case REPLICA_MANAGER_PING:
+            // Retorna um ACK
+            send_backup_ack(socket_id);
+            printf("ACK Enviado!\n");
+            break;
+        default:
+            printf("[tid: %d] Codigo comunicacao desconhecido: 0x%02x\n", tid, (uint8_t)package.package_type);
+            break;
+        
+        }
+    }
     return;
 }
 
-// Loop de requisições e respotas para determinado dispositivo
+// Loop de requisições e respotas para os clientes
 void serverLoopClient(int socket_id, int tid, std::string &username, User *&user, Device *&device)
 {
     auto package = Package();
@@ -154,7 +178,7 @@ void serverLoopClient(int socket_id, int tid, std::string &username, User *&user
         // A lock user->files_lock é obtida para evitar que os arquivos sejam modificados enquanto
         //   estão sendo acessados
         // A lock device->socket_lock é acessada enquanto pacotes forem escritos (também é
-        //   adiquirida ao propagar eventos)
+        //   adquirida ao propagar eventos)
         switch (package.package_type)
         {
         // Envia arquivo para o usuário

@@ -63,6 +63,10 @@ PackageUploadFile::PackageUploadFile(File file) : File(file) {}
 
 PackageFileNotFound::PackageFileNotFound() {}
 
+PackageReplicaManagerPing::PackageReplicaManagerPing() {}
+
+PackageReplicaManagerPingResponse::PackageReplicaManagerPingResponse() {}
+
 PackageSpecific::PackageSpecific() {}
 
 PackageSpecific::PackageSpecific(PackageUserIdentification userIdentification)
@@ -97,6 +101,12 @@ PackageSpecific::PackageSpecific(PackageUploadFile uploadFile)
 
 PackageSpecific::PackageSpecific(PackageFileNotFound fileNotFound)
     : fileNotFound(fileNotFound) {}
+
+PackageSpecific::PackageSpecific(PackageReplicaManagerPing replicaManagerPing)
+    : replicaManagerPing(replicaManagerPing) {}
+
+PackageSpecific::PackageSpecific(PackageReplicaManagerPingResponse replicaManagerPingResponse)
+    : replicaManagerPingResponse(replicaManagerPingResponse) {}
 
 PackageSpecific::~PackageSpecific() {}
 
@@ -141,6 +151,12 @@ Package::Package(const Package &&rhs)
         break;
     case FILE_NOT_FOUND:
         package_specific.fileNotFound = std::move(rhs.package_specific.fileNotFound);
+        break;
+    case REPLICA_MANAGER_PING:
+        package_specific.replicaManagerPing = std::move(rhs.package_specific.replicaManagerPing);
+        break;
+    case REPLICA_MANAGER_PING_RESPONSE:
+        package_specific.replicaManagerPingResponse = std::move(rhs.package_specific.replicaManagerPingResponse);
         break;
     default:
         throw std::invalid_argument("Unknown package_type.");
@@ -191,6 +207,12 @@ Package &Package::operator=(const Package &rhs)
     case FILE_NOT_FOUND:
         package_specific.fileNotFound = rhs.package_specific.fileNotFound;
         break;
+    case REPLICA_MANAGER_PING:
+        package_specific.replicaManagerPing = rhs.package_specific.replicaManagerPing;
+        break;
+    case REPLICA_MANAGER_PING_RESPONSE:
+        package_specific.replicaManagerPingResponse = rhs.package_specific.replicaManagerPingResponse;
+        break;
     default:
         throw std::invalid_argument("Unknown package_type.");
     }
@@ -231,6 +253,12 @@ Package::Package(PackageUploadFile file)
 Package::Package(PackageFileNotFound fileNotFound)
     : package_type(FILE_NOT_FOUND), package_specific(fileNotFound) {}
 
+Package::Package(PackageReplicaManagerPing replicaManagerPing)
+    : package_type(REPLICA_MANAGER_PING), package_specific(replicaManagerPing) {}
+
+Package::Package(PackageReplicaManagerPingResponse replicaManagerPingResponse)
+    : package_type(REPLICA_MANAGER_PING_RESPONSE), package_specific(replicaManagerPingResponse) {}
+
 // Conversão de Package de representação local para be
 void Package::htobe(void)
 {
@@ -244,6 +272,8 @@ void Package::htobe(void)
     case CHANGE_EVENT:
     case REQUEST_FILE:
     case REQUEST_FILE_LIST:
+    case REPLICA_MANAGER_PING:
+    case REPLICA_MANAGER_PING_RESPONSE:
     case FILE_NOT_FOUND:
         break;
     case FILE_CONTENT:
@@ -282,6 +312,8 @@ void Package::betoh(void)
     case CHANGE_EVENT:
     case REQUEST_FILE:
     case REQUEST_FILE_LIST:
+    case REPLICA_MANAGER_PING:
+    case REPLICA_MANAGER_PING_RESPONSE:
     case FILE_NOT_FOUND:
         break;
     case FILE_CONTENT:

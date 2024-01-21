@@ -93,6 +93,10 @@ std::optional<ssize_t> sizeof_base_package(PackageType package_type)
         return sizeof(PackageUploadFile);
     case FILE_NOT_FOUND:
         return sizeof(PackageFileNotFound);
+    case REPLICA_MANAGER_PING:
+        return sizeof(PackageReplicaManagerPing);
+    case REPLICA_MANAGER_PING_RESPONSE:
+        return sizeof(PackageReplicaManagerPingResponse);
     default:
         printf("[sizeof_base_package] Unknown package type: 0x%02x\n", (uint8_t)package_type);
         return std::nullopt;
@@ -205,6 +209,12 @@ int read_package_from_socket(int socket, Package &package, std::vector<char> &fi
         break;
     case FILE_NOT_FOUND:
         package = Package(PackageFileNotFound());
+        break;
+    case REPLICA_MANAGER_PING:
+        package = Package(PackageReplicaManagerPing());
+        break;
+    case REPLICA_MANAGER_PING_RESPONSE:
+        package = Package(PackageReplicaManagerPingResponse());
         break;
     default:
         return 1;
@@ -438,6 +448,12 @@ void print_package(FILE *fout, bool sending, Package &package, std::vector<char>
         break;
     case FILE_NOT_FOUND:
         fprintf(fout, "Package(FILE_NOT_FOUND");
+        break;
+    case REPLICA_MANAGER_PING:
+        fprintf(fout, "Package(REPLICA_MANAGER_PING");
+        break;
+    case REPLICA_MANAGER_PING_RESPONSE:
+        fprintf(fout, "Package(REPLICA_MANAGER_PING_RESPONSE");
         break;
     default:
         fprintf(fout, "Package(UNKOWN[0x%02x]", (uint8_t)package.package_type);

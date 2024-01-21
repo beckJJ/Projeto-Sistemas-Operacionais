@@ -32,7 +32,7 @@ struct DadosConexao
     // Lock para alterar file_list
     pthread_mutex_t *file_list_lock;
     // Deve ser verificado se já leu todo FileList
-    bool is_file_list_readed;
+    bool is_file_list_read;
     // Lista de arquivos do servidor, atualizada sempre que PackageFileList forem recebidos
     std::vector<File> file_list;
     // Usado para cancelar a thread em execução

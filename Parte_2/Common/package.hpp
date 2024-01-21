@@ -42,7 +42,11 @@ enum PackageType : char
     // Usado para que um novo RM se identifique
     INITIAL_REPLICA_MANAGER_IDENTIFICATION,
     // Resposta do servidor para identificação do replica manager
-    REPLICA_MANAGER_IDENTIFICATION_RESPONSE
+    REPLICA_MANAGER_IDENTIFICATION_RESPONSE,
+    // Pacote de ping enviado pelo backup
+    REPLICA_MANAGER_PING,
+    // Resposta do servidor para o ping do backup
+    REPLICA_MANAGER_PING_RESPONSE
 };
 
 // Indica aceitação ou rejeição da conexão do dispositivo
@@ -199,6 +203,16 @@ struct alignas(ALIGN_VALUE) PackageFileNotFound
     PackageFileNotFound();
 };
 
+struct alignas(ALIGN_VALUE) PackageReplicaManagerPing
+{
+    PackageReplicaManagerPing();
+};
+
+struct alignas(ALIGN_VALUE) PackageReplicaManagerPingResponse
+{
+    PackageReplicaManagerPingResponse();
+};
+
 // União de todos os pacotes
 union alignas(ALIGN_VALUE) PackageSpecific
 {
@@ -213,6 +227,8 @@ union alignas(ALIGN_VALUE) PackageSpecific
     alignas(ALIGN_VALUE) PackageRequestFileList requestFileList;
     alignas(ALIGN_VALUE) PackageUploadFile uploadFile;
     alignas(ALIGN_VALUE) PackageFileNotFound fileNotFound;
+    alignas(ALIGN_VALUE) PackageReplicaManagerPing replicaManagerPing;
+    alignas(ALIGN_VALUE) PackageReplicaManagerPingResponse replicaManagerPingResponse;
 
     PackageSpecific();
     PackageSpecific(PackageUserIdentification userIdentification);
@@ -226,6 +242,8 @@ union alignas(ALIGN_VALUE) PackageSpecific
     PackageSpecific(PackageFileList fileList);
     PackageSpecific(PackageUploadFile uploadFile);
     PackageSpecific(PackageFileNotFound fileNotFound);
+    PackageSpecific(PackageReplicaManagerPing replicaManagerPing);
+    PackageSpecific(PackageReplicaManagerPingResponse replicaManagerPingResponse);
     ~PackageSpecific();
 };
 
@@ -256,6 +274,8 @@ struct alignas(ALIGN_VALUE) Package
     Package(PackageFileList fileList);
     Package(PackageUploadFile file);
     Package(PackageFileNotFound fileNotFound);
+    Package(PackageReplicaManagerPing replicaManagerPing);
+    Package(PackageReplicaManagerPingResponse replicaManagerPingResponse);
 };
 
 #endif

@@ -31,6 +31,22 @@ int send_file_list(int socket, std::vector<File> files)
     return 0;
 }
 
+// Faz um ping do servidor de backup para o servidor principal
+int send_ping_to_main(int socket)
+{
+    std::vector<char> fileContentBuffer;
+    Package package = Package(PackageReplicaManagerPing());
+    return write_package_to_socket(socket, package, fileContentBuffer);
+}
+
+// Retorna um ACK do servidor principal para um backup
+int send_backup_ack(int socket)
+{
+    std::vector<char> fileContentBuffer;
+    Package package = Package(PackageReplicaManagerPingResponse());
+    return write_package_to_socket(socket, package, fileContentBuffer);
+}
+
 // Envia uma sequência de pacotes PackageFileContent contendo o conteúdo em path
 int send_file(int socket, const char *path)
 {

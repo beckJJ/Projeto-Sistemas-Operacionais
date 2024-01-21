@@ -104,9 +104,10 @@ int main(int argc, char *argv[])
         char *ret;
 
         limpaTela();
-        menu_principal(dados_conexao); /* Exibe o menu principal ao usuario, para digitar os comandos. */
-
-        ret = fgets(dados_conexao.comando, sizeof(dados_conexao.comando), stdin); /* Obtem o comando inserido pelo usuario. */
+        /* Exibe o menu principal ao usuario, para digitar os comandos. */
+        menu_principal(dados_conexao); 
+        /* Obtem o comando inserido pelo usuario. */
+        ret = fgets(dados_conexao.comando, sizeof(dados_conexao.comando), stdin); 
 
         // Erro ou EOF
         if (ret == NULL)

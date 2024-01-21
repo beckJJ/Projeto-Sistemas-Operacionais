@@ -7,7 +7,7 @@
 #include "deviceManager.hpp"
 
 void serverLoop(int socket_id, int tid, std::string &username, User *&user, Device *&device);
-void serverLoopBackup();
+void serverLoopBackup(int socket_id, int tid);
 void serverLoopClient(int socket_id, int tid, std::string &username, User *&user, Device *&device);
 
 #endif

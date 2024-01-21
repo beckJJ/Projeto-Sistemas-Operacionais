@@ -4,11 +4,11 @@
 #include <ctype.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/socket.h>
 #include <unistd.h>
 #include <dirent.h>
 #include <time.h>
 #include <limits.h>
-#include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
 #include <pthread.h>
@@ -22,6 +22,7 @@
 #include "connections.hpp"
 #include "../Common/DadosConexao.hpp"
 #include "replicaManager.hpp"
+#include "../Common/package_file.hpp"
 
 #if DEBUG_PACOTE
 // Lock usado por print_package para exibir completamente um pacote
@@ -103,7 +104,6 @@ int main(int argc, char *argv[])
             exit(EXIT_FAILURE);
         } else {
             printf("Handshake succeeded\n");
-            exit(0);
         }
     }
 
@@ -147,20 +147,30 @@ int main(int argc, char *argv[])
         ServerThreadArg thread_arg; // { };
         pthread_t thread;
 
-        if ((thread_arg.socket_id = accept(main_thread_socket, (struct sockaddr *)&cli_addr, &clilen)) == -1)
-        {
-            printf("Erro! Nao foi possivel realizar conexao com o cliente!\n");
-            break;
-        }
-        thread_arg.socket_address = cli_addr;
-
-        printf("Nova conexao estabelecida.\n");
-
         if (backup) {
-            //pthread_create(&)
+            while (true) {
+                send_ping_to_main(dadosConexao.socket);
+                std::vector<char> fileContentBuffer;
+                Package package;
+                if (read_package_from_socket(dadosConexao.socket, package, fileContentBuffer)) {
+                    printf("Erro ao ler pacote do servidor.\n");
+                    exit(0);
+                }
+                sleep(1);
+            }
         } else {
+
+            if ((thread_arg.socket_id = accept(main_thread_socket, (struct sockaddr *)&cli_addr, &clilen)) == -1) {
+                printf("Erro! Nao foi possivel realizar conexao com o cliente!\n");
+                break;
+            }
+            thread_arg.socket_address = cli_addr;
+
+            printf("Nova conexao estabelecida.\n");
+
             // Cria thread para lidar com a conexão estabelecida    
             pthread_create(&thread, NULL, serverThread, &thread_arg);
+            
         }
     }
 

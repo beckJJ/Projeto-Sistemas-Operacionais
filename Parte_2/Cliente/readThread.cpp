@@ -154,7 +154,7 @@ void *readThread(void *)
             pthread_mutex_lock(dados_conexao.file_list_lock);
 
             handleFileList(package);
-            dados_conexao.is_file_list_readed = true;
+            dados_conexao.is_file_list_read = true;
 
             pthread_mutex_unlock(dados_conexao.file_list_lock);
 
