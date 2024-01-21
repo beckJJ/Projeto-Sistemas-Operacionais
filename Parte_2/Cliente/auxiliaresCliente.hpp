@@ -3,7 +3,7 @@
 
 #include <vector>
 #include "../Common/package.hpp"
-#include "DadosConexao.hpp"
+#include "../Common/DadosConexao.hpp"
 
 // download_file pode falhar pelo arquivo não existir ou não conseguir ler ou escrever pacote
 #define DOWNLOAD_FILE_FILE_NOT_FOUND 1

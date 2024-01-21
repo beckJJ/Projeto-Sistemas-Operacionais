@@ -14,7 +14,7 @@
 #include "../Common/functions.hpp"
 #include "../Common/package_functions.hpp"
 #include "../Common/package_file.hpp"
-#include "DadosConexao.hpp"
+#include "../Common/DadosConexao.hpp"
 #include "interfaceCliente.hpp"
 #include "auxiliaresCliente.hpp"
 

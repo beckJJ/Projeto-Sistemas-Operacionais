@@ -20,6 +20,7 @@
 #include "config.hpp"
 #include <signal.h>
 #include "connections.hpp"
+#include "../Common/DadosConexao.hpp"
 
 #if DEBUG_PACOTE
 // Lock usado por print_package para exibir completamente um pacote
@@ -29,6 +30,8 @@ pthread_mutex_t print_package_lock = PTHREAD_MUTEX_INITIALIZER;
 DeviceManager deviceManager = DeviceManager();
 int main_thread_socket = -1;
 ActiveConnections_t activeConnections;
+bool backup = false;
+DadosConexao dadosConexao = DadosConexao();
 
 void sigint_handler_main(int)
 {
@@ -52,7 +55,7 @@ int main(int argc, char *argv[])
     char c;
 
     // Lê argumentos do programa
-    while ((c = getopt(argc, argv, "hp:")) != -1)
+    while ((c = getopt(argc, argv, "bhp:s:m:")) != -1)
     {
         switch (c)
         {
@@ -64,11 +67,32 @@ int main(int argc, char *argv[])
         case 'p':
             port = atoi(optarg);
             break;
+        case 'b':  // inicializar server como backup
+            backup = true;
+            break;
+        case 's': // informar ip do servidor principal
+            strcpy(dadosConexao.endereco_ip, optarg);
+            break;
+        case 'm': // informar a porta do servidor principal
+            strcpy(dadosConexao.numero_porta, optarg);
+            break;
         default:
             printf("Usage:\n");
-            printf("\t%s [-p PORT]\n", argv[0]);
+            printf("\t%s [-p PORT] [-b] [-s SERVER_IP] [-m SERVER_PORT]\n", argv[0]);
             abort();
         }
+    }
+    if (backup) {
+        printf("Inicializando Backup\n");
+        if (!dadosConexao.endereco_ip[0]) {
+            printf("Erro: Informe o endereco ip do servidor principal\n");
+            exit(0);
+        }
+        if (!dadosConexao.numero_porta[0]) {
+            printf("Erro: informe a porta do servidor principal\n");
+            exit(0);
+        }
+        printf("Conectando no servidor principal %s:%s\n", dadosConexao.endereco_ip, dadosConexao.numero_porta);
     }
 
     // Registra sigint_handler_main para SIGINT
@@ -122,19 +146,13 @@ int main(int argc, char *argv[])
         thread_arg.socket_address = cli_addr;
 
         printf("Nova conexao estabelecida.\n");
-/*
-        printf("Clientes conectados:\n");
-        for (sockaddr_in c : activeConnections.clients) {
-            char clientIP[INET_ADDRSTRLEN];
-            inet_ntop(AF_INET, &(c.sin_addr), clientIP, INET_ADDRSTRLEN);
-            printf("%s\t", clientIP);
-            printf("%d\n", ntohs(c.sin_port));
 
+        if (backup) {
+            //pthread_create(&)
+        } else {
+            // Cria thread para lidar com a conexão estabelecida    
+            pthread_create(&thread, NULL, serverThread, &thread_arg);
         }
-        printf("\n");
-*/
-        // Cria thread para lidar com a conexão estabelecida
-        pthread_create(&thread, NULL, serverThread, &thread_arg);
     }
 
     close(main_thread_socket);

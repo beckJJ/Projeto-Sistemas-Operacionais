@@ -33,7 +33,7 @@ all: myClient myServer
 
 
 myClient: Cliente/myClient.cpp auxiliaresCliente interfaceCliente comunicacaoCliente package functions package_file package_functions eventThread readThread DadosConexao
-	$(CC) $(CFLAGS) $(DEFINES) -o myClient Cliente/myClient.cpp Cliente/auxiliaresCliente.o Cliente/interfaceCliente.o Cliente/comunicacaoCliente.o Cliente/eventThread.o Cliente/readThread.o Cliente/DadosConexao.o Common/package.o Common/functions.o Common/package_file.o Common/package_functions.o
+	$(CC) $(CFLAGS) $(DEFINES) -o myClient Cliente/myClient.cpp Cliente/auxiliaresCliente.o Cliente/interfaceCliente.o Cliente/comunicacaoCliente.o Cliente/eventThread.o Cliente/readThread.o Common/DadosConexao.o Common/package.o Common/functions.o Common/package_file.o Common/package_functions.o
 
 auxiliaresCliente: Cliente/auxiliaresCliente.cpp
 	$(CC) $(CFLAGS) $(DEFINES) -c -o Cliente/auxiliaresCliente.o Cliente/auxiliaresCliente.cpp
@@ -50,12 +50,9 @@ eventThread: Cliente/eventThread.cpp
 readThread: Cliente/readThread.cpp
 	$(CC) $(CFLAGS) $(DEFINES) -c -o Cliente/readThread.o Cliente/readThread.cpp
 
-DadosConexao: Cliente/DadosConexao.cpp
-	$(CC) $(CFLAGS) $(DEFINES) -c -o Cliente/DadosConexao.o Cliente/DadosConexao.cpp
 
-
-myServer: Servidor/myServer.cpp serverThread deviceManager serverLoop package functions package_file package_functions
-	$(CC) $(CFLAGS) $(DEFINES) -o myServer Servidor/myServer.cpp Servidor/serverThread.o Servidor/deviceManager.o Servidor/serverLoop.o Common/package.o Common/functions.o Common/package_file.o Common/package_functions.o
+myServer: Servidor/myServer.cpp serverThread deviceManager serverLoop package functions package_file package_functions DadosConexao
+	$(CC) $(CFLAGS) $(DEFINES) -o myServer Servidor/myServer.cpp Servidor/serverThread.o Servidor/deviceManager.o Servidor/serverLoop.o Common/package.o Common/functions.o Common/package_file.o Common/package_functions.o Common/DadosConexao.o
 
 deviceManager: Servidor/deviceManager.cpp
 	$(CC) $(CFLAGS) $(DEFINES) -c -o Servidor/deviceManager.o Servidor/deviceManager.cpp
@@ -78,6 +75,10 @@ package_file: Common/package_file.cpp
 
 package_functions: Common/package_functions.cpp
 	$(CC) $(CFLAGS) $(DEFINES) -c -o Common/package_functions.o Common/package_functions.cpp
+
+DadosConexao: Common/DadosConexao.cpp
+	$(CC) $(CFLAGS) $(DEFINES) -c -o Common/DadosConexao.o Common/DadosConexao.cpp
+
 
 clean:
 	rm -f myClient myServer Cliente/*.o Servidor/*.o Common/*.o

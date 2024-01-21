@@ -1,7 +1,7 @@
 #ifndef _INTERFACECLIENTE_H_
 #define _INTERFACECLIENTE_H_
 
-#include "DadosConexao.hpp"
+#include "../Common/DadosConexao.hpp"
 
 /* Constantes para indicar a sintaxe de cada comando. */
 #define COMANDO_MYCLIENT "myClient"

@@ -103,7 +103,7 @@ Package::Package(const Package &&rhs)
     // Move dependendo do tipo
     switch (package_type)
     {
-    case INITAL_USER_IDENTIFICATION:
+    case INITIAL_USER_IDENTIFICATION:
         package_specific.userIdentification = std::move(rhs.package_specific.userIdentification);
         break;
     case USER_IDENTIFICATION_RESPONSE:
@@ -152,7 +152,7 @@ Package &Package::operator=(const Package &rhs)
     // Cópia dependendo do tipo
     switch (package_type)
     {
-    case INITAL_USER_IDENTIFICATION:
+    case INITIAL_USER_IDENTIFICATION:
         package_specific.userIdentification = rhs.package_specific.userIdentification;
         break;
     case USER_IDENTIFICATION_RESPONSE:
@@ -193,7 +193,7 @@ Package &Package::operator=(const Package &rhs)
 }
 
 Package::Package(PackageUserIdentification userIdentification)
-    : package_type(INITAL_USER_IDENTIFICATION), package_specific(userIdentification) {}
+    : package_type(INITIAL_USER_IDENTIFICATION), package_specific(userIdentification) {}
 
 Package::Package(PackageUserIdentificationResponse userIdentificationResponse)
     : package_type(USER_IDENTIFICATION_RESPONSE), package_specific(userIdentificationResponse) {}
@@ -225,7 +225,7 @@ void Package::htobe(void)
     switch (this->package_type)
     {
     // Não há campo para converter
-    case INITAL_USER_IDENTIFICATION:
+    case INITIAL_USER_IDENTIFICATION:
     case USER_IDENTIFICATION_RESPONSE:
     case INITIAL_REPLICA_MANAGER_IDENTIFICATION:
     case REPLICA_MANAGER_IDENTIFICATION_RESPONSE:
@@ -263,7 +263,7 @@ void Package::betoh(void)
     switch (this->package_type)
     {
     // Não há campo para converter
-    case INITAL_USER_IDENTIFICATION:
+    case INITIAL_USER_IDENTIFICATION:
     case USER_IDENTIFICATION_RESPONSE:
     case CHANGE_EVENT:
     case REQUEST_FILE:

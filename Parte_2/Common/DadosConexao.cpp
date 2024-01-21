@@ -4,6 +4,10 @@ DadosConexao::DadosConexao()
 {
     socket = -1;
 
+    nome_usuario[0] = 0;
+    endereco_ip[0]  = 0;
+    numero_porta[0] = 0;
+
     socket_lock = new pthread_mutex_t;
     file_list_lock = new pthread_mutex_t;
     file_list_cond = new pthread_cond_t;

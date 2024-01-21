@@ -3,7 +3,7 @@
 
 // Funções de comunicação usadas pelo usuário
 
-#include "DadosConexao.hpp"
+#include "../Common/DadosConexao.hpp"
 #include <optional>
 
 // Conecta-se com o servidor

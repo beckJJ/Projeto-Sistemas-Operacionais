@@ -21,10 +21,28 @@
 
 extern DeviceManager deviceManager;
 extern ActiveConnections_t activeConnections;
+extern bool backup;
 
 thread_local pid_t tid = 0;
 thread_local Client_t client = {-1, {0, 0, 0, 0}};
 
+// Função para receber conexões de servidores de backup 
+int connectBackup(Server_t server)
+{
+    auto package = Package();
+    std::vector<char> fileContentBuffer;
+
+    if (read_package_from_socket(server.socket_id, package, fileContentBuffer)) {
+        printf("[tid: %d] Erro ao ler primeiro pacote do backup\n", tid);
+        return 1;
+    }
+
+    if (package.package_type != INITIAL_REPLICA_MANAGER_IDENTIFICATION) {
+        printf("[tid: %d] Pacote inicial do backup nao e identificacao: 0x%02x\n", tid, (uint8_t)package.package_type);
+        return 1;
+    }
+    return 0;
+}
 
 // Processa pacotes iniciais de identificação
 int connectUser(Client_t client, std::string &username, User *&user, Device *&device, uint8_t &deviceID)
@@ -38,8 +56,8 @@ int connectUser(Client_t client, std::string &username, User *&user, Device *&de
         return 1;
     }
 
-    // O primeiro pacote enviado pelo usuário deve ser INITAL_USER_IDENTIFICATION
-    if (package.package_type != INITAL_USER_IDENTIFICATION)
+    // O primeiro pacote enviado pelo usuário deve ser INITIAL_USER_IDENTIFICATION
+    if (package.package_type != INITIAL_USER_IDENTIFICATION)
     {
         printf("[tid: %d] Pacote inicial do usuario nao e identificacao: 0x%02x\n", tid, (uint8_t)package.package_type);
         return 1;

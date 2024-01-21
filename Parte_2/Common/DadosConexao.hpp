@@ -11,7 +11,7 @@
 #include <cstdint>
 #include <optional>
 #include <vector>
-#include "../Common/package.hpp"
+#include "package.hpp"
 
 /* Estrutura utilizada para conter todos os dados da conexao. */
 struct DadosConexao
@@ -24,7 +24,7 @@ struct DadosConexao
 
     // Armazena o socket sendo utilizado para comunicacao
     int socket;
-    // Lock que deve ser adiquirida antes de ler e enviar pacotes para o servidor
+    // Lock que deve ser adquirido antes de ler e enviar pacotes para o servidor
     pthread_mutex_t *socket_lock;
     // Condição usada para esperar leitura da lista de arquivos que deve ser feita pela thread de
     //   leitura

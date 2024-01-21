@@ -71,7 +71,7 @@ std::optional<ssize_t> sizeof_base_package(PackageType package_type)
 {
     switch (package_type)
     {
-    case INITAL_USER_IDENTIFICATION:
+    case INITIAL_USER_IDENTIFICATION:
         return sizeof(PackageUserIdentification);
     case USER_IDENTIFICATION_RESPONSE:
         return sizeof(PackageUserIdentificationResponse);
@@ -132,7 +132,7 @@ int read_package_from_socket(int socket, Package &package, std::vector<char> &fi
     // Cria Package dependendo tipo, aplicando bexxtoh conforme necessário
     switch (package_type.value())
     {
-    case INITAL_USER_IDENTIFICATION:
+    case INITIAL_USER_IDENTIFICATION:
         package = Package(PackageUserIdentification(
             *(uint8_t *)buffer_data,
             &buffer_data[ALIGN_VALUE]));
@@ -311,9 +311,9 @@ void print_package(FILE *fout, bool sending, Package &package, std::vector<char>
 
     switch (package.package_type)
     {
-    case INITAL_USER_IDENTIFICATION:
+    case INITIAL_USER_IDENTIFICATION:
         fprintf(fout,
-                "Package(INITAL_USER_IDENTIFICATION, 0x%02x, %s",
+                "Package(INITIAL_USER_IDENTIFICATION, 0x%02x, %s",
                 (uint8_t)package.package_specific.userIdentification.deviceID,
                 package.package_specific.userIdentification.user_name);
         break;

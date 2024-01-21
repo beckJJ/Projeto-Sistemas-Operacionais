@@ -3,7 +3,7 @@
 #include <pthread.h>
 #include "../Common/package.hpp"
 #include "../Common/package_functions.hpp"
-#include "DadosConexao.hpp"
+#include "../Common/DadosConexao.hpp"
 #include <string>
 #include "../Common/defines.hpp"
 #include "comunicacaoCliente.hpp"

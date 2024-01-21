@@ -21,7 +21,7 @@
 enum PackageType : char
 {
     // Usado para que o usuário se identifique
-    INITAL_USER_IDENTIFICATION,
+    INITIAL_USER_IDENTIFICATION,
     // Resposta do servidor para identificação do usuario
     USER_IDENTIFICATION_RESPONSE,
     // Indica mudança nos arquivos, tanto cliente->servidor quanto servidor->cliente
