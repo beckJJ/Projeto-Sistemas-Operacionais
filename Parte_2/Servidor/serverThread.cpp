@@ -48,7 +48,7 @@ int connectToServer(Connection_t connection, std::string &username, User *&user,
 }
 
 // Função para receber conexões de servidores de backup 
-int connectBackup(Connection_t server, std::string &username, User *&user, Device *&device, uint8_t &deviceID, Package &package, std::vector<char> fileContentBuffer)
+int connectBackup(Connection_t server)
 {
     auto package = Package();
     std::vector<char> fileContentBuffer;
