@@ -40,7 +40,8 @@ int connectToServer(Connection_t connection, std::string &username, User *&user,
         case INITIAL_USER_IDENTIFICATION:
             return connectUser(connection, username, user, device, deviceID, package, fileContentBuffer);
         case INITIAL_REPLICA_MANAGER_IDENTIFICATION:
-            return connectBackup(connection);
+            username = "backup";
+            return connectBackup(connection, deviceID, package, fileContentBuffer);
         default: 
             printf("[tid: %d] Pacote inicial da conexao nao e identificacao: 0x%02x\n", tid, (uint8_t)package.package_type);
             return 1;
@@ -48,22 +49,38 @@ int connectToServer(Connection_t connection, std::string &username, User *&user,
 }
 
 // Função para receber conexões de servidores de backup 
-int connectBackup(Connection_t server)
+int connectBackup(Connection_t server, uint8_t &deviceID, Package &package, std::vector<char> fileContentBuffer)
 {
-    auto package = Package();
-    std::vector<char> fileContentBuffer;
+    deviceID = package.package_specific.replicaManagerIdentification.deviceID;
 
-    if (read_package_from_socket(server.socket_id, package, fileContentBuffer)) {
-        printf("[tid: %d] Erro ao ler primeiro pacote do backup\n", tid);
+    std::optional<DeviceConnectReturn> deviceConnectReturn;
+
+    // Tenta conectar com o replica manager
+    std::string username = "backup";
+    deviceConnectReturn = deviceManager.connect(server, username);
+
+    if (!deviceConnectReturn.has_value()) {
+        printf("[tid: %d] Nova conexao do backup rejeitada.\n", tid);
+
+        // Responde ao usuário indicando rejeição da conexão
+        package = Package(PackageReplicaManagerIdentificationResponse(REJECTED_RM, 0));
+        write_package_to_socket(server.socket_id, package, fileContentBuffer);
         return 1;
     }
 
-    if (package.package_type != INITIAL_REPLICA_MANAGER_IDENTIFICATION) {
-        printf("[tid: %d] Pacote inicial do backup nao e identificacao: 0x%02x\n", tid, (uint8_t)package.package_type);
+    deviceID = deviceConnectReturn.value().deviceID;
+
+    printf("[tid: %d] Nova conexao com backup, dispositivo: 0x%02x.\n", tid, (uint8_t)deviceID);
+
+    // Responde ao backup indicando sucesso da conexão
+    package = Package(PackageReplicaManagerIdentificationResponse(ACCEPTED_RM, deviceID));
+
+    if (write_package_to_socket(server.socket_id, package, fileContentBuffer))
+    {
+        printf("[tid: %d] Erro ao enviar resposta inicial ao backup.\n", tid);
         return 1;
     }
 
-    
     return 0;
 }
 

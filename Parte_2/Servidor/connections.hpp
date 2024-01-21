@@ -11,7 +11,7 @@ typedef struct {
 // struct que guarda todas as conexões ativas do servidor principal
 typedef struct {
     // Lock para alterar as conexões
-    pthread_mutex_t *lock;
+    pthread_mutex_t *lock; // NOVO MUTEX
 
     std::vector<Connection_t> clients;
     std::vector<Connection_t> backups;

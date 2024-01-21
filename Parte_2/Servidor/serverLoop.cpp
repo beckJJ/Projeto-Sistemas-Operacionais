@@ -118,8 +118,22 @@ void handleChangeEvent(int socket_id, int tid, PackageChangeEvent &changeEvent, 
     }
 }
 
-// Loop de requisições e respotas para determinado dispositivo
 void serverLoop(int socket_id, int tid, std::string &username, User *&user, Device *&device)
+{
+    if (username == "backup") {
+        serverLoopBackup();
+    } else {
+        serverLoopClient(socket_id, tid, username, user, device);
+    }
+}
+
+void serverLoopBackup()
+{
+    return;
+}
+
+// Loop de requisições e respotas para determinado dispositivo
+void serverLoopClient(int socket_id, int tid, std::string &username, User *&user, Device *&device)
 {
     auto package = Package();
     std::vector<char> fileContentBuffer;

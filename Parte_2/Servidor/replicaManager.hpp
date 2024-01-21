@@ -1,0 +1,10 @@
+#pragma once
+
+#include <optional>
+#include "../Common/package.hpp"
+#include "../Common/DadosConexao.hpp"
+#include "../Common/package_functions.hpp"
+
+
+std::optional<int> conecta_servidor(DadosConexao &dadosConexao);
+int conecta_backup(DadosConexao &dadosConexao);

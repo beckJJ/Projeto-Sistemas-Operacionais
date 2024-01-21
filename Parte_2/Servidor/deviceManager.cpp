@@ -236,8 +236,59 @@ DeviceManager::~DeviceManager()
     disconnect_all();
 }
 
-// Conecta thread como dispositivo de determinado usuário
-std::optional<DeviceConnectReturn> DeviceManager::connect(Connection_t client, std::string &user)
+std::optional<DeviceConnectReturn> DeviceManager::connect(Connection_t connection, std::string &username)
+{
+    if (username == "backup") {
+        return connectBackup(connection);
+    }
+    else {
+        return connectClient(connection, username);
+    }
+}
+
+// Conecta thread do servidor principal com servidor de backup
+std::optional<DeviceConnectReturn> DeviceManager::connectBackup(Connection_t backup)
+{
+    uint8_t deviceID;
+    
+    // encontrar primeiro valor livre de deviceID
+    pthread_mutex_lock(&backups_lock);
+    deviceID = nextBackupID;
+    backups.push_back(deviceID);
+    nextBackupID++;
+    pthread_mutex_unlock(&backups_lock);
+
+    // adicionar cliente na lista de clientes conectados
+    pthread_mutex_lock(activeConnections.lock);
+
+    activeConnections.backups.push_back(backup);
+
+    printf("Clientes conectados:\n");
+    for (Connection_t c : activeConnections.clients) {
+        char clientIP[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &(c.address.sin_addr), clientIP, INET_ADDRSTRLEN);
+        printf("%s\t", clientIP);
+        printf("%d\t", ntohs(c.address.sin_port));
+        printf("%d\n", c.socket_id);
+    }
+    printf("Backups conectados:\n");
+    for (Connection_t c : activeConnections.backups) {
+        char clientIP[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &(c.address.sin_addr), clientIP, INET_ADDRSTRLEN);
+        printf("%s\t", clientIP);
+        printf("%d\t", ntohs(c.address.sin_port));
+        printf("%d\n", c.socket_id);
+    }
+    printf("\n");
+    
+    pthread_mutex_unlock(activeConnections.lock);
+
+    return DeviceConnectReturn(NULL, NULL, deviceID);
+}
+
+
+// Conecta thread com dispositivo de determinado usuário
+std::optional<DeviceConnectReturn> DeviceManager::connectClient(Connection_t client, std::string &user)
 {
     uint8_t deviceID;
 
@@ -311,7 +362,6 @@ std::optional<DeviceConnectReturn> DeviceManager::connect(Connection_t client, s
         printf("%s\t", clientIP);
         printf("%d\t", ntohs(c.address.sin_port));
         printf("%d\n", c.socket_id);
-
     }
     printf("\n");
     pthread_mutex_unlock(activeConnections.lock);
@@ -320,9 +370,65 @@ std::optional<DeviceConnectReturn> DeviceManager::connect(Connection_t client, s
     return DeviceConnectReturn(device, usuario, deviceID);
 }
 
+void DeviceManager::disconnect(std::string &username, uint8_t id, Connection_t connection)
+{
+    if (username == "backup") {
+        disconnectBackup(id, connection);
+    } else {
+        disconnectClient(username, id, connection);
+    }
+}
+
+void DeviceManager::disconnectBackup(uint8_t id, Connection_t backup)
+{
+    // Remove id do backup da lista de backups
+    pthread_mutex_lock(&backups_lock);
+    for (int i = 0; i < (int)backups.size(); i++) {
+        if (backups[i] == id) {
+            backups.erase(backups.begin()+i);
+            break;
+        }
+    }
+    pthread_mutex_unlock(&backups_lock);
+
+    // remove backup da lista de backups conectados
+    pthread_mutex_lock(activeConnections.lock);
+    int i = 0;
+    while (backup.socket_id != activeConnections.backups[i].socket_id && i < (int)activeConnections.backups.size()) {
+        i++;
+    }
+    if (i >= (int)activeConnections.backups.size()) {
+        // deu algum erro
+        printf("Erro ao tentar remover backup que nao estava conectado da lista de clientes conectados!\n");
+    } else {
+        activeConnections.backups.erase(activeConnections.backups.begin()+i);
+    }
+
+    printf("Clientes conectados:\n");
+    for (Connection_t c : activeConnections.clients) {
+        char clientIP[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &(c.address.sin_addr), clientIP, INET_ADDRSTRLEN);
+        printf("%s\t", clientIP);
+        printf("%d\t", ntohs(c.address.sin_port));
+        printf("%d\n", c.socket_id);
+    }
+    printf("Backups conectados:\n");
+    for (Connection_t c : activeConnections.backups) {
+        char clientIP[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &(c.address.sin_addr), clientIP, INET_ADDRSTRLEN);
+        printf("%s\t", clientIP);
+        printf("%d\t", ntohs(c.address.sin_port));
+        printf("%d\n", c.socket_id);
+    }
+    
+    printf("\n");
+
+    pthread_mutex_unlock(activeConnections.lock);
+}
+
 // Desconecta determinado dispositivo de um usuário, os sockets serão fechados por
 //   device.close_sockets()
-void DeviceManager::disconnect(std::string &user, uint8_t id, Connection_t client)
+void DeviceManager::disconnectClient(std::string &user, uint8_t id, Connection_t client)
 {
     // Evita alteração enquanto lê
     pthread_mutex_lock(&usuarios_lock);

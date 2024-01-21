@@ -73,10 +73,10 @@ std::optional<ssize_t> sizeof_base_package(PackageType package_type)
     {
     case INITIAL_USER_IDENTIFICATION:
         return sizeof(PackageUserIdentification);
-    case USER_IDENTIFICATION_RESPONSE:
-        return sizeof(PackageUserIdentificationResponse);
     case INITIAL_REPLICA_MANAGER_IDENTIFICATION:
         return sizeof(PackageReplicaManagerIdentification);
+    case USER_IDENTIFICATION_RESPONSE:
+        return sizeof(PackageUserIdentificationResponse);
     case REPLICA_MANAGER_IDENTIFICATION_RESPONSE:
         return sizeof(PackageReplicaManagerIdentificationResponse);
     case CHANGE_EVENT:
@@ -137,10 +137,19 @@ int read_package_from_socket(int socket, Package &package, std::vector<char> &fi
             *(uint8_t *)buffer_data,
             &buffer_data[ALIGN_VALUE]));
         break;
+    case INITIAL_REPLICA_MANAGER_IDENTIFICATION:
+        package = Package(PackageReplicaManagerIdentification(
+            *(uint8_t*)buffer_data));
+        break;
     case USER_IDENTIFICATION_RESPONSE:
         package = Package(PackageUserIdentificationResponse(
             *(InitialUserIdentificationResponseStatus *)buffer_data,
             *(uint8_t *)&buffer_data[ALIGN_VALUE]));
+        break;
+    case REPLICA_MANAGER_IDENTIFICATION_RESPONSE:
+        package = Package(PackageReplicaManagerIdentificationResponse(
+            *(InitialReplicaManagerIdentificationResponseStatus*)buffer_data,
+            *(uint8_t*)&buffer_data[ALIGN_VALUE]));
         break;
     case CHANGE_EVENT:
         package = Package(PackageChangeEvent(
@@ -317,6 +326,11 @@ void print_package(FILE *fout, bool sending, Package &package, std::vector<char>
                 (uint8_t)package.package_specific.userIdentification.deviceID,
                 package.package_specific.userIdentification.user_name);
         break;
+    case INITIAL_REPLICA_MANAGER_IDENTIFICATION:
+        fprintf(fout,
+                "Package(INITIAL_REPLICA_MANAGER_IDENTIFICATION, 0x%02x",
+                (uint8_t)package.package_specific.replicaManagerIdentification.deviceID);
+        break;
     case USER_IDENTIFICATION_RESPONSE:
         fprintf(fout, "Package(USER_IDENTIFICATION_RESPONSE, ");
 
@@ -334,6 +348,20 @@ void print_package(FILE *fout, bool sending, Package &package, std::vector<char>
         }
 
         fprintf(fout, ", %d", package.package_specific.userIdentificationResponse.deviceID);
+        break;
+    case REPLICA_MANAGER_IDENTIFICATION_RESPONSE:
+        fprintf(fout, "Package(REPLICA_MANAGER_IDENTIFICATION_RESPONSE, ");
+        switch (package.package_specific.replicaManagerIdentificationResponse.status) {
+        case ACCEPTED_RM:
+            fprintf(fout, "ACCEPTED_RM");
+            break;
+        case REJECTED_RM:
+            fprintf(fout, "REJECTED_RM");
+            break;
+        default:
+            fprintf(fout, "UNKNOWN_RM");
+            break;
+        }
         break;
     case CHANGE_EVENT:
         fprintf(fout, "Package(CHANGE_EVENT, 0x%02x, ", (uint8_t)package.package_specific.changeEvent.deviceID);

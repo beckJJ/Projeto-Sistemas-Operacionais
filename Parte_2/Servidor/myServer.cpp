@@ -21,6 +21,7 @@
 #include <signal.h>
 #include "connections.hpp"
 #include "../Common/DadosConexao.hpp"
+#include "replicaManager.hpp"
 
 #if DEBUG_PACOTE
 // Lock usado por print_package para exibir completamente um pacote
@@ -82,6 +83,10 @@ int main(int argc, char *argv[])
             abort();
         }
     }
+
+    // Registra sigint_handler_main para SIGINT
+    signal(SIGINT, sigint_handler_main);
+
     if (backup) {
         printf("Inicializando Backup\n");
         if (!dadosConexao.endereco_ip[0]) {
@@ -93,10 +98,14 @@ int main(int argc, char *argv[])
             exit(0);
         }
         printf("Conectando no servidor principal %s:%s\n", dadosConexao.endereco_ip, dadosConexao.numero_porta);
-    }
 
-    // Registra sigint_handler_main para SIGINT
-    signal(SIGINT, sigint_handler_main);
+        if (conecta_backup(dadosConexao)) {
+            exit(EXIT_FAILURE);
+        } else {
+            printf("Handshake succeeded\n");
+            exit(0);
+        }
+    }
 
     // Cria sync_dir do servidor
     if (create_dir_if_not_exists(PREFIXO_DIRETORIO_SERVIDOR))

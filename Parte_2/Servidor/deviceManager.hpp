@@ -92,18 +92,27 @@ class DeviceManager
 private:
     // Hash nome de usuario para User
     std::map<std::string, User *> usuarios;
+    std::vector<uint8_t> backups;
     pthread_mutex_t usuarios_lock = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_t backups_lock = PTHREAD_MUTEX_INITIALIZER;
+    uint8_t nextBackupID = 0;
+
+    std::optional<DeviceConnectReturn> connectClient(Connection_t client, std::string &user);
+    std::optional<DeviceConnectReturn> connectBackup(Connection_t backup);
+
+    void disconnectClient(std::string &user, uint8_t id, Connection_t client);
+    void disconnectBackup(uint8_t id, Connection_t backup);
 
 public:
     DeviceManager();
     ~DeviceManager();
 
-    // Conecta thread como dispositivo de determinado usuário
-    std::optional<DeviceConnectReturn> connect(Connection_t client, std::string &user);
+    // Conecta thread como dispositivo de determinado 
+    std::optional<DeviceConnectReturn> connect(Connection_t client, std::string &username);
 
     // Desconecta determinado dispositivo de um usuário, os sockets serão fechados por
     //   device.close_sockets()
-    void disconnect(std::string &user, uint8_t id, Connection_t client);
+    void disconnect(std::string &username, uint8_t id, Connection_t connection);
 
     // Desconecta todas os usuários
     void disconnect_all(void);

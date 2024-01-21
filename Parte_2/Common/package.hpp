@@ -1,3 +1,4 @@
+#pragma once
 #ifndef _PACKAGE_H_
 #define _PACKAGE_H_
 
@@ -112,9 +113,9 @@ struct alignas(ALIGN_VALUE) PackageUserIdentificationResponse
 struct alignas(ALIGN_VALUE) PackageReplicaManagerIdentification
 {
     // ID do RM, usado caso connectionType == EVENT_CONNECTION
-    alignas(ALIGN_VALUE) uint8_t replicaManagerID;
+    alignas(ALIGN_VALUE) uint8_t deviceID;
 
-    PackageReplicaManagerIdentification(uint8_t replicaManagerID);
+    PackageReplicaManagerIdentification(uint8_t deviceID);
 };
 
 // Resposta do servidor para identificação do Replica Manager
@@ -123,9 +124,9 @@ struct alignas(ALIGN_VALUE) PackageReplicaManagerIdentificationResponse
     // Indica se foi aceita ou rejeitada a conexão
     alignas(ALIGN_VALUE) InitialReplicaManagerIdentificationResponseStatus status;
     // ID do dispositivo
-    alignas(ALIGN_VALUE) uint8_t replicaManagerID;
+    alignas(ALIGN_VALUE) uint8_t deviceID;
 
-    PackageReplicaManagerIdentificationResponse(InitialReplicaManagerIdentificationResponseStatus status, uint8_t replicaManagerID);
+    PackageReplicaManagerIdentificationResponse(InitialReplicaManagerIdentificationResponseStatus status, uint8_t deviceID);
 };
 
 // Indica mudança nos arquivos
