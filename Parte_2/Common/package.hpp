@@ -222,7 +222,8 @@ struct alignas(ALIGN_VALUE) PackageFileList
 // TODO: DEFINIR PackageActiveConnectionsList CONFORME NECESSÁRIO, TALVEZ SEJA PARECIDO COM O DE CIMA
 struct alignas(ALIGN_VALUE) PackageActiveConnectionsList
 {
-
+    alignas(ALIGN_VALUE) std::vector<Connection_t> clients;
+    alignas(ALIGN_VALUE)std::vector<Connection_t> backups;
 };
 
 // Indica que um arquivo será enviado
