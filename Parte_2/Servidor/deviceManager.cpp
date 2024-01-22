@@ -236,11 +236,15 @@ DeviceManager::~DeviceManager()
     disconnect_all();
 }
 
-std::optional<DeviceConnectReturn> DeviceManager::connect(Connection_t connection, std::string &username)
+std::optional<DeviceConnectReturn> DeviceManager::connect(Connection_t connection, std::string &username, bool backupTransfer)
 {
     std::optional<DeviceConnectReturn> returnValue;
     if (username == "backup") {
-        returnValue = connectBackup(connection);
+        if (backupTransfer) {
+            returnValue = connectBackupTransfer(connection);
+        } else {
+            returnValue = connectBackup();
+        }
     }
     else {
         returnValue = connectClient(connection, username);
@@ -250,11 +254,10 @@ std::optional<DeviceConnectReturn> DeviceManager::connect(Connection_t connectio
     return returnValue;
 }
 
-// Conecta thread do servidor principal com servidor de backup
-std::optional<DeviceConnectReturn> DeviceManager::connectBackup(Connection_t backup)
+std::optional<DeviceConnectReturn> DeviceManager::connectBackupTransfer(Connection_t backup)
 {
     uint8_t deviceID;
-    
+
     // encontrar primeiro valor livre de deviceID
     pthread_mutex_lock(&backups_lock);
     deviceID = nextBackupID;
@@ -262,7 +265,7 @@ std::optional<DeviceConnectReturn> DeviceManager::connectBackup(Connection_t bac
     nextBackupID++;
     pthread_mutex_unlock(&backups_lock);
 
-    // adicionar cliente na lista de clientes conectados
+    // adicionar backup na lista de backups conectados
     pthread_mutex_lock(activeConnections.lock);
 
     activeConnections.backups.push_back(backup);
@@ -282,6 +285,21 @@ std::optional<DeviceConnectReturn> DeviceManager::connectBackup(Connection_t bac
     printf("\n");
     
     pthread_mutex_unlock(activeConnections.lock);
+
+    return DeviceConnectReturn(NULL, NULL, deviceID);
+}
+
+// Conecta thread do servidor principal com servidor de backup
+std::optional<DeviceConnectReturn> DeviceManager::connectBackup()
+{
+    uint8_t deviceID;
+    
+    // encontrar primeiro valor livre de deviceID
+    pthread_mutex_lock(&backups_lock);
+    deviceID = nextBackupID;
+    backups.push_back(deviceID);
+    nextBackupID++;
+    pthread_mutex_unlock(&backups_lock);
 
     return DeviceConnectReturn(NULL, NULL, deviceID);
 }
@@ -402,8 +420,8 @@ void DeviceManager::disconnectBackup(uint8_t id, Connection_t backup)
         i++;
     }
     if (i >= (int)activeConnections.backups.size()) {
-        // deu algum erro
-        printf("Erro ao tentar remover backup que nao estava conectado da lista de clientes conectados!\n");
+        // foi removida a thread de ping
+        printf("Removida a thread de ping do backup.\n");
     } else {
         activeConnections.backups.erase(activeConnections.backups.begin()+i);
     }

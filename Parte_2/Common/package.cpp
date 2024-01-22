@@ -33,6 +33,12 @@ PackageReplicaManagerIdentification::PackageReplicaManagerIdentification(uint8_t
 PackageReplicaManagerIdentificationResponse::PackageReplicaManagerIdentificationResponse(InitialReplicaManagerIdentificationResponseStatus status, uint8_t deviceID)
     : status(status), deviceID(deviceID) {}
 
+PackageReplicaManagerTransferIdentification::PackageReplicaManagerTransferIdentification(uint8_t deviceID)
+    : deviceID(deviceID) {}
+
+PackageReplicaManagerTransferIdentificationResponse::PackageReplicaManagerTransferIdentificationResponse(ReplicaManagerTransferIdentificationResponseStatus status, uint8_t deviceID)
+    : status(status), deviceID(deviceID) {}
+
 PackageChangeEvent::PackageChangeEvent() : event((ChangeEvents)0), deviceID(0)
 {
     filename1[0] = '\0';
@@ -80,6 +86,12 @@ PackageSpecific::PackageSpecific(PackageUserIdentificationResponse userIdentific
 
 PackageSpecific::PackageSpecific(PackageReplicaManagerIdentificationResponse replicaManagerIdentificationResponse)
     : replicaManagerIdentificationResponse(replicaManagerIdentificationResponse) {}
+
+PackageSpecific::PackageSpecific(PackageReplicaManagerTransferIdentification replicaManagerTransferIdentification)
+    : replicaManagerTransferIdentification(replicaManagerTransferIdentification) {}
+
+PackageSpecific::PackageSpecific(PackageReplicaManagerTransferIdentificationResponse replicaManagerTransferIdentificationResponse)
+    : replicaManagerTransferIdentificationResponse(replicaManagerTransferIdentificationResponse) {}
 
 PackageSpecific::PackageSpecific(PackageChangeEvent ChangeEvent)
     : changeEvent(ChangeEvent) {}
@@ -158,6 +170,12 @@ Package::Package(const Package &&rhs)
     case REPLICA_MANAGER_PING_RESPONSE:
         package_specific.replicaManagerPingResponse = std::move(rhs.package_specific.replicaManagerPingResponse);
         break;
+    case REPLICA_MANAGER_TRANSFER_IDENTIFICATION:
+        package_specific.replicaManagerTransferIdentification = std::move(rhs.package_specific.replicaManagerTransferIdentification);
+        break;
+    case REPLICA_MANAGER_TRANSFER_IDENTIFICATION_RESPONSE:
+        package_specific.replicaManagerTransferIdentificationResponse = std::move(rhs.package_specific.replicaManagerTransferIdentificationResponse);
+        break;
     default:
         throw std::invalid_argument("Unknown package_type.");
     }
@@ -213,6 +231,12 @@ Package &Package::operator=(const Package &rhs)
     case REPLICA_MANAGER_PING_RESPONSE:
         package_specific.replicaManagerPingResponse = rhs.package_specific.replicaManagerPingResponse;
         break;
+    case REPLICA_MANAGER_TRANSFER_IDENTIFICATION:
+        package_specific.replicaManagerTransferIdentification = rhs.package_specific.replicaManagerTransferIdentification;
+        break;
+    case REPLICA_MANAGER_TRANSFER_IDENTIFICATION_RESPONSE:
+        package_specific.replicaManagerTransferIdentificationResponse = rhs.package_specific.replicaManagerTransferIdentificationResponse;
+        break;
     default:
         throw std::invalid_argument("Unknown package_type.");
     }
@@ -259,6 +283,12 @@ Package::Package(PackageReplicaManagerPing replicaManagerPing)
 Package::Package(PackageReplicaManagerPingResponse replicaManagerPingResponse)
     : package_type(REPLICA_MANAGER_PING_RESPONSE), package_specific(replicaManagerPingResponse) {}
 
+Package::Package(PackageReplicaManagerTransferIdentification replicaManagerTransferIdentification)
+    : package_type(REPLICA_MANAGER_TRANSFER_IDENTIFICATION), package_specific(replicaManagerTransferIdentification) {}
+
+Package::Package(PackageReplicaManagerTransferIdentificationResponse replicaManagerTransferIdentificationResponse)
+    : package_type(REPLICA_MANAGER_TRANSFER_IDENTIFICATION_RESPONSE), package_specific(replicaManagerTransferIdentificationResponse) {}
+
 // Conversão de Package de representação local para be
 void Package::htobe(void)
 {
@@ -274,6 +304,8 @@ void Package::htobe(void)
     case REQUEST_FILE_LIST:
     case REPLICA_MANAGER_PING:
     case REPLICA_MANAGER_PING_RESPONSE:
+    case REPLICA_MANAGER_TRANSFER_IDENTIFICATION:
+    case REPLICA_MANAGER_TRANSFER_IDENTIFICATION_RESPONSE:
     case FILE_NOT_FOUND:
         break;
     case FILE_CONTENT:
@@ -314,6 +346,8 @@ void Package::betoh(void)
     case REQUEST_FILE_LIST:
     case REPLICA_MANAGER_PING:
     case REPLICA_MANAGER_PING_RESPONSE:
+    case REPLICA_MANAGER_TRANSFER_IDENTIFICATION:
+    case REPLICA_MANAGER_TRANSFER_IDENTIFICATION_RESPONSE:
     case FILE_NOT_FOUND:
         break;
     case FILE_CONTENT:

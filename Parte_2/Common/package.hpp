@@ -46,7 +46,11 @@ enum PackageType : char
     // Pacote de ping enviado pelo backup
     REPLICA_MANAGER_PING,
     // Resposta do servidor para o ping do backup
-    REPLICA_MANAGER_PING_RESPONSE
+    REPLICA_MANAGER_PING_RESPONSE,
+    // Pacote de identificação da thread de transferência de arquivos do backup para o servidor principal
+    REPLICA_MANAGER_TRANSFER_IDENTIFICATION,
+    // Pacote de resposta do servidor principal para a thread de transferência de arquivos do servidor principal para o backup
+    REPLICA_MANAGER_TRANSFER_IDENTIFICATION_RESPONSE
 };
 
 // Indica aceitação ou rejeição da conexão do dispositivo
@@ -61,6 +65,12 @@ enum InitialReplicaManagerIdentificationResponseStatus : char
 {
     ACCEPTED_RM,
     REJECTED_RM,
+};
+
+enum ReplicaManagerTransferIdentificationResponseStatus : char
+{
+    ACCEPTED_RM_T,
+    REJECTED_RM_T,
 };
 
 // Modificações que ocorreram em determinado arquivo, enviado pelo cliente com base no inotify e
@@ -131,6 +141,22 @@ struct alignas(ALIGN_VALUE) PackageReplicaManagerIdentificationResponse
     alignas(ALIGN_VALUE) uint8_t deviceID;
 
     PackageReplicaManagerIdentificationResponse(InitialReplicaManagerIdentificationResponseStatus status, uint8_t deviceID);
+};
+
+// Usado para que o Replica Manager se identifique na thread de transfer
+struct alignas(ALIGN_VALUE) PackageReplicaManagerTransferIdentification
+{
+    alignas(ALIGN_VALUE) uint8_t deviceID;
+
+    PackageReplicaManagerTransferIdentification(uint8_t deviceID);
+};
+
+// Resposta do servidor para identificação do replica manager de transferência
+struct alignas(ALIGN_VALUE) PackageReplicaManagerTransferIdentificationResponse
+{
+    alignas(ALIGN_VALUE) ReplicaManagerTransferIdentificationResponseStatus status;
+    alignas(ALIGN_VALUE) uint8_t deviceID;
+    PackageReplicaManagerTransferIdentificationResponse(ReplicaManagerTransferIdentificationResponseStatus status, uint8_t deviceID);
 };
 
 // Indica mudança nos arquivos
@@ -220,6 +246,8 @@ union alignas(ALIGN_VALUE) PackageSpecific
     alignas(ALIGN_VALUE) PackageUserIdentificationResponse userIdentificationResponse;
     alignas(ALIGN_VALUE) PackageReplicaManagerIdentification replicaManagerIdentification;
     alignas(ALIGN_VALUE) PackageReplicaManagerIdentificationResponse replicaManagerIdentificationResponse;
+    alignas(ALIGN_VALUE) PackageReplicaManagerTransferIdentification replicaManagerTransferIdentification;
+    alignas(ALIGN_VALUE) PackageReplicaManagerTransferIdentificationResponse replicaManagerTransferIdentificationResponse;
     alignas(ALIGN_VALUE) PackageChangeEvent changeEvent;
     alignas(ALIGN_VALUE) PackageRequestFile requestFile;
     alignas(ALIGN_VALUE) PackageFileContent fileContent;
@@ -235,6 +263,8 @@ union alignas(ALIGN_VALUE) PackageSpecific
     PackageSpecific(PackageUserIdentificationResponse userIdentificationResponse);
     PackageSpecific(PackageReplicaManagerIdentification replicaManagerIdentification);
     PackageSpecific(PackageReplicaManagerIdentificationResponse replicaManagerIdentificationResponse);  
+    PackageSpecific(PackageReplicaManagerTransferIdentification replicaManagerTransferIdentification);
+    PackageSpecific(PackageReplicaManagerTransferIdentificationResponse replicaManagerTransferIdentificationResponse);
     PackageSpecific(PackageChangeEvent ChangeEvent);
     PackageSpecific(PackageRequestFile requestFile);
     PackageSpecific(PackageFileContent fileContent);
@@ -267,6 +297,8 @@ struct alignas(ALIGN_VALUE) Package
     Package(PackageUserIdentificationResponse userIdentificationResponse);
     Package(PackageReplicaManagerIdentification replicaManagerIdentification);
     Package(PackageReplicaManagerIdentificationResponse replicaManagerIdentificationResponse);
+    Package(PackageReplicaManagerTransferIdentification replicaManagerTransferIdentification);
+    Package(PackageReplicaManagerTransferIdentificationResponse replicaManagerTransferIdentificationResponse);
     Package(PackageChangeEvent ChangeEvent);
     Package(PackageRequestFile requestFile);
     Package(PackageFileContent fileContent);

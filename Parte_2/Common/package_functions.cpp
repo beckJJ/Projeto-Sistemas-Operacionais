@@ -97,6 +97,10 @@ std::optional<ssize_t> sizeof_base_package(PackageType package_type)
         return sizeof(PackageReplicaManagerPing);
     case REPLICA_MANAGER_PING_RESPONSE:
         return sizeof(PackageReplicaManagerPingResponse);
+    case REPLICA_MANAGER_TRANSFER_IDENTIFICATION:
+        return sizeof(PackageReplicaManagerTransferIdentification);
+    case REPLICA_MANAGER_TRANSFER_IDENTIFICATION_RESPONSE:
+        return sizeof(PackageReplicaManagerTransferIdentificationResponse);
     default:
         printf("[sizeof_base_package] Unknown package type: 0x%02x\n", (uint8_t)package_type);
         return std::nullopt;
@@ -215,6 +219,15 @@ int read_package_from_socket(int socket, Package &package, std::vector<char> &fi
         break;
     case REPLICA_MANAGER_PING_RESPONSE:
         package = Package(PackageReplicaManagerPingResponse());
+        break;
+    case REPLICA_MANAGER_TRANSFER_IDENTIFICATION:
+        package = Package(PackageReplicaManagerTransferIdentification(
+            *(uint8_t*)buffer_data));
+        break;
+    case REPLICA_MANAGER_TRANSFER_IDENTIFICATION_RESPONSE:
+        package = Package(PackageReplicaManagerTransferIdentificationResponse(
+            *(ReplicaManagerTransferIdentificationResponseStatus*)buffer_data,
+            *(uint8_t*)&buffer_data[ALIGN_VALUE]));
         break;
     default:
         return 1;
@@ -454,6 +467,12 @@ void print_package(FILE *fout, bool sending, Package &package, std::vector<char>
         break;
     case REPLICA_MANAGER_PING_RESPONSE:
         fprintf(fout, "Package(REPLICA_MANAGER_PING_RESPONSE");
+        break;
+    case REPLICA_MANAGER_TRANSFER_IDENTIFICATION:
+        fprintf(fout, "Package(REPLICA_MANAGER_TRANSFER_IDENTIFICATION");
+        break;
+    case REPLICA_MANAGER_TRANSFER_IDENTIFICATION_RESPONSE:
+        fprintf(fout, "Package(REPLICA_MANAGER_TRANSFER_IDENTIFICATION_RESPONSE");
         break;
     default:
         fprintf(fout, "Package(UNKOWN[0x%02x]", (uint8_t)package.package_type);

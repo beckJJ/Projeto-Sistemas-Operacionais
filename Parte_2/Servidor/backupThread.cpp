@@ -16,7 +16,7 @@ extern DeviceManager deviceManager;
 extern ActiveConnections_t activeConnections;
 
 //thread_local pid_t tid = 0;
-thread_local Connection_t mainServer = {{0}, {0}, -1};
+thread_local Connection_t mainServer = {{0}, {0}, {0}, -1};
 
 
 // Thread que fica recebendo novas conexões do servidor principal
@@ -26,7 +26,7 @@ void *backupThread(void *arg)
     strcpy(dadosConexao.endereco_ip, ((ServerThreadArg*)arg)->endereco_ip);
     strcpy(dadosConexao.numero_porta, ((ServerThreadArg*)arg)->numero_porta);
 
-    if (conecta_backup_main(dadosConexao)) {
+    if (conecta_backup_transfer_main(dadosConexao)) {
         exit(EXIT_FAILURE);
     } else {
         printf("Thread secundaria conectada\n");

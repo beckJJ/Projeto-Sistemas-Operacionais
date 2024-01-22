@@ -98,7 +98,8 @@ private:
     uint8_t nextBackupID = 0;
 
     std::optional<DeviceConnectReturn> connectClient(Connection_t client, std::string &user);
-    std::optional<DeviceConnectReturn> connectBackup(Connection_t backup);
+    std::optional<DeviceConnectReturn> connectBackup();
+    std::optional<DeviceConnectReturn> connectBackupTransfer(Connection_t backup);
 
     void disconnectClient(std::string &user, uint8_t id, Connection_t client);
     void disconnectBackup(uint8_t id, Connection_t backup);
@@ -108,7 +109,7 @@ public:
     ~DeviceManager();
 
     // Conecta thread como dispositivo de determinado 
-    std::optional<DeviceConnectReturn> connect(Connection_t client, std::string &username);
+    std::optional<DeviceConnectReturn> connect(Connection_t client, std::string &username, bool backupTransfer);
 
     // Desconecta determinado dispositivo de um usuário, os sockets serão fechados por
     //   device.close_sockets()

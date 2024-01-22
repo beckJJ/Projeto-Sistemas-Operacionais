@@ -46,7 +46,47 @@ std::optional<int> conecta_servidor(DadosConexao &dadosConexao)
     return socket_id;
 }
 
-// Conecta backup ao servidor principal (função do backup)
+// Conecta thread de transfer do backup ao servidor principal
+int conecta_backup_transfer_main(DadosConexao &dadosConexao)
+{
+    std::optional<int> socket_opt = conecta_servidor(dadosConexao);
+    if (!socket_opt.has_value()) {
+        return 1;
+    }
+
+    int current_socket = socket_opt.value();
+    dadosConexao.socket = current_socket;
+
+    Package package = Package(PackageReplicaManagerTransferIdentification(dadosConexao.deviceID));
+    std::vector<char> fileContentBuffer;
+
+    if (write_package_to_socket(current_socket, package, fileContentBuffer)) {
+        printf("Nao foi possivel enviar pacote de identificacao para o servidor.\n");
+        return 1;
+    }
+
+    if (read_package_from_socket(current_socket, package, fileContentBuffer)) {
+        printf("Erro ao ler resposta inicial do servidor.\n");
+        return 1;
+    }
+
+    // Resposta inválida
+    if (package.package_type != REPLICA_MANAGER_TRANSFER_IDENTIFICATION_RESPONSE) {
+        printf("Resposta invalida do servidor.\n");
+        return 1;
+    }
+
+    // Dispositivo rejeitado
+    if (package.package_specific.replicaManagerTransferIdentificationResponse.status == REJECTED_RM_T) {
+        printf("Nao foi possivel se registrar como backup.\n");
+        return 1;
+    }
+
+    dadosConexao.deviceID = package.package_specific.replicaManagerTransferIdentificationResponse.deviceID;
+    return 0;
+}
+
+// Conecta backup ao servidor principal (função do backup) -> conexão da thread de ping
 int conecta_backup_main(DadosConexao &dadosConexao)
 {
     std::optional<int> socket_opt = conecta_servidor(dadosConexao);
