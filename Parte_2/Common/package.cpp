@@ -65,6 +65,9 @@ PackageRequestFileList::PackageRequestFileList() {}
 PackageFileList::PackageFileList(uint16_t count, uint16_t seqn, File file)
     : count(count), seqn(seqn), file(file) {}
 
+// TODO: DEFINIR PackageActiveConnectionsList CONFORME NECESSÁRIO, TALVEZ SEJA PARECIDO COM O DE CIMA
+PackageActiveConnectionsList::PackageActiveConnectionsList()
+
 PackageUploadFile::PackageUploadFile(File file) : File(file) {}
 
 PackageFileNotFound::PackageFileNotFound() {}
@@ -104,6 +107,9 @@ PackageSpecific::PackageSpecific(PackageFileContent fileContent)
 
 PackageSpecific::PackageSpecific(PackageFileList fileList)
     : fileList(fileList) {}
+
+PackageSpecific::PackageSpecific(PackageActiveConnectionsList activeConnectionsList)
+    : activeConnectionsList(activeConnectionsList) {}
 
 PackageSpecific::PackageSpecific(PackageRequestFileList requestFileList)
     : requestFileList(requestFileList) {}
@@ -157,6 +163,9 @@ Package::Package(const Package &&rhs)
         break;
     case FILE_LIST:
         package_specific.fileList = std::move(rhs.package_specific.fileList);
+        break;
+    case ACTIVE_CONNECTIONS_LIST:
+        package_specific.activeConnectionsList = std::move(rhs.package_specific.activeConnectionsList);
         break;
     case UPLOAD_FILE:
         package_specific.uploadFile = std::move(rhs.package_specific.uploadFile);
@@ -219,6 +228,9 @@ Package &Package::operator=(const Package &rhs)
     case FILE_LIST:
         package_specific.fileList = rhs.package_specific.fileList;
         break;
+    case ACTIVE_CONNECTIONS_LIST:
+        package_specific.activeConnectionsList = rhs.package_specific.activeConnectionsList;
+        break;
     case UPLOAD_FILE:
         package_specific.uploadFile = rhs.package_specific.uploadFile;
         break;
@@ -271,6 +283,9 @@ Package::Package(PackageRequestFileList requestFileList)
 Package::Package(PackageFileList fileList)
     : package_type(FILE_LIST), package_specific(fileList) {}
 
+Package::Package(PackageActiveConnectionsList activeConnectionsList)
+    : package_type(ACTIVE_CONNECTIONS_LIST), package_specific(activeConnectionsList) {}
+
 Package::Package(PackageUploadFile file)
     : package_type(UPLOAD_FILE), package_specific(file) {}
 
@@ -321,6 +336,9 @@ void Package::htobe(void)
         package_specific.fileList.file.atime = htobe64(package_specific.fileList.file.atime);
         package_specific.fileList.file.ctime = htobe64(package_specific.fileList.file.ctime);
         break;
+    case ACTIVE_CONNECTIONS_LIST:
+        // TODO FAZER A CONVERSÃO CONFORME NECESSÁRIO (TALVEZ SEJA PARECIDO COM FILELIST)
+        break;
     case UPLOAD_FILE:
         package_specific.uploadFile.size = htobe64(package_specific.uploadFile.size);
         package_specific.uploadFile.mtime = htobe64(package_specific.uploadFile.mtime);
@@ -362,6 +380,9 @@ void Package::betoh(void)
         package_specific.fileList.file.mtime = be64toh(package_specific.fileList.file.mtime);
         package_specific.fileList.file.atime = be64toh(package_specific.fileList.file.atime);
         package_specific.fileList.file.ctime = be64toh(package_specific.fileList.file.ctime);
+        break;
+    case ACTIVE_CONNECTIONS_LIST:
+        // TODO FAZER A CONVERSÃO CONFORME NECESSÁRIO (TALVEZ SEJA PARECIDO COM FILELIST)
         break;
     case UPLOAD_FILE:
         package_specific.uploadFile.size = be64toh(package_specific.uploadFile.size);

@@ -50,7 +50,9 @@ enum PackageType : char
     // Pacote de identificação da thread de transferência de arquivos do backup para o servidor principal
     REPLICA_MANAGER_TRANSFER_IDENTIFICATION,
     // Pacote de resposta do servidor principal para a thread de transferência de arquivos do servidor principal para o backup
-    REPLICA_MANAGER_TRANSFER_IDENTIFICATION_RESPONSE
+    REPLICA_MANAGER_TRANSFER_IDENTIFICATION_RESPONSE,
+    // Pacote para transferencia de lista de dispositivos conectados
+    ACTIVE_CONNECTIONS_LIST
 };
 
 // Indica aceitação ou rejeição da conexão do dispositivo
@@ -217,6 +219,12 @@ struct alignas(ALIGN_VALUE) PackageFileList
     PackageFileList(uint16_t count, uint16_t seqn, File file);
 };
 
+// TODO: DEFINIR PackageActiveConnectionsList CONFORME NECESSÁRIO, TALVEZ SEJA PARECIDO COM O DE CIMA
+struct alignas(ALIGN_VALUE) PackageActiveConnectionsList
+{
+
+};
+
 // Indica que um arquivo será enviado
 struct alignas(ALIGN_VALUE) PackageUploadFile : File
 {
@@ -252,6 +260,7 @@ union alignas(ALIGN_VALUE) PackageSpecific
     alignas(ALIGN_VALUE) PackageRequestFile requestFile;
     alignas(ALIGN_VALUE) PackageFileContent fileContent;
     alignas(ALIGN_VALUE) PackageFileList fileList;
+    alignas(ALIGN_VALUE) PackageActiveConnectionsList activeConnectionsList;
     alignas(ALIGN_VALUE) PackageRequestFileList requestFileList;
     alignas(ALIGN_VALUE) PackageUploadFile uploadFile;
     alignas(ALIGN_VALUE) PackageFileNotFound fileNotFound;
@@ -270,6 +279,7 @@ union alignas(ALIGN_VALUE) PackageSpecific
     PackageSpecific(PackageFileContent fileContent);
     PackageSpecific(PackageRequestFileList requestFileList);
     PackageSpecific(PackageFileList fileList);
+    PackageSpecific(PackageActiveConnectionsList activeConnectionsList);
     PackageSpecific(PackageUploadFile uploadFile);
     PackageSpecific(PackageFileNotFound fileNotFound);
     PackageSpecific(PackageReplicaManagerPing replicaManagerPing);
@@ -304,6 +314,7 @@ struct alignas(ALIGN_VALUE) Package
     Package(PackageFileContent fileContent);
     Package(PackageRequestFileList requestFileList);
     Package(PackageFileList fileList);
+    Package(PackageActiveConnectionsList activeConnectionsList);
     Package(PackageUploadFile file);
     Package(PackageFileNotFound fileNotFound);
     Package(PackageReplicaManagerPing replicaManagerPing);

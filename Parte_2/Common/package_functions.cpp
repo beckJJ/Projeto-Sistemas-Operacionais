@@ -89,6 +89,8 @@ std::optional<ssize_t> sizeof_base_package(PackageType package_type)
         return sizeof(PackageRequestFileList);
     case FILE_LIST:
         return sizeof(PackageFileList);
+    case ACTIVE_CONNECTIONS_LIST:
+        return sizeof(PackageActiveConnectionsList);
     case UPLOAD_FILE:
         return sizeof(PackageUploadFile);
     case FILE_NOT_FOUND:
@@ -201,6 +203,9 @@ int read_package_from_socket(int socket, Package &package, std::vector<char> &fi
                 be64toh(*(int64_t *)&(buffer_data[4 * ALIGN_VALUE])),
                 be64toh(*(int64_t *)&(buffer_data[5 * ALIGN_VALUE])),
                 &buffer_data[6 * ALIGN_VALUE])));
+        break;
+    case ACTIVE_CONNECTIONS_LIST:
+        // TODO FAZER O RETORNO DO PACOTE (FORMATO DEVE SER SEMELHANTE AO DE FILELIST ACIMA)
         break;
     case UPLOAD_FILE:
         package = Package(PackageUploadFile(
@@ -448,6 +453,9 @@ void print_package(FILE *fout, bool sending, Package &package, std::vector<char>
             package.package_specific.fileList.file.atime,
             package.package_specific.fileList.file.ctime,
             package.package_specific.fileList.file.name);
+        break;
+    case ACTIVE_CONNECTIONS_LIST:
+        // TODO FAZER O fprintf DO ACTIVE_CONNECTIONS_LIST COM OS DADOS DO PACOTE (DEVE SER SEMELHANTE COM O DE FILE_LIST ACIMA)
         break;
     case UPLOAD_FILE:
         fprintf(
