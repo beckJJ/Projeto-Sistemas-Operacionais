@@ -66,7 +66,8 @@ PackageFileList::PackageFileList(uint16_t count, uint16_t seqn, File file)
     : count(count), seqn(seqn), file(file) {}
 
 // TODO: DEFINIR PackageActiveConnectionsList CONFORME NECESSÁRIO, TALVEZ SEJA PARECIDO COM O DE CIMA
-PackageActiveConnectionsList::PackageActiveConnectionsList()
+PackageActiveConnectionsList::PackageActiveConnectionsList(std::vector<Connection_t> clients, std::vector<Connection_t> backups)
+    : clients(clients), backups(backups) {}
 
 PackageUploadFile::PackageUploadFile(File file) : File(file) {}
 
