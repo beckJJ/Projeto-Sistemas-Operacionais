@@ -5,11 +5,12 @@
 
 #define DIMENSAO_GERAL 100
 
+//TODO
 typedef struct {
-    char numero_porta[DIMENSAO_GERAL]; // Porta que o cliente/backup aguardam novas conexões
-    char endereco_ip[DIMENSAO_GERAL];
-    char username[DIMENSAO_GERAL];
-    int socket_id;
+    alignas(ALIGN_VALUE) char numero_porta[DIMENSAO_GERAL]; // buffer
+    alignas(ALIGN_VALUE) char endereco_ip[DIMENSAO_GERAL]; // &buffer[104]
+    alignas(ALIGN_VALUE) char username[DIMENSAO_GERAL]; // &buffer[104 * 2]
+    alignas(ALIGN_VALUE) int socket_id; // &buffer[104 * 3]
 } Connection_t;
 
 // struct que guarda todas as conexões ativas do servidor principal
