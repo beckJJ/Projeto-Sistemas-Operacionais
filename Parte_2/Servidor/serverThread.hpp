@@ -11,8 +11,8 @@ struct ServerThreadArg
 {
     // socket que a thread usará
     int socket_id;
-    char numero_porta[DIMENSAO_GERAL]; // Porta que o cliente/backup aguardam novas conexões
-    char endereco_ip[DIMENSAO_GERAL];
+    uint16_t port;
+    uint32_t host;
 };
 
 //typedef struct BackupThreadArg ;

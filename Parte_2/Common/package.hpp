@@ -224,9 +224,11 @@ struct alignas(ALIGN_VALUE) Connection_t
     // Tipos usados em struct sockaddr_in
     alignas(ALIGN_VALUE) uint16_t port;
     alignas(ALIGN_VALUE) uint32_t host;
+    alignas(ALIGN_VALUE) uint16_t socket_id;
     alignas(ALIGN_VALUE) char user_name[USER_NAME_MAX_LENGTH];
 
-    Connection_t(uint16_t port, uint32_t host, const char _user_name[USER_NAME_MAX_LENGTH]);
+    Connection_t();
+    Connection_t(uint16_t port, uint32_t host, uint16_t socket_id, const char _user_name[USER_NAME_MAX_LENGTH]);
 };
 
 // TODO: DEFINIR PackageActiveConnectionsList CONFORME NECESSÁRIO, TALVEZ SEJA PARECIDO COM O DE CIMA

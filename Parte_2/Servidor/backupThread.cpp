@@ -11,20 +11,21 @@
 #include <pthread.h>
 #include <threads.h>
 #include <string.h>
+#include <arpa/inet.h>
+#include <stdlib.h>
 
 extern DeviceManager deviceManager;
 extern ActiveConnections_t activeConnections;
 
 //thread_local pid_t tid = 0;
-thread_local Connection_t mainServer = {{0}, {0}, {0}, -1};
-
+thread_local Connection_t client_backup = Connection_t(0, 0, 0xFFFF, "");
 
 // Thread que fica recebendo novas conexões do servidor principal
 void *backupThread(void *arg)
 {
     DadosConexao dadosConexao = DadosConexao();
-    strcpy(dadosConexao.endereco_ip, ((ServerThreadArg*)arg)->endereco_ip);
-    strcpy(dadosConexao.numero_porta, ((ServerThreadArg*)arg)->numero_porta);
+    strcpy(dadosConexao.endereco_ip, inet_ntoa(*(struct in_addr *)&((ServerThreadArg*)arg)->host));
+    sprintf(dadosConexao.numero_porta, "%d", ((ServerThreadArg*)arg)->port);
 
     if (conecta_backup_transfer_main(dadosConexao)) {
         exit(EXIT_FAILURE);
@@ -43,14 +44,16 @@ void *backupThread(void *arg)
             pthread_mutex_lock(activeConnections.lock);
             printf("Clientes conectados:\n");
             for (Connection_t c : activeConnections.clients) {
-                printf("%s\t", c.endereco_ip);
-                printf("%s\t", c.numero_porta);
+                char *endereco_ip = inet_ntoa(*(struct in_addr *)&c.host);
+                printf("%s\t", endereco_ip);
+                printf("%d\t", c.port);
                 printf("%d\n", c.socket_id);
             }
             printf("Backups conectados:\n");
             for (Connection_t c : activeConnections.backups) {
-                printf("%s\t", c.endereco_ip);
-                printf("%s\t", c.numero_porta);
+                char *endereco_ip = inet_ntoa(*(struct in_addr *)&c.host);
+                printf("%s\t", endereco_ip);
+                printf("%d\t", c.port);
                 printf("%d\n", c.socket_id);
             }
             printf("\n");

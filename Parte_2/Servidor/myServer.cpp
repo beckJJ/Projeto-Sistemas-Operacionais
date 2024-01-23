@@ -148,8 +148,8 @@ int main(int argc, char *argv[])
         if (backup) {
             ServerThreadArg backup_thread_arg;
 
-            strcpy(backup_thread_arg.endereco_ip, dadosConexao.endereco_ip);
-            strcpy(backup_thread_arg.numero_porta, dadosConexao.numero_porta);
+            inet_aton(dadosConexao.endereco_ip, (struct in_addr *)&backup_thread_arg.host);
+            backup_thread_arg.port = htons(atoi(dadosConexao.numero_porta));;
 
             pthread_t new_thread;
             
@@ -184,7 +184,8 @@ int main(int argc, char *argv[])
                 break;
             }
 
-            inet_ntop(AF_INET, &(cli_addr.sin_addr), thread_arg.endereco_ip, INET_ADDRSTRLEN);
+        //    inet_ntop(AF_INET, &(cli_addr.sin_addr), thread_arg.endereco_ip, INET_ADDRSTRLEN);
+            thread_arg.host = *(uint32_t*)&cli_addr.sin_addr;
 
             printf("Nova conexao estabelecida.\n");
 

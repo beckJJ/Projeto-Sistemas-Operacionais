@@ -272,14 +272,16 @@ std::optional<DeviceConnectReturn> DeviceManager::connectBackupTransfer(Connecti
 
     printf("Clientes conectados:\n");
     for (Connection_t c : activeConnections.clients) {
-        printf("%s\t", c.endereco_ip);
-        printf("%s\t", c.numero_porta);
+        char *endereco_ip = inet_ntoa(*(struct in_addr *)&c.host);
+        printf("%s\t", endereco_ip);
+        printf("%d\t", c.port);
         printf("%d\n", c.socket_id);
     }
     printf("Backups conectados:\n");
     for (Connection_t c : activeConnections.backups) {
-        printf("%s\t", c.endereco_ip);
-        printf("%s\t", c.numero_porta);
+        char *endereco_ip = inet_ntoa(*(struct in_addr *)&c.host);
+        printf("%s\t", endereco_ip);
+        printf("%d\t", c.port);
         printf("%d\n", c.socket_id);
     }
     printf("\n");
@@ -375,14 +377,16 @@ std::optional<DeviceConnectReturn> DeviceManager::connectClient(Connection_t cli
     activeConnections.clients.push_back(client);
     printf("Clientes conectados:\n");
     for (Connection_t c : activeConnections.clients) {
-        printf("%s\t", c.endereco_ip);
-        printf("%s\t", c.numero_porta);
+        char *endereco_ip = inet_ntoa(*(struct in_addr *)&c.host);
+        printf("%s\t", endereco_ip);
+        printf("%d\t", c.port);
         printf("%d\n", c.socket_id);
     }
     printf("Backups conectados:\n");
     for (Connection_t c : activeConnections.backups) {
-        printf("%s\t", c.endereco_ip);
-        printf("%s\t", c.numero_porta);
+        char *endereco_ip = inet_ntoa(*(struct in_addr *)&c.host);
+        printf("%s\t", endereco_ip);
+        printf("%d\t", c.port);
         printf("%d\n", c.socket_id);
     }
     printf("\n");
@@ -428,14 +432,16 @@ void DeviceManager::disconnectBackup(uint8_t id, Connection_t backup)
 
     printf("Clientes conectados:\n");
     for (Connection_t c : activeConnections.clients) {
-        printf("%s\t", c.endereco_ip);
-        printf("%s\t", c.numero_porta);
+        char *endereco_ip = inet_ntoa(*(struct in_addr *)&c.host);
+        printf("%s\t", endereco_ip);
+        printf("%d\t", c.port);
         printf("%d\n", c.socket_id);
     }
     printf("Backups conectados:\n");
     for (Connection_t c : activeConnections.backups) {
-        printf("%s\t", c.endereco_ip);
-        printf("%s\t", c.numero_porta);
+        char *endereco_ip = inet_ntoa(*(struct in_addr *)&c.host);
+        printf("%s\t", endereco_ip);
+        printf("%d\t", c.port);
         printf("%d\n", c.socket_id);
     }
     printf("\n");
@@ -506,14 +512,16 @@ void DeviceManager::disconnectClient(std::string &user, uint8_t id, Connection_t
 
     printf("Clientes conectados:\n");
     for (Connection_t c : activeConnections.clients) {
-        printf("%s\t", c.endereco_ip);
-        printf("%s\t", c.numero_porta);
+        char *endereco_ip = inet_ntoa(*(struct in_addr *)&c.host);
+        printf("%s\t", endereco_ip);
+        printf("%d\t", c.port);
         printf("%d\n", c.socket_id);
     }
     printf("Backups conectados:\n");
     for (Connection_t c : activeConnections.backups) {
-        printf("%s\t", c.endereco_ip);
-        printf("%s\t", c.numero_porta);
+        char *endereco_ip = inet_ntoa(*(struct in_addr *)&c.host);
+        printf("%s\t", endereco_ip);
+        printf("%d\t", c.port);
         printf("%d\n", c.socket_id);
     }
     printf("\n");
