@@ -149,7 +149,7 @@ int read_package_from_socket(int socket, Package &package, std::vector<char> &fi
         break;
     case INITIAL_REPLICA_MANAGER_IDENTIFICATION:
         package = Package(PackageReplicaManagerIdentification(
-            *(uint8_t*)buffer_data));
+            *(uint8_t *)buffer_data));
         break;
     case USER_IDENTIFICATION_RESPONSE:
         package = Package(PackageUserIdentificationResponse(
@@ -158,8 +158,8 @@ int read_package_from_socket(int socket, Package &package, std::vector<char> &fi
         break;
     case REPLICA_MANAGER_IDENTIFICATION_RESPONSE:
         package = Package(PackageReplicaManagerIdentificationResponse(
-            *(InitialReplicaManagerIdentificationResponseStatus*)buffer_data,
-            *(uint8_t*)&buffer_data[ALIGN_VALUE]));
+            *(InitialReplicaManagerIdentificationResponseStatus *)buffer_data,
+            *(uint8_t *)&buffer_data[ALIGN_VALUE]));
         break;
     case CHANGE_EVENT:
         package = Package(PackageChangeEvent(
@@ -205,7 +205,14 @@ int read_package_from_socket(int socket, Package &package, std::vector<char> &fi
                 &buffer_data[6 * ALIGN_VALUE])));
         break;
     case ACTIVE_CONNECTIONS_LIST:
-        // TODO FAZER O RETORNO DO PACOTE (FORMATO DEVE SER SEMELHANTE AO DE FILELIST ACIMA)
+        package = Package(PackageActiveConnectionsList(
+            be16toh(*(uint16_t *)buffer_data),
+            be16toh(*(uint16_t *)&(buffer_data[ALIGN_VALUE])),
+            be16toh(*(bool *)&(buffer_data[2 * ALIGN_VALUE])),
+            Connection_t(
+                be16toh(*(uint16_t *)&(buffer_data[3 * ALIGN_VALUE])),
+                be32toh(*(uint32_t *)&(buffer_data[4 * ALIGN_VALUE])),
+                &(buffer_data[5 * ALIGN_VALUE]))));
         break;
     case UPLOAD_FILE:
         package = Package(PackageUploadFile(
@@ -227,12 +234,12 @@ int read_package_from_socket(int socket, Package &package, std::vector<char> &fi
         break;
     case REPLICA_MANAGER_TRANSFER_IDENTIFICATION:
         package = Package(PackageReplicaManagerTransferIdentification(
-            *(uint8_t*)buffer_data));
+            *(uint8_t *)buffer_data));
         break;
     case REPLICA_MANAGER_TRANSFER_IDENTIFICATION_RESPONSE:
         package = Package(PackageReplicaManagerTransferIdentificationResponse(
-            *(ReplicaManagerTransferIdentificationResponseStatus*)buffer_data,
-            *(uint8_t*)&buffer_data[ALIGN_VALUE]));
+            *(ReplicaManagerTransferIdentificationResponseStatus *)buffer_data,
+            *(uint8_t *)&buffer_data[ALIGN_VALUE]));
         break;
     default:
         return 1;
@@ -379,7 +386,9 @@ void print_package(FILE *fout, bool sending, Package &package, std::vector<char>
         break;
     case REPLICA_MANAGER_IDENTIFICATION_RESPONSE:
         fprintf(fout, "Package(REPLICA_MANAGER_IDENTIFICATION_RESPONSE, ");
-        switch (package.package_specific.replicaManagerIdentificationResponse.status) {
+
+        switch (package.package_specific.replicaManagerIdentificationResponse.status)
+        {
         case ACCEPTED_RM:
             fprintf(fout, "ACCEPTED_RM");
             break;
@@ -390,6 +399,7 @@ void print_package(FILE *fout, bool sending, Package &package, std::vector<char>
             fprintf(fout, "UNKNOWN_RM");
             break;
         }
+
         break;
     case CHANGE_EVENT:
         fprintf(fout, "Package(CHANGE_EVENT, 0x%02x, ", (uint8_t)package.package_specific.changeEvent.deviceID);

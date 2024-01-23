@@ -219,11 +219,29 @@ struct alignas(ALIGN_VALUE) PackageFileList
     PackageFileList(uint16_t count, uint16_t seqn, File file);
 };
 
+struct alignas(ALIGN_VALUE) Connection_t
+{
+    // Tipos usados em struct sockaddr_in
+    alignas(ALIGN_VALUE) uint16_t port;
+    alignas(ALIGN_VALUE) uint32_t host;
+    alignas(ALIGN_VALUE) char user_name[USER_NAME_MAX_LENGTH];
+
+    Connection_t(uint16_t port, uint32_t host, const char _user_name[USER_NAME_MAX_LENGTH]);
+};
+
 // TODO: DEFINIR PackageActiveConnectionsList CONFORME NECESSÁRIO, TALVEZ SEJA PARECIDO COM O DE CIMA
 struct alignas(ALIGN_VALUE) PackageActiveConnectionsList
 {
-    alignas(ALIGN_VALUE) std::vector<Connection_t> clients;
-    alignas(ALIGN_VALUE)std::vector<Connection_t> backups;
+    // Tamanho da lista sendo enviada
+    alignas(ALIGN_VALUE) uint16_t count;
+    // Sequência do item sendo enviado, inicia em 1
+    alignas(ALIGN_VALUE) uint16_t seqn;
+    // Indica se é cliente ou backup
+    alignas(ALIGN_VALUE) bool is_client;
+    // Conexão atual
+    alignas(ALIGN_VALUE) Connection_t connection;
+
+    PackageActiveConnectionsList(uint16_t count, uint16_t seqn, bool is_client, Connection_t connection);
 };
 
 // Indica que um arquivo será enviado
@@ -272,7 +290,7 @@ union alignas(ALIGN_VALUE) PackageSpecific
     PackageSpecific(PackageUserIdentification userIdentification);
     PackageSpecific(PackageUserIdentificationResponse userIdentificationResponse);
     PackageSpecific(PackageReplicaManagerIdentification replicaManagerIdentification);
-    PackageSpecific(PackageReplicaManagerIdentificationResponse replicaManagerIdentificationResponse);  
+    PackageSpecific(PackageReplicaManagerIdentificationResponse replicaManagerIdentificationResponse);
     PackageSpecific(PackageReplicaManagerTransferIdentification replicaManagerTransferIdentification);
     PackageSpecific(PackageReplicaManagerTransferIdentificationResponse replicaManagerTransferIdentificationResponse);
     PackageSpecific(PackageChangeEvent ChangeEvent);

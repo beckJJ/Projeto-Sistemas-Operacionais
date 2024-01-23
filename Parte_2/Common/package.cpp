@@ -27,7 +27,7 @@ PackageUserIdentification::PackageUserIdentification(uint8_t deviceID, const cha
 PackageUserIdentificationResponse::PackageUserIdentificationResponse(InitialUserIdentificationResponseStatus status, uint8_t deviceID)
     : status(status), deviceID(deviceID) {}
 
-PackageReplicaManagerIdentification::PackageReplicaManagerIdentification(uint8_t deviceID) 
+PackageReplicaManagerIdentification::PackageReplicaManagerIdentification(uint8_t deviceID)
     : deviceID(deviceID) {}
 
 PackageReplicaManagerIdentificationResponse::PackageReplicaManagerIdentificationResponse(InitialReplicaManagerIdentificationResponseStatus status, uint8_t deviceID)
@@ -65,9 +65,14 @@ PackageRequestFileList::PackageRequestFileList() {}
 PackageFileList::PackageFileList(uint16_t count, uint16_t seqn, File file)
     : count(count), seqn(seqn), file(file) {}
 
-// TODO: DEFINIR PackageActiveConnectionsList CONFORME NECESSÁRIO, TALVEZ SEJA PARECIDO COM O DE CIMA
-PackageActiveConnectionsList::PackageActiveConnectionsList(std::vector<Connection_t> clients, std::vector<Connection_t> backups)
-    : clients(clients), backups(backups) {}
+Connection_t::Connection_t(uint16_t port, uint32_t host, const char _user_name[USER_NAME_MAX_LENGTH])
+    : port(port), host(host)
+{
+    strncpy(user_name, _user_name, USER_NAME_MAX_LENGTH - 1);
+}
+
+PackageActiveConnectionsList::PackageActiveConnectionsList(uint16_t count, uint16_t seqn, bool is_client, Connection_t connection)
+    : count(count), seqn(seqn), is_client(is_client), connection(connection) {}
 
 PackageUploadFile::PackageUploadFile(File file) : File(file) {}
 
@@ -338,7 +343,10 @@ void Package::htobe(void)
         package_specific.fileList.file.ctime = htobe64(package_specific.fileList.file.ctime);
         break;
     case ACTIVE_CONNECTIONS_LIST:
-        // TODO FAZER A CONVERSÃO CONFORME NECESSÁRIO (TALVEZ SEJA PARECIDO COM FILELIST)
+        package_specific.activeConnectionsList.count = htobe16(package_specific.activeConnectionsList.count);
+        package_specific.activeConnectionsList.seqn = htobe16(package_specific.activeConnectionsList.seqn);
+        package_specific.activeConnectionsList.connection.port = htobe16(package_specific.activeConnectionsList.connection.port);
+        package_specific.activeConnectionsList.connection.host = htobe32(package_specific.activeConnectionsList.connection.host);
         break;
     case UPLOAD_FILE:
         package_specific.uploadFile.size = htobe64(package_specific.uploadFile.size);
@@ -383,7 +391,10 @@ void Package::betoh(void)
         package_specific.fileList.file.ctime = be64toh(package_specific.fileList.file.ctime);
         break;
     case ACTIVE_CONNECTIONS_LIST:
-        // TODO FAZER A CONVERSÃO CONFORME NECESSÁRIO (TALVEZ SEJA PARECIDO COM FILELIST)
+        package_specific.activeConnectionsList.count = be16toh(package_specific.activeConnectionsList.count);
+        package_specific.activeConnectionsList.seqn = be16toh(package_specific.activeConnectionsList.seqn);
+        package_specific.activeConnectionsList.connection.port = be16toh(package_specific.activeConnectionsList.connection.port);
+        package_specific.activeConnectionsList.connection.host = be32toh(package_specific.activeConnectionsList.connection.host);
         break;
     case UPLOAD_FILE:
         package_specific.uploadFile.size = be64toh(package_specific.uploadFile.size);
