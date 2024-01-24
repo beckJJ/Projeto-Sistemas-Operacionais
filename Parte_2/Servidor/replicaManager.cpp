@@ -42,7 +42,6 @@ std::optional<int> conecta_servidor(DadosConexao &dadosConexao)
         printf("Erro! Nao foi possivel estabelecer conexao com o socket do servidor!\n");
         return std::nullopt;
     }
-
     return socket_id;
 }
 

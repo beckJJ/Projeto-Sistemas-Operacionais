@@ -145,7 +145,7 @@ void serverLoopBackup(int socket_id, int tid)
         case REPLICA_MANAGER_PING:
             // Retorna um ACK
             send_backup_ack(socket_id);
-            printf("ACK Enviado!\n");
+    //        printf("ACK Enviado!\n");
             break;
         default:
             printf("[tid: %d] Codigo comunicacao desconhecido: 0x%02x\n", tid, (uint8_t)package.package_type);

@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
             ServerThreadArg backup_thread_arg;
 
             inet_aton(dadosConexao.endereco_ip, (struct in_addr *)&backup_thread_arg.host);
-            backup_thread_arg.port = htons(atoi(dadosConexao.numero_porta));;
+            backup_thread_arg.port = atoi(dadosConexao.numero_porta);
 
             pthread_t new_thread;
             
@@ -172,7 +172,7 @@ int main(int argc, char *argv[])
                     printf("Resposta invalida do servidor.\n");
                     exit(0);
                 }
-                printf("ACK RECEBIDO\n");
+            //    printf("ACK RECEBIDO\n");
                 sleep(1);
             }
         } else {

@@ -258,6 +258,8 @@ std::optional<DeviceConnectReturn> DeviceManager::connectBackupTransfer(Connecti
 {
     uint8_t deviceID;
 
+    printf("Conectando backup transfer...\n");
+
     // encontrar primeiro valor livre de deviceID
     pthread_mutex_lock(&backups_lock);
     deviceID = nextBackupID;
@@ -302,7 +304,6 @@ std::optional<DeviceConnectReturn> DeviceManager::connectBackup()
     backups.push_back(deviceID);
     nextBackupID++;
     pthread_mutex_unlock(&backups_lock);
-
     return DeviceConnectReturn(NULL, NULL, deviceID);
 }
 
@@ -420,7 +421,7 @@ void DeviceManager::disconnectBackup(uint8_t id, Connection_t backup)
     // remove backup da lista de backups conectados
     pthread_mutex_lock(activeConnections.lock);
     int i = 0;
-    while (backup.socket_id != activeConnections.backups[i].socket_id && i < (int)activeConnections.backups.size()) {
+    while (i < (int)activeConnections.backups.size() && backup.socket_id != activeConnections.backups[i].socket_id) {
         i++;
     }
     if (i >= (int)activeConnections.backups.size()) {
@@ -500,7 +501,7 @@ void DeviceManager::disconnectClient(std::string &user, uint8_t id, Connection_t
     pthread_mutex_lock(activeConnections.lock);
 
     int i = 0;
-    while (client.socket_id != activeConnections.clients[i].socket_id && i < (int)activeConnections.clients.size()) {
+    while (i < (int)activeConnections.clients.size() && client.socket_id != activeConnections.clients[i].socket_id) {
         i++;
     }
     if (i >= (int)activeConnections.clients.size()) {

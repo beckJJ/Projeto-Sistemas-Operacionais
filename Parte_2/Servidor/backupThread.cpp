@@ -38,7 +38,7 @@ void *backupThread(void *arg)
         Package package;
 
         if (read_package_from_socket(dadosConexao.socket, package, fileContentBuffer)) {
-            printf("Erro ao ler pacote do servidor.\n");    pthread_mutex_lock(activeConnections.lock);
+            printf("Erro ao ler pacote do servidor.\n");
             break;
         } else {
             pthread_mutex_lock(activeConnections.lock);
