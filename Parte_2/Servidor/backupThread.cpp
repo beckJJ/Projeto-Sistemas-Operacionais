@@ -24,7 +24,7 @@ thread_local Connection_t client_backup = Connection_t(0, 0, 0xFFFF, "");
 void *backupThread(void *arg)
 {
     DadosConexao dadosConexao = DadosConexao();
-    strcpy(dadosConexao.endereco_ip, inet_ntoa(*(struct in_addr *)&((ServerThreadArg*)arg)->host));
+    strcpy(dadosConexao.endereco_ip, ((ServerThreadArg*)arg)->hostname);
     sprintf(dadosConexao.numero_porta, "%d", ((ServerThreadArg*)arg)->port);
 
     if (conecta_backup_transfer_main(dadosConexao)) {
@@ -40,25 +40,31 @@ void *backupThread(void *arg)
         if (read_package_from_socket(dadosConexao.socket, package, fileContentBuffer)) {
             printf("Erro ao ler pacote do servidor.\n");
             break;
-        } else {
-            pthread_mutex_lock(activeConnections.lock);
-            printf("Clientes conectados:\n");
-            for (Connection_t c : activeConnections.clients) {
-                char *endereco_ip = inet_ntoa(*(struct in_addr *)&c.host);
-                printf("%s\t", endereco_ip);
-                printf("%d\t", c.port);
-                printf("%d\n", c.socket_id);
-            }
-            printf("Backups conectados:\n");
-            for (Connection_t c : activeConnections.backups) {
-                char *endereco_ip = inet_ntoa(*(struct in_addr *)&c.host);
-                printf("%s\t", endereco_ip);
-                printf("%d\t", c.port);
-                printf("%d\n", c.socket_id);
-            }
-            printf("\n");
-            pthread_mutex_unlock(activeConnections.lock);
         }
+
+        if (package.package_type == ACTIVE_CONNECTIONS_LIST) {
+            printf("RECEBIDO PACOTE DE ACTIVE_CONNECTIONS_LIST\n");
+            break;
+        }
+
+        pthread_mutex_lock(activeConnections.lock);
+        printf("Clientes conectados:\n");
+        for (Connection_t c : activeConnections.clients) {
+            char *endereco_ip = inet_ntoa(*(struct in_addr *)&c.host);
+            printf("%s\t", endereco_ip);
+            printf("%d\t", c.port);
+            printf("%d\n", c.socket_id);
+        }
+        printf("Backups conectados:\n");
+        for (Connection_t c : activeConnections.backups) {
+            char *endereco_ip = inet_ntoa(*(struct in_addr *)&c.host);
+            printf("%s\t", endereco_ip);
+            printf("%d\t", c.port);
+            printf("%d\n", c.socket_id);
+        }
+        printf("\n");
+        pthread_mutex_unlock(activeConnections.lock);
+    
     }
     return NULL;
 }

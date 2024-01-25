@@ -148,8 +148,9 @@ int main(int argc, char *argv[])
         if (backup) {
             ServerThreadArg backup_thread_arg;
 
-            inet_aton(dadosConexao.endereco_ip, (struct in_addr *)&backup_thread_arg.host);
+//            inet_aton(dadosConexao.endereco_ip, (struct in_addr *)&backup_thread_arg.host);
             backup_thread_arg.port = atoi(dadosConexao.numero_porta);
+            strcpy(backup_thread_arg.hostname, dadosConexao.endereco_ip);
 
             pthread_t new_thread;
             
@@ -179,6 +180,7 @@ int main(int argc, char *argv[])
             ServerThreadArg thread_arg; // { };
             pthread_t thread;
 
+            printf("Aguardando nova conexao...\n");
             if ((thread_arg.socket_id = accept(main_thread_socket, (struct sockaddr *)&cli_addr, &clilen)) == -1) {
                 printf("Erro! Nao foi possivel realizar conexao com o cliente!\n");
                 break;

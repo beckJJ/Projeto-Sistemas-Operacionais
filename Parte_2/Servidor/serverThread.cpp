@@ -78,6 +78,11 @@ int connectBackupTransfer(Connection_t server, uint8_t &deviceID, Package &packa
         return 1;
     }
 
+    // Envia a lista de conexões ao backup conectado
+  //  package = Package(PackageActiveConnectionsList())
+//        PackageActiveConnectionsList(uint16_t count, uint16_t seqn, bool is_client, Connection_t connection);
+
+
     return 0;
 }
 

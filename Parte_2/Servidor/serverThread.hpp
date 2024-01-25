@@ -7,12 +7,16 @@
 #include "deviceManager.hpp"
 #include <netinet/in.h>
 
+// Tamanho máximo de um hostname (ex: "localhost")
+#define MAX_HOSTNAME_LENGTH 128
+
 struct ServerThreadArg
 {
     // socket que a thread usará
     int socket_id;
     uint16_t port;
     uint32_t host;
+    char hostname[MAX_HOSTNAME_LENGTH];
 };
 
 //typedef struct BackupThreadArg ;
