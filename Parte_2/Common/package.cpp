@@ -7,6 +7,8 @@
 
 File::File() {}
 
+Connection_t::Connection_t() {}
+
 File::File(int64_t size, int64_t mtime, int64_t atime, int64_t ctime, const char _name[NAME_MAX])
     : size(size), mtime(mtime), atime(atime), ctime(ctime)
 {

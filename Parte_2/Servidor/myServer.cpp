@@ -19,7 +19,7 @@
 #include "../Common/functions.hpp"
 #include "config.hpp"
 #include <signal.h>
-#include "connections.hpp"
+#include "../Common/connections.hpp"
 #include "../Common/DadosConexao.hpp"
 #include "replicaManager.hpp"
 #include "../Common/package_file.hpp"
@@ -56,6 +56,8 @@ int main(int argc, char *argv[])
 {
     uint16_t port = PORT;
     char c;
+
+    activeConnections.lock = new pthread_mutex_t;
 
     // Lê argumentos do programa
     while ((c = getopt(argc, argv, "bhp:s:m:")) != -1)
@@ -141,14 +143,11 @@ int main(int argc, char *argv[])
 
     clilen = sizeof(struct sockaddr_in);
 
-    activeConnections.lock = new pthread_mutex_t;
-
     while (1)
     {
         if (backup) {
             ServerThreadArg backup_thread_arg;
 
-//            inet_aton(dadosConexao.endereco_ip, (struct in_addr *)&backup_thread_arg.host);
             backup_thread_arg.port = atoi(dadosConexao.numero_porta);
             strcpy(backup_thread_arg.hostname, dadosConexao.endereco_ip);
 
@@ -186,7 +185,6 @@ int main(int argc, char *argv[])
                 break;
             }
 
-        //    inet_ntop(AF_INET, &(cli_addr.sin_addr), thread_arg.endereco_ip, INET_ADDRSTRLEN);
             thread_arg.host = *(uint32_t*)&cli_addr.sin_addr;
 
             printf("Nova conexao estabelecida.\n");

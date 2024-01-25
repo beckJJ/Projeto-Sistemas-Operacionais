@@ -5,10 +5,15 @@
 
 #include "defines.hpp"
 #include "package.hpp"
+#include "connections.hpp"
 #include <optional>
 
 // Envia uma sequência de pacotes PackageFileList
 int send_file_list(int socket, std::vector<File> files);
+
+// Envia uma sequência de pacotes PackageActiveConnectionsList 
+int send_active_connections_list_all(ActiveConnections_t activeConnections);
+int send_active_connections_list(int socket, ActiveConnections_t activeConnections);
 
 // Envia uma sequência de pacotes PackageFileContent contendo o conteúdo em path
 int send_file(int socket, const char *path);

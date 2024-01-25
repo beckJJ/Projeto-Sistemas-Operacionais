@@ -16,7 +16,7 @@
 #include "../Common/functions.hpp"
 #include <string.h>
 #include "serverLoop.hpp"
-#include "connections.hpp"
+#include "../Common/connections.hpp"
 #include <arpa/inet.h>
 
 extern DeviceManager deviceManager;
@@ -79,10 +79,9 @@ int connectBackupTransfer(Connection_t server, uint8_t &deviceID, Package &packa
     }
 
     // Envia a lista de conexões ao backup conectado
-  //  package = Package(PackageActiveConnectionsList())
-//        PackageActiveConnectionsList(uint16_t count, uint16_t seqn, bool is_client, Connection_t connection);
-
-
+    pthread_mutex_lock(activeConnections.lock);
+    send_active_connections_list_all(activeConnections);
+    pthread_mutex_unlock(activeConnections.lock);
     return 0;
 }
 
@@ -161,6 +160,11 @@ int connectUser(Connection_t client, std::string &username, User *&user, Device 
         printf("[tid: %d] Erro ao enviar resposta inicial ao usuario.\n", tid);
         return 1;
     }
+
+    // Envia a lista de conexões aos backups conectados
+    pthread_mutex_lock(activeConnections.lock);
+    send_active_connections_list_all(activeConnections);
+    pthread_mutex_unlock(activeConnections.lock);
 
     return 0;
 }

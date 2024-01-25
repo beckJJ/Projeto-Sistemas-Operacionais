@@ -2,7 +2,7 @@
 #include <vector>
 #include <netinet/in.h>
 #include <string>
-#include "../Common/package.hpp"
+#include "package.hpp"
 
 // struct que guarda todas as conexões ativas do servidor principal
 typedef struct

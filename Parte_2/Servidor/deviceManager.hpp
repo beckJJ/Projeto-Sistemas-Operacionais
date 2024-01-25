@@ -3,6 +3,7 @@
 
 #include "../Common/defines.hpp"
 #include "../Common/package.hpp"
+#include "../Common/connections.hpp"
 #include <utility>
 #include <map>
 #include <string>
@@ -11,7 +12,6 @@
 #include <iostream>
 #include <optional>
 #include <unistd.h>
-#include "connections.hpp"
 
 struct Device;
 struct User;

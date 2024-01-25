@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <iostream>
 #include "functions.hpp"
+#include "connections.hpp"
+#include "package.hpp"
 
 // Envia uma sequência de pacotes PackageFileList
 int send_file_list(int socket, std::vector<File> files)
@@ -28,6 +30,52 @@ int send_file_list(int socket, std::vector<File> files)
         }
     }
 
+    return 0;
+}
+
+int send_active_connections_list_all(ActiveConnections_t activeConnections)
+{
+    for (size_t i = 0; i < activeConnections.backups.size(); i++) {
+        if (send_active_connections_list(activeConnections.backups[i].socket_id, activeConnections)) {
+            return -1;
+        }
+    }
+    return 0;
+}
+
+// Envia uma sequência de pacotes PackageActiveConnectionsList 
+int send_active_connections_list(int socket, ActiveConnections_t activeConnections)
+{
+    std::vector<char> fileContentBuffer;
+    
+    // Enviar clientes
+    if (activeConnections.clients.size() == 0) { // se a lista de clientes estiver 
+        Package package = Package(PackageActiveConnectionsList(0, 0, true, Connection_t()));
+        if (write_package_to_socket(socket, package, fileContentBuffer)) {
+            return -1;
+        }
+    } else {
+        for (size_t i = 0; i < activeConnections.clients.size(); i++) {
+            Package package = Package(PackageActiveConnectionsList(activeConnections.clients.size(), i+1, true, activeConnections.clients[i]));
+            if (write_package_to_socket(socket, package, fileContentBuffer)) {
+                return -1;
+            }
+        }
+    }
+    // Enviar backups
+    if (activeConnections.backups.size() == 0) { // se a lista de backups estiver vazia
+        Package package = Package(PackageActiveConnectionsList(0, 0, false, Connection_t()));
+        if (write_package_to_socket(socket, package, fileContentBuffer)) {
+            return -1;
+        }
+    } else {
+        for (size_t i = 0; i < activeConnections.backups.size(); i++) {
+            Package package = Package(PackageActiveConnectionsList(activeConnections.backups.size(), i+1, false, activeConnections.backups[i]));
+            if (write_package_to_socket(socket, package, fileContentBuffer)) {
+                return -1;
+            }
+        }
+    }
     return 0;
 }
 

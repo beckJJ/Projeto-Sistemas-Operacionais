@@ -249,8 +249,6 @@ std::optional<DeviceConnectReturn> DeviceManager::connect(Connection_t connectio
     else {
         returnValue = connectClient(connection, username);
     }
-    // enviar conexões novas para os backups
-    //
     return returnValue;
 }
 
@@ -404,6 +402,10 @@ void DeviceManager::disconnect(std::string &username, uint8_t id, Connection_t c
     } else {
         disconnectClient(username, id, connection);
     }
+    // Envia a lista de conexões ao backup conectado
+    pthread_mutex_lock(activeConnections.lock);
+    send_active_connections_list_all(activeConnections);
+    pthread_mutex_unlock(activeConnections.lock);
 }
 
 void DeviceManager::disconnectBackup(uint8_t id, Connection_t backup)
