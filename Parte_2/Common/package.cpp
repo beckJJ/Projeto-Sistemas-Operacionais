@@ -47,11 +47,12 @@ PackageChangeEvent::PackageChangeEvent() : event((ChangeEvents)0), deviceID(0)
     filename2[0] = '\0';
 }
 
-PackageChangeEvent::PackageChangeEvent(ChangeEvents event, uint8_t deviceID, const char _filename1[NAME_MAX], const char _filename2[NAME_MAX])
+PackageChangeEvent::PackageChangeEvent(ChangeEvents event, uint8_t deviceID, const char _filename1[NAME_MAX], const char _filename2[NAME_MAX], const char _username[NAME_MAX])
     : event(event), deviceID(deviceID)
 {
     strncpy(filename1, _filename1, NAME_MAX - 1);
     strncpy(filename2, _filename2, NAME_MAX - 1);
+    strncpy(username , _username , NAME_MAX - 1);
 }
 
 PackageRequestFile::PackageRequestFile(const char _filename[NAME_MAX])

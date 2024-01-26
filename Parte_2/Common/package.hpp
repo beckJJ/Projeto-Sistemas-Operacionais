@@ -172,9 +172,11 @@ struct alignas(ALIGN_VALUE) PackageChangeEvent
     alignas(ALIGN_VALUE) char filename1[NAME_MAX]{};
     // Nome de arquivo 2, usado apenas no evento de renomeação
     alignas(ALIGN_VALUE) char filename2[NAME_MAX]{};
+    // nome de usuario, usado para os backups saberem onde salvar
+    alignas(ALIGN_VALUE) char  username[NAME_MAX]{};
 
     PackageChangeEvent();
-    PackageChangeEvent(ChangeEvents event, uint8_t deviceID, const char _filename1[NAME_MAX], const char _filename2[NAME_MAX]);
+    PackageChangeEvent(ChangeEvents event, uint8_t deviceID, const char _filename1[NAME_MAX], const char _filename2[NAME_MAX], const char _username[NAME_MAX]);
 };
 
 // Requisita um arquivo

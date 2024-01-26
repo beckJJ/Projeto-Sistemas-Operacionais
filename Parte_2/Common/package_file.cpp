@@ -125,17 +125,17 @@ int send_file(int socket, const char *path)
     {
         // Lê arquivo
         size_t to_read_now = std::min((long)MAX_DATA_SIZE, to_read);
-        auto readed = fread(buffer.data(), sizeof(char), to_read_now, fp);
+        auto read = fread(buffer.data(), sizeof(char), to_read_now, fp);
 
-        if (to_read_now != readed)
+        if (to_read_now != read)
         {
             goto fail;
         }
 
-        to_read -= readed;
+        to_read -= read;
 
         // Cria pacote a ser enviado com o conteúdo recém lido
-        package = Package(PackageFileContent(fsize, seqn, readed));
+        package = Package(PackageFileContent(fsize, seqn, read));
 
         if (write_package_to_socket(socket, package, buffer))
         {
@@ -241,6 +241,17 @@ std::optional<std::vector<File>> read_file_list(int socket)
     }
 
     return files;
+}
+
+// envia um arquivo para a lista de backups
+int send_file_to_backups(ActiveConnections_t activeConnections, const char *path, const char *filename)
+{  
+    for (Connection_t backup : activeConnections.backups) {
+        if (send_file_from_path(backup.socket_id, path, filename)) {
+            return 1;
+        }
+    }
+    return 0;
 }
 
 // Lê uma sequência de pacotes PackageFileContent e armazena o conteúdo obtido em path

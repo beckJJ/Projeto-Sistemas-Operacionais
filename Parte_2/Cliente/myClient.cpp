@@ -24,7 +24,7 @@ DadosConexao dados_conexao;
 
 // Último evento recebido pelo servidor, usado para determinar se o evento gerado por outro
 //   dispositivo foi gerado em resposta a um evento gerado no dispositivo atual
-PackageChangeEvent previousSyncedChangeEvent = PackageChangeEvent((ChangeEvents)0xff, (uint8_t)0xff, "", "");
+PackageChangeEvent previousSyncedChangeEvent = PackageChangeEvent((ChangeEvents)0xff, (uint8_t)0xff, "", "", dados_conexao.nome_usuario);
 // Lock para evento anterior
 pthread_mutex_t previousSyncedChangeEventLock = PTHREAD_MUTEX_INITIALIZER;
 

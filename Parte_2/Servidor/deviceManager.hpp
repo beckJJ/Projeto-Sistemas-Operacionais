@@ -16,6 +16,8 @@
 struct Device;
 struct User;
 
+void propagate_event_backups(PackageChangeEvent packageChangeEvent, char username[USER_NAME_MAX_LENGTH]);
+
 // Dados retornados ao conectar-se em DeviceManager::connect_*
 struct DeviceConnectReturn
 {

@@ -3,6 +3,7 @@
 #include "../Common/package_file.hpp"
 
 extern DeviceManager deviceManager;
+extern ActiveConnections_t activeConnections;
 
 // Lida com pacote PackageChangeEvent
 void handleChangeEvent(int socket_id, int tid, PackageChangeEvent &changeEvent, std::string &path_base, User *&user)
@@ -116,6 +117,10 @@ void handleChangeEvent(int socket_id, int tid, PackageChangeEvent &changeEvent, 
         user->propagate_event(changeEvent);
         pthread_mutex_unlock(user->devices_lock);
     }
+    // Propaga o evento para os backups 
+    pthread_mutex_lock(activeConnections.lock);
+    propagate_event_backups(changeEvent, user->username);
+    pthread_mutex_unlock(activeConnections.lock);
 }
 
 void serverLoop(int socket_id, int tid, std::string &username, User *&user, Device *&device)
@@ -223,6 +228,15 @@ void serverLoopClient(int socket_id, int tid, std::string &username, User *&user
             }
 
             pthread_mutex_unlock(user->files_lock);
+
+            // propagar para os backups
+            pthread_mutex_lock(activeConnections.lock);
+            // Enviar o pacote de upload file para os backups
+
+            // Enviar o arquivo para os backups
+            send_file_to_backups(activeConnections, path_base.c_str(), package.package_specific.uploadFile.name);
+            pthread_mutex_unlock(activeConnections.lock);
+
 
             break;
         }

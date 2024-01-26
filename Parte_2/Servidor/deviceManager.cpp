@@ -42,7 +42,7 @@ void Device::close_sockets(void)
 
 User::User()
 {
-    previousPackageChangeEvent = PackageChangeEvent((ChangeEvents)0xff, (uint8_t)0xff, "", "");
+    previousPackageChangeEvent = PackageChangeEvent((ChangeEvents)0xff, (uint8_t)0xff, "", "", this->username);
 
     files = new std::vector<File>();
     devices = new std::vector<Device *>();
@@ -176,6 +176,36 @@ void User::update_file_info(const char *path, const char filename[NAME_MAX])
     }
 
     add_file_or_replace(file_opt.value());
+}
+
+void propagate_event_backups(PackageChangeEvent packageChangeEvent, char username[NAME_MAX]) // username só é utilizado se for pacote do tipo FILE_MODIFIED
+{
+    Package package = Package(packageChangeEvent);
+    std::vector<char> fileContentBuffer;
+
+    for (Connection_t backup : activeConnections.backups) {
+        printf("Enviando pacote para %d...\n", backup.socket_id);
+        if (write_package_to_socket(backup.socket_id, package, fileContentBuffer)) {
+            printf("Erro ao propagar evento para backup no socket %d.\n", backup.socket_id);
+        }
+        // Envia conteúdo do arquivo caso o evento seja FILE_MODIFIED
+        if (package.package_specific.changeEvent.event == FILE_MODIFIED) {
+            // Envia o arquivo modificado
+            std::string path = PREFIXO_DIRETORIO_SERVIDOR;
+            path.append("/");
+            path.append(username);
+            path.append("/");
+            path.append(package.package_specific.changeEvent.filename1);
+            if (send_file_from_path(backup.socket_id,
+                                    path.c_str(),
+                                    package.package_specific.changeEvent.filename1))
+            {
+                printf("Erro ao enviar conteudo do arquivo \"%s\" modificado.\n",
+                       package.package_specific.changeEvent.filename1);
+            }
+        }
+
+    }
 }
 
 // Propaga evento para dispositivos com dispositivos com ID diferente de packageChangeEvent.deviceID

@@ -185,7 +185,7 @@ void *eventThread(void *)
             // Envia eventos completados
             for (auto userEvent : completeUserEvents)
             {
-                auto changeEvent = PackageChangeEvent(userEvent.changeEvent, dados_conexao.deviceID, userEvent.movedFrom.c_str(), userEvent.movedTo.c_str());
+                auto changeEvent = PackageChangeEvent(userEvent.changeEvent, dados_conexao.deviceID, userEvent.movedFrom.c_str(), userEvent.movedTo.c_str(), dados_conexao.nome_usuario);
                 auto package = Package(changeEvent);
 
                 // Ignora eventos gerados pelo inotify que foram gerados em resposta ao último evento
@@ -199,7 +199,7 @@ void *eventThread(void *)
                     // Limpa previousSyncedChangeEvent, se não fosse limpo eventos genuínos seriam
                     //   ignorados
                     pthread_mutex_lock(&previousSyncedChangeEventLock);
-                    previousSyncedChangeEvent = PackageChangeEvent((ChangeEvents)0xff, (uint8_t)0xff, "", "");
+                    previousSyncedChangeEvent = PackageChangeEvent((ChangeEvents)0xff, (uint8_t)0xff, "", "", dados_conexao.nome_usuario);
                     pthread_mutex_unlock(&previousSyncedChangeEventLock);
                     continue;
                 }

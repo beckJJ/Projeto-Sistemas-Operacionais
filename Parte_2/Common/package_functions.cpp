@@ -167,7 +167,9 @@ int read_package_from_socket(int socket, Package &package, std::vector<char> &fi
             *(uint8_t *)&buffer_data[ALIGN_VALUE],
             &buffer_data[2 * ALIGN_VALUE],
             // NAME_MAX == 255 e alignas(8), logo haverá 1 byte de padding
-            &buffer_data[2 * ALIGN_VALUE + NAME_MAX + 1]));
+            &buffer_data[2 * ALIGN_VALUE + NAME_MAX + 1],
+            // NAME_MAX == 255 e alignas(8), logo haverá 1 byte de padding
+            &buffer_data[2 * ALIGN_VALUE + 2 * (NAME_MAX + 1)]));
         break;
     case REQUEST_FILE:
         package = Package(PackageRequestFile(buffer_data));

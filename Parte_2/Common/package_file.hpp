@@ -18,6 +18,8 @@ int send_active_connections_list(int socket, ActiveConnections_t activeConnectio
 // Envia uma sequência de pacotes PackageFileContent contendo o conteúdo em path
 int send_file(int socket, const char *path);
 
+int send_file_to_backups(ActiveConnections_t activeConnections, const char *path, const char *filename);
+
 // Envia um arquivo em path com o nome de filename, enviará o pacote PackageUploadFile ou
 //   PackageNotFound, caso PackageUploadFile tenha sido enviado chamará send_file para enviar o
 //   conteúdo do arquivo
