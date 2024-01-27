@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
             printf("Erro: informe a porta do servidor principal\n");
             exit(0);
         }
-//        printf("Conectando no servidor principal %s:%s\n", dadosConexao.endereco_ip, dadosConexao.numero_porta);
+        printf("Conectando no servidor principal %s:%s\n", dadosConexao.endereco_ip, dadosConexao.numero_porta);
 
         // Iniciar thread de ping 
         ServerThreadArg ping_thread_arg;
@@ -145,56 +145,40 @@ int main(int argc, char *argv[])
 
     clilen = sizeof(struct sockaddr_in);
 
+    if (backup) {
+        ServerThreadArg backup_thread_arg;
+
+        backup_thread_arg.port = atoi(dadosConexao.numero_porta);
+        strcpy(backup_thread_arg.hostname, dadosConexao.endereco_ip);
+
+        pthread_t backup_thread;
+        
+        // Inicia thread para ficar aguardando novas conexões no servidor principal 
+        pthread_create(&backup_thread, NULL, backupThread, &backup_thread_arg);
+        
+        // Fica em busy waiting até deixar de ser backup
+        while (true) {
+            sleep(1);
+        }
+    }
+
     while (1)
     {
-        if (backup) {
-            ServerThreadArg backup_thread_arg;
+        ServerThreadArg thread_arg; // { };
+        pthread_t thread;
 
-            backup_thread_arg.port = atoi(dadosConexao.numero_porta);
-            strcpy(backup_thread_arg.hostname, dadosConexao.endereco_ip);
-
-            pthread_t backup_thread;
-            
-            // Inicia thread para ficar aguardando novas conexões no servidor principal 
-            pthread_create(&backup_thread, NULL, backupThread, &backup_thread_arg);
-
-            // Thread atual fica enviando pings para o servidor principal e recebendo ACKs
-            while (true) {
- /*               send_ping_to_main(dadosConexao.socket);
-                std::vector<char> fileContentBuffer;
-                Package package;
-                if (read_package_from_socket(dadosConexao.socket, package, fileContentBuffer)) {
-                    printf("Erro ao ler pacote do servidor.\n");
-                    exit(0);
-                    // algoritmo de seleção 
-                    // setar backup = false para o escolhido
-                }
-                // Resposta inválida
-                if (package.package_type != REPLICA_MANAGER_PING_RESPONSE) {
-                    printf("Resposta invalida do servidor.\n");
-                    exit(0);
-                }
-            //    printf("ACK RECEBIDO\n"); */
-                sleep(1);
-            }
-        } else {
-            ServerThreadArg thread_arg; // { };
-            pthread_t thread;
-
-            printf("Aguardando nova conexao...\n");
-            if ((thread_arg.socket_id = accept(main_thread_socket, (struct sockaddr *)&cli_addr, &clilen)) == -1) {
-                printf("Erro! Nao foi possivel realizar conexao com o cliente!\n");
-                break;
-            }
-
-            thread_arg.host = *(uint32_t*)&cli_addr.sin_addr;
-
-            printf("Nova conexao estabelecida.\n");
-
-            // Cria thread para lidar com a conexão estabelecida    
-            pthread_create(&thread, NULL, serverThread, &thread_arg);
-            
+        printf("Aguardando nova conexao...\n");
+        if ((thread_arg.socket_id = accept(main_thread_socket, (struct sockaddr *)&cli_addr, &clilen)) == -1) {
+            printf("Erro! Nao foi possivel realizar conexao com o cliente!\n");
+            break;
         }
+
+        thread_arg.host = *(uint32_t*)&cli_addr.sin_addr;
+
+        printf("Nova conexao estabelecida.\n");
+
+        // Cria thread para lidar com a conexão estabelecida    
+        pthread_create(&thread, NULL, serverThread, &thread_arg);
     }
 
     close(main_thread_socket);
