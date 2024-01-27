@@ -17,6 +17,7 @@
 
 extern DeviceManager deviceManager;
 extern ActiveConnections_t activeConnections;
+extern pthread_mutex_t backup_connection_lock;
 
 thread_local Connection_t client_backup = Connection_t(0, 0, 0xFFFF, "");
 
@@ -141,14 +142,14 @@ void *backupThread(void *arg)
     path_base.append("/");
     uint16_t listen_port = ((ServerThreadArg*)arg)->listen_port;
 
-    printf("Checkpoint 1\n");
+    pthread_mutex_lock(&backup_connection_lock);
     if (conecta_backup_transfer_main(dadosConexao, listen_port)) {
+        pthread_mutex_unlock(&backup_connection_lock);
         exit(EXIT_FAILURE);
     } else {
         printf("Thread de transferencia conectada\n");
     }
-
-    printf("Checkpoint 2\n");
+    pthread_mutex_unlock(&backup_connection_lock);
 
     while (true) {
         std::vector<char> fileContentBuffer;

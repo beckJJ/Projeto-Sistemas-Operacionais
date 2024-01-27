@@ -12,6 +12,7 @@
 #include "serverThread.hpp"
 
 extern bool backup;
+extern pthread_mutex_t backup_connection_lock; 
 
 std::optional<int> conecta_servidor(DadosConexao &dadosConexao)
 {
@@ -52,12 +53,10 @@ std::optional<int> conecta_servidor(DadosConexao &dadosConexao)
 // Conecta thread de transfer do backup ao servidor principal
 int conecta_backup_transfer_main(DadosConexao &dadosConexao, uint16_t listen_port)
 {
-    printf("Checkpoint 1.1\n");
     std::optional<int> socket_opt = conecta_servidor(dadosConexao);
     if (!socket_opt.has_value()) {
         return 1;
     }
-    printf("Checkpoint 1.2\n");
 
     int current_socket = socket_opt.value();
     dadosConexao.socket = current_socket;
@@ -65,20 +64,16 @@ int conecta_backup_transfer_main(DadosConexao &dadosConexao, uint16_t listen_por
     Package package = Package(PackageReplicaManagerTransferIdentification(dadosConexao.deviceID, listen_port));
     std::vector<char> fileContentBuffer;
 
-    printf("Checkpoint 1.3\n");
-
     if (write_package_to_socket(current_socket, package, fileContentBuffer)) {
         printf("Nao foi possivel enviar pacote de identificacao para o servidor.\n");
         return 1;
     }
 
-    printf("Checkpoint 1.4\n");
     if (read_package_from_socket(current_socket, package, fileContentBuffer)) {
         printf("Erro ao ler resposta inicial do servidor.\n");
         return 1;
     }
     
-    printf("Checkpoint 1.5\n");
     // Resposta inválida
     if (package.package_type != REPLICA_MANAGER_TRANSFER_IDENTIFICATION_RESPONSE) {
         printf("Resposta invalida do servidor.\n");
@@ -141,12 +136,14 @@ void *pingThread(void *arg)
     strcpy(dadosConexao.endereco_ip, ((ServerThreadArg*)arg)->hostname);
     sprintf(dadosConexao.numero_porta, "%d", ((ServerThreadArg*)arg)->port);
 
-
+    pthread_mutex_lock(&backup_connection_lock);
     if (conecta_backup_main(dadosConexao)) {
+        pthread_mutex_unlock(&backup_connection_lock);
         exit(EXIT_FAILURE);
     } else {
         printf("Thread de ping conectada\n");
     }
+    pthread_mutex_unlock(&backup_connection_lock);
 
     while (true) {
         send_ping_to_main(dadosConexao.socket);
@@ -158,7 +155,6 @@ void *pingThread(void *arg)
             // inicia algoritmo de seleção
             // seta backup = false se for escolhido
         }
-        printf("ACK RECEBIDO!\n");
         // Resposta inválida
         if (package.package_type != REPLICA_MANAGER_PING_RESPONSE) {
             printf("Resposta invalida do servidor.\n");

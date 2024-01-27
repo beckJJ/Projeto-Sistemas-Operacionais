@@ -30,6 +30,9 @@
 pthread_mutex_t print_package_lock = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
+// Lock utilizado para um backup se conectar com uma thread de cada vez
+pthread_mutex_t backup_connection_lock = PTHREAD_MUTEX_INITIALIZER;
+
 DeviceManager deviceManager = DeviceManager();
 int main_thread_socket = -1;
 ActiveConnections_t activeConnections;
