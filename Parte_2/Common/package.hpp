@@ -149,8 +149,9 @@ struct alignas(ALIGN_VALUE) PackageReplicaManagerIdentificationResponse
 struct alignas(ALIGN_VALUE) PackageReplicaManagerTransferIdentification
 {
     alignas(ALIGN_VALUE) uint8_t deviceID;
+    alignas(ALIGN_VALUE) uint16_t listen_port;
 
-    PackageReplicaManagerTransferIdentification(uint8_t deviceID);
+    PackageReplicaManagerTransferIdentification(uint8_t deviceID, uint16_t listen_port);
 };
 
 // Resposta do servidor para identificação do replica manager de transferência

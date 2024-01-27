@@ -17,6 +17,7 @@ struct ServerThreadArg
     uint16_t port;
     uint32_t host;
     char hostname[MAX_HOSTNAME_LENGTH];
+    uint16_t listen_port;
 };
 
 //typedef struct BackupThreadArg ;

@@ -35,8 +35,8 @@ PackageReplicaManagerIdentification::PackageReplicaManagerIdentification(uint8_t
 PackageReplicaManagerIdentificationResponse::PackageReplicaManagerIdentificationResponse(InitialReplicaManagerIdentificationResponseStatus status, uint8_t deviceID)
     : status(status), deviceID(deviceID) {}
 
-PackageReplicaManagerTransferIdentification::PackageReplicaManagerTransferIdentification(uint8_t deviceID)
-    : deviceID(deviceID) {}
+PackageReplicaManagerTransferIdentification::PackageReplicaManagerTransferIdentification(uint8_t deviceID, uint16_t listen_port)
+    : deviceID(deviceID), listen_port(listen_port) {}
 
 PackageReplicaManagerTransferIdentificationResponse::PackageReplicaManagerTransferIdentificationResponse(ReplicaManagerTransferIdentificationResponseStatus status, uint8_t deviceID)
     : status(status), deviceID(deviceID) {}
@@ -328,7 +328,6 @@ void Package::htobe(void)
     case REQUEST_FILE_LIST:
     case REPLICA_MANAGER_PING:
     case REPLICA_MANAGER_PING_RESPONSE:
-    case REPLICA_MANAGER_TRANSFER_IDENTIFICATION:
     case REPLICA_MANAGER_TRANSFER_IDENTIFICATION_RESPONSE:
     case FILE_NOT_FOUND:
         break;
@@ -350,12 +349,16 @@ void Package::htobe(void)
         package_specific.activeConnectionsList.seqn = htobe16(package_specific.activeConnectionsList.seqn);
         package_specific.activeConnectionsList.connection.port = htobe16(package_specific.activeConnectionsList.connection.port);
         package_specific.activeConnectionsList.connection.host = htobe32(package_specific.activeConnectionsList.connection.host);
+        package_specific.activeConnectionsList.connection.socket_id = htobe16(package_specific.activeConnectionsList.connection.socket_id);
         break;
     case UPLOAD_FILE:
         package_specific.uploadFile.size = htobe64(package_specific.uploadFile.size);
         package_specific.uploadFile.mtime = htobe64(package_specific.uploadFile.mtime);
         package_specific.uploadFile.atime = htobe64(package_specific.uploadFile.atime);
         package_specific.uploadFile.ctime = htobe64(package_specific.uploadFile.ctime);
+        break;
+    case REPLICA_MANAGER_TRANSFER_IDENTIFICATION:
+        package_specific.replicaManagerTransferIdentification.listen_port = htobe16(package_specific.replicaManagerTransferIdentification.listen_port);
         break;
     default:
         throw std::invalid_argument("Unknown package_type.");
@@ -376,7 +379,6 @@ void Package::betoh(void)
     case REQUEST_FILE_LIST:
     case REPLICA_MANAGER_PING:
     case REPLICA_MANAGER_PING_RESPONSE:
-    case REPLICA_MANAGER_TRANSFER_IDENTIFICATION:
     case REPLICA_MANAGER_TRANSFER_IDENTIFICATION_RESPONSE:
     case FILE_NOT_FOUND:
         break;
@@ -398,12 +400,16 @@ void Package::betoh(void)
         package_specific.activeConnectionsList.seqn = be16toh(package_specific.activeConnectionsList.seqn);
         package_specific.activeConnectionsList.connection.port = be16toh(package_specific.activeConnectionsList.connection.port);
         package_specific.activeConnectionsList.connection.host = be32toh(package_specific.activeConnectionsList.connection.host);
+        package_specific.activeConnectionsList.connection.socket_id = be16toh(package_specific.activeConnectionsList.connection.socket_id);
         break;
     case UPLOAD_FILE:
         package_specific.uploadFile.size = be64toh(package_specific.uploadFile.size);
         package_specific.uploadFile.mtime = be64toh(package_specific.uploadFile.mtime);
         package_specific.uploadFile.atime = be64toh(package_specific.uploadFile.atime);
         package_specific.uploadFile.ctime = be64toh(package_specific.uploadFile.ctime);
+        break;
+    case REPLICA_MANAGER_TRANSFER_IDENTIFICATION:
+        package_specific.replicaManagerTransferIdentification.listen_port = be16toh(package_specific.replicaManagerTransferIdentification.listen_port);
         break;
     default:
         throw std::invalid_argument("Unknown package_type.");

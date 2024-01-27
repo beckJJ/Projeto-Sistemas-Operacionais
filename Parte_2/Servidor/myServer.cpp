@@ -150,6 +150,7 @@ int main(int argc, char *argv[])
 
         backup_thread_arg.port = atoi(dadosConexao.numero_porta);
         strcpy(backup_thread_arg.hostname, dadosConexao.endereco_ip);
+        backup_thread_arg.listen_port = port;
 
         pthread_t backup_thread;
         

@@ -266,12 +266,12 @@ DeviceManager::~DeviceManager()
     disconnect_all();
 }
 
-std::optional<DeviceConnectReturn> DeviceManager::connect(Connection_t connection, std::string &username, bool backupTransfer)
+std::optional<DeviceConnectReturn> DeviceManager::connect(Connection_t connection, std::string &username, bool backupTransfer, uint16_t listen_port)
 {
     std::optional<DeviceConnectReturn> returnValue;
     if (username == "backup") {
         if (backupTransfer) {
-            returnValue = connectBackupTransfer(connection);
+            returnValue = connectBackupTransfer(connection, listen_port);
         } else {
             returnValue = connectBackup();
         }
@@ -282,7 +282,7 @@ std::optional<DeviceConnectReturn> DeviceManager::connect(Connection_t connectio
     return returnValue;
 }
 
-std::optional<DeviceConnectReturn> DeviceManager::connectBackupTransfer(Connection_t backup)
+std::optional<DeviceConnectReturn> DeviceManager::connectBackupTransfer(Connection_t backup, uint16_t listen_port)
 {
     uint8_t deviceID;
 
@@ -297,7 +297,7 @@ std::optional<DeviceConnectReturn> DeviceManager::connectBackupTransfer(Connecti
 
     // adicionar backup na lista de backups conectados
     pthread_mutex_lock(activeConnections.lock);
-
+    backup.port = listen_port;
     activeConnections.backups.push_back(backup);
 
     printf("Clientes conectados:\n");

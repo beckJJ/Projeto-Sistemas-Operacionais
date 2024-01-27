@@ -140,8 +140,9 @@ void *backupThread(void *arg)
     sprintf(dadosConexao.numero_porta, "%d", ((ServerThreadArg*)arg)->port);
     std::string path_base = std::string(PREFIXO_DIRETORIO_SERVIDOR);
     path_base.append("/");
+    uint16_t listen_port = ((ServerThreadArg*)arg)->listen_port;
 
-    if (conecta_backup_transfer_main(dadosConexao)) {
+    if (conecta_backup_transfer_main(dadosConexao, listen_port)) {
         exit(EXIT_FAILURE);
     } else {
         printf("Thread de transferencia conectada\n");

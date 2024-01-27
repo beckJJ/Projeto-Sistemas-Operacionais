@@ -237,7 +237,8 @@ int read_package_from_socket(int socket, Package &package, std::vector<char> &fi
         break;
     case REPLICA_MANAGER_TRANSFER_IDENTIFICATION:
         package = Package(PackageReplicaManagerTransferIdentification(
-            *(uint8_t *)buffer_data));
+            *(uint8_t *)buffer_data,
+            be16toh(*(uint16_t *)&buffer_data[ALIGN_VALUE])));
         break;
     case REPLICA_MANAGER_TRANSFER_IDENTIFICATION_RESPONSE:
         package = Package(PackageReplicaManagerTransferIdentificationResponse(

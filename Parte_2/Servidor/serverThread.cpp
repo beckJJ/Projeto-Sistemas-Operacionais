@@ -54,10 +54,11 @@ int connectToServer(Connection_t connection, std::string &username, User *&user,
 int connectBackupTransfer(Connection_t server, uint8_t &deviceID, Package &package, std::vector<char> fileContentBuffer)
 {
     deviceID = package.package_specific.replicaManagerTransferIdentification.deviceID;
+    uint16_t listen_port = package.package_specific.replicaManagerTransferIdentification.listen_port;
     std::optional<DeviceConnectReturn> deviceConnectReturn;
 
     std::string username = "backup";
-    deviceConnectReturn = deviceManager.connect(server, username, true);
+    deviceConnectReturn = deviceManager.connect(server, username, true, listen_port);
 
     if (!deviceConnectReturn.has_value()) {
         printf("[tid: %d] Nova conexao do backup rejeitada.\n", tid);
@@ -94,7 +95,7 @@ int connectBackup(Connection_t server, uint8_t &deviceID, Package &package, std:
 
     // Tenta conectar com o replica manager
     std::string username = "backup";
-    deviceConnectReturn = deviceManager.connect(server, username, false);
+    deviceConnectReturn = deviceManager.connect(server, username, false, 0);
 
     if (!deviceConnectReturn.has_value()) {
         printf("[tid: %d] Nova conexao do backup rejeitada.\n", tid);
@@ -130,7 +131,7 @@ int connectUser(Connection_t client, std::string &username, User *&user, Device 
     std::optional<DeviceConnectReturn> deviceConnectReturn;
 
     // Tenta conectar como um dispositivo do usuário
-    deviceConnectReturn = deviceManager.connect(client, username, false);
+    deviceConnectReturn = deviceManager.connect(client, username, false, 0);
 
     // Conexão rejeitada
     if (!deviceConnectReturn.has_value())
