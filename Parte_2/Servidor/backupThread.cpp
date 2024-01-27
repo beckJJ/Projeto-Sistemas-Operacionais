@@ -141,11 +141,14 @@ void *backupThread(void *arg)
     path_base.append("/");
     uint16_t listen_port = ((ServerThreadArg*)arg)->listen_port;
 
+    printf("Checkpoint 1\n");
     if (conecta_backup_transfer_main(dadosConexao, listen_port)) {
         exit(EXIT_FAILURE);
     } else {
         printf("Thread de transferencia conectada\n");
     }
+
+    printf("Checkpoint 2\n");
 
     while (true) {
         std::vector<char> fileContentBuffer;

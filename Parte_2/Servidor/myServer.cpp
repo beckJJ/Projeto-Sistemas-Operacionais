@@ -101,15 +101,6 @@ int main(int argc, char *argv[])
             printf("Erro: informe a porta do servidor principal\n");
             exit(0);
         }
-        printf("Conectando no servidor principal %s:%s\n", dadosConexao.endereco_ip, dadosConexao.numero_porta);
-
-        // Iniciar thread de ping 
-        ServerThreadArg ping_thread_arg;
-        pthread_t ping_thread;
-        ping_thread_arg.port = atoi(dadosConexao.numero_porta);
-        strcpy(ping_thread_arg.hostname, dadosConexao.endereco_ip);
-
-        pthread_create(&ping_thread, NULL, pingThread, &ping_thread_arg);
     }
 
     // Cria sync_dir do servidor
@@ -143,6 +134,8 @@ int main(int argc, char *argv[])
     printf("Servidor está escutando na porta: %d.\n", port);
 
     if (backup) {
+        printf("Conectando no servidor principal %s:%s\n", dadosConexao.endereco_ip, dadosConexao.numero_porta);
+        // Inicia thread para ficar aguardando novas conexões no servidor principal 
         ServerThreadArg backup_thread_arg;
 
         backup_thread_arg.port = atoi(dadosConexao.numero_porta);
@@ -151,21 +144,37 @@ int main(int argc, char *argv[])
 
         pthread_t backup_thread;
         
-        // Inicia thread para ficar aguardando novas conexões no servidor principal 
         pthread_create(&backup_thread, NULL, backupThread, &backup_thread_arg);
+
+        // Iniciar thread de ping 
+        ServerThreadArg ping_thread_arg;
+        pthread_t ping_thread;
+        ping_thread_arg.port = atoi(dadosConexao.numero_porta);
+        strcpy(ping_thread_arg.hostname, dadosConexao.endereco_ip);
+
+        pthread_create(&ping_thread, NULL, pingThread, &ping_thread_arg);
         
         // Fica em busy waiting até deixar de ser backup
         while (backup) {
+  /*          socklen_t backup_len;
+            struct sockaddr_in backup_addr;
+            backup_len = sizeof(struct sockaddr_in);
+
+            int socket_id = -1;
+            // Aguardando pacotes de election...
+            if ((socket_id = accept(main_thread_socket, (struct sockaddr *)&backup_addr, &backup_len)) == -1) {
+                continue;
+            }
+
             Package package = Package();
             std::vector<char> fileContentBuffer;
-
-            // Aguardando pacotes de election...
-            if (read_package_from_socket(main_thread_socket, package, fileContentBuffer)) {
+            if (read_package_from_socket(socket_id, package, fileContentBuffer)) {
                 printf("Nenhum pacote election recebido");
             } else {
                 printf("Pacote election recebido\n");
             }
-            sleep(10);
+*/
+            sleep(10); 
         }
     }
 

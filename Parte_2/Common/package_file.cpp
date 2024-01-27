@@ -49,7 +49,7 @@ int send_active_connections_list(int socket, ActiveConnections_t activeConnectio
     std::vector<char> fileContentBuffer;
     
     // Enviar clientes
-    if (activeConnections.clients.size() == 0) { // se a lista de clientes estiver 
+    if (activeConnections.clients.size() == 0) { // se a lista de clientes estiver vazia
         Package package = Package(PackageActiveConnectionsList(0, 0, true, Connection_t()));
         if (write_package_to_socket(socket, package, fileContentBuffer)) {
             return -1;

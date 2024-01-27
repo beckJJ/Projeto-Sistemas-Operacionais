@@ -428,17 +428,19 @@ std::optional<DeviceConnectReturn> DeviceManager::connectClient(Connection_t cli
     return DeviceConnectReturn(device, usuario, deviceID);
 }
 
-void DeviceManager::disconnect(std::string &username, uint8_t id, Connection_t connection)
+void DeviceManager::disconnect(std::string &username, uint8_t id, Connection_t connection, bool backupTransfer)
 {
     if (username == "backup") {
         disconnectBackup(id, connection);
     } else {
         disconnectClient(username, id, connection);
     }
-    // Envia a lista de conexões ao backup conectado
-    pthread_mutex_lock(activeConnections.lock);
-    send_active_connections_list_all(activeConnections);
-    pthread_mutex_unlock(activeConnections.lock);
+    // Envia a lista de conexões aos backups conectados, se não desconectou uma thread de ping
+    if (backupTransfer) {
+        pthread_mutex_lock(activeConnections.lock);
+        send_active_connections_list_all(activeConnections);
+        pthread_mutex_unlock(activeConnections.lock);
+    }
 }
 
 void DeviceManager::disconnectBackup(uint8_t id, Connection_t backup)

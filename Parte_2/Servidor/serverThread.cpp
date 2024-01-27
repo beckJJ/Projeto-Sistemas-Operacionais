@@ -24,9 +24,8 @@ extern ActiveConnections_t activeConnections;
 extern bool backup;
 
 thread_local pid_t tid = 0;
-thread_local Connection_t client = Connection_t(0, 0, 0xFFFF, "");
 
-int connectToServer(Connection_t connection, std::string &username, User *&user, Device *&device, uint8_t &deviceID)
+int connectToServer(Connection_t connection, std::string &username, User *&user, Device *&device, uint8_t &deviceID, bool &backupTransfer)
 {
     auto package = Package();
     std::vector<char> fileContentBuffer;
@@ -37,17 +36,19 @@ int connectToServer(Connection_t connection, std::string &username, User *&user,
     }
     
     switch (package.package_type) {
-        case INITIAL_USER_IDENTIFICATION:
-            return connectUser(connection, username, user, device, deviceID, package, fileContentBuffer);
-        case INITIAL_REPLICA_MANAGER_IDENTIFICATION: // thread de ping do servidor principal com o backup
-            username = "backup";
-            return connectBackup(connection, deviceID, package, fileContentBuffer);
-        case REPLICA_MANAGER_TRANSFER_IDENTIFICATION: // thread de transferência de arquivos do servidor principal para o backup
-            username = "backup";
-            return connectBackupTransfer(connection, deviceID, package, fileContentBuffer);
-        default: 
-            printf("[tid: %d] Pacote inicial da conexao nao e identificacao: 0x%02x\n", tid, (uint8_t)package.package_type);
-            return 1;
+    case INITIAL_USER_IDENTIFICATION:
+        return connectUser(connection, username, user, device, deviceID, package, fileContentBuffer);
+    case INITIAL_REPLICA_MANAGER_IDENTIFICATION: // thread de ping do servidor principal com o backup
+        username = "backup";
+        backupTransfer = false;
+        return connectBackup(connection, deviceID, package, fileContentBuffer);
+    case REPLICA_MANAGER_TRANSFER_IDENTIFICATION: // thread de transferência de arquivos do servidor principal para o backup
+        username = "backup";
+        backupTransfer = true;
+        return connectBackupTransfer(connection, deviceID, package, fileContentBuffer);
+    default: 
+        printf("[tid: %d] Pacote inicial da conexao nao e identificacao: 0x%02x\n", tid, (uint8_t)package.package_type);
+        return 1;
     }
 }
 
@@ -172,6 +173,8 @@ int connectUser(Connection_t client, std::string &username, User *&user, Device 
 
 void *serverThread(void *arg)
 {
+    Connection_t client = Connection_t(0, 0, 0xFFFF, "");
+
     client.socket_id = ((ServerThreadArg*)arg)->socket_id;
     client.host      = ((ServerThreadArg*)arg)->host;
     client.port      = ((ServerThreadArg*)arg)->port;
@@ -192,8 +195,9 @@ void *serverThread(void *arg)
 
     std::vector<char> fileContentBuffer;
 
+    bool backupTransfer = false;
     // Tentar conectar-se como um dispositivo do usuário
-    if (connectToServer(client, username, user, device, deviceID))
+    if (connectToServer(client, username, user, device, deviceID, backupTransfer))
     {
         close(client.socket_id);
         return NULL;
@@ -203,7 +207,7 @@ void *serverThread(void *arg)
 
     // Desconecta o dispositivo atual, serverLoop só retorna no caso de não ser possível ler pacotes
     printf("[tid: %d] Disconnecting thread.\n", tid);
-    deviceManager.disconnect(username, deviceID, client);
+    deviceManager.disconnect(username, deviceID, client, backupTransfer);
 
     // socket_id será fechado no destrutor de Device
 
