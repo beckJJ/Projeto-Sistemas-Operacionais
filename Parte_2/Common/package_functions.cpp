@@ -25,27 +25,27 @@ int write_n_bytes_from_socket(int socket, char *buffer, ssize_t size);
 std::optional<std::vector<char>> read_n_bytes_from_socket(int socket, ssize_t size)
 {
     std::vector<char> buffer = std::vector<char>(size);
-    ssize_t readed_bytes_count = 0;
-    ssize_t readed_bytes = 0;
+    ssize_t read_bytes_count = 0;
+    ssize_t read_bytes = 0;
 
     // Lê até ter lido size bytes
     while (size)
     {
-        readed_bytes = read(socket, &buffer.data()[readed_bytes_count], size);
+        read_bytes = read(socket, &buffer.data()[read_bytes_count], size);
 
-        if (readed_bytes == -1)
+        if (read_bytes == -1)
         {
             std::cout << "Socket read returned -1." << std::endl;
             return std::nullopt;
         }
-        else if (readed_bytes == 0)
+        else if (read_bytes == 0)
         {
             std::cout << "Socket read returned 0, needed to read " << size << " bytes." << std::endl;
             return std::nullopt;
         }
 
-        readed_bytes_count += readed_bytes;
-        size -= readed_bytes;
+        read_bytes_count += read_bytes;
+        size -= read_bytes;
     }
 
     return buffer;
@@ -103,6 +103,10 @@ std::optional<ssize_t> sizeof_base_package(PackageType package_type)
         return sizeof(PackageReplicaManagerTransferIdentification);
     case REPLICA_MANAGER_TRANSFER_IDENTIFICATION_RESPONSE:
         return sizeof(PackageReplicaManagerTransferIdentificationResponse);
+    case REPLICA_MANAGER_ELECTION_ELECTION:
+        return sizeof(PackageReplicaManagerElectionElection);
+    case REPLICA_MANAGER_ELECTION_ANSWER:
+        return sizeof(PackageReplicaManagerElectionAnswer);
     default:
         printf("[sizeof_base_package] Unknown package type: 0x%02x\n", (uint8_t)package_type);
         return std::nullopt;
@@ -244,6 +248,14 @@ int read_package_from_socket(int socket, Package &package, std::vector<char> &fi
         package = Package(PackageReplicaManagerTransferIdentificationResponse(
             *(ReplicaManagerTransferIdentificationResponseStatus *)buffer_data,
             *(uint8_t *)&buffer_data[ALIGN_VALUE]));
+        break;
+    case REPLICA_MANAGER_ELECTION_ELECTION: // mensagem ELECTION
+        // TODO : VER O QUE VAI TER NAS MENSAGENS DE ELECTION E ANSWER
+        package = Package(PackageReplicaManagerElectionElection());
+        break;
+    case REPLICA_MANAGER_ELECTION_ANSWER: // mensagem ANSWER
+        // TODO : VER O QUE VAI TER NAS MENSAGENS DE ELECTION E ANSWER
+        package = Package(PackageReplicaManagerElectionAnswer());
         break;
     default:
         return 1;
@@ -495,6 +507,12 @@ void print_package(FILE *fout, bool sending, Package &package, std::vector<char>
         break;
     case REPLICA_MANAGER_TRANSFER_IDENTIFICATION_RESPONSE:
         fprintf(fout, "Package(REPLICA_MANAGER_TRANSFER_IDENTIFICATION_RESPONSE");
+        break;
+    case REPLICA_MANAGER_ELECTION_ELECTION:
+        fprintf(fout, "Package(REPLICA_MANAGER_ELECTION_ELECTION");
+        break;
+    case REPLICA_MANAGER_ELECTION_ANSWER:
+        fprintf(fout, "Package(REPLICA_MANAGER_ELECTION_ANSWER");
         break;
     default:
         fprintf(fout, "Package(UNKOWN[0x%02x]", (uint8_t)package.package_type);

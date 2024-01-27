@@ -52,7 +52,11 @@ enum PackageType : char
     // Pacote de resposta do servidor principal para a thread de transferência de arquivos do servidor principal para o backup
     REPLICA_MANAGER_TRANSFER_IDENTIFICATION_RESPONSE,
     // Pacote para transferencia de lista de dispositivos conectados
-    ACTIVE_CONNECTIONS_LIST
+    ACTIVE_CONNECTIONS_LIST,
+    // Pacote para inicio de eleição (pacote election)
+    REPLICA_MANAGER_ELECTION_ELECTION,
+    // Pacote para resposta de eleição (pacote answer)
+    REPLICA_MANAGER_ELECTION_ANSWER
 };
 
 // Indica aceitação ou rejeição da conexão do dispositivo
@@ -271,6 +275,16 @@ struct alignas(ALIGN_VALUE) PackageReplicaManagerPingResponse
     PackageReplicaManagerPingResponse();
 };
 
+struct alignas(ALIGN_VALUE) PackageReplicaManagerElectionElection
+{
+    PackageReplicaManagerElectionElection();
+};
+
+struct alignas(ALIGN_VALUE) PackageReplicaManagerElectionAnswer
+{
+    PackageReplicaManagerElectionAnswer();
+};
+
 // União de todos os pacotes
 union alignas(ALIGN_VALUE) PackageSpecific
 {
@@ -290,6 +304,8 @@ union alignas(ALIGN_VALUE) PackageSpecific
     alignas(ALIGN_VALUE) PackageFileNotFound fileNotFound;
     alignas(ALIGN_VALUE) PackageReplicaManagerPing replicaManagerPing;
     alignas(ALIGN_VALUE) PackageReplicaManagerPingResponse replicaManagerPingResponse;
+    alignas(ALIGN_VALUE) PackageReplicaManagerElectionElection replicaManagerElectionElection;
+    alignas(ALIGN_VALUE) PackageReplicaManagerElectionAnswer replicaManagerElectionAnswer;
 
     PackageSpecific();
     PackageSpecific(PackageUserIdentification userIdentification);
@@ -308,6 +324,8 @@ union alignas(ALIGN_VALUE) PackageSpecific
     PackageSpecific(PackageFileNotFound fileNotFound);
     PackageSpecific(PackageReplicaManagerPing replicaManagerPing);
     PackageSpecific(PackageReplicaManagerPingResponse replicaManagerPingResponse);
+    PackageSpecific(PackageReplicaManagerElectionElection replicaManagerElectionElection);
+    PackageSpecific(PackageReplicaManagerElectionAnswer replicaManagerElectionAnswer);
     ~PackageSpecific();
 };
 
@@ -343,6 +361,8 @@ struct alignas(ALIGN_VALUE) Package
     Package(PackageFileNotFound fileNotFound);
     Package(PackageReplicaManagerPing replicaManagerPing);
     Package(PackageReplicaManagerPingResponse replicaManagerPingResponse);
+    Package(PackageReplicaManagerElectionElection replicaManagerElectionElection);
+    Package(PackageReplicaManagerElectionAnswer replicaManagerElectionAnswer);
 };
 
 #endif

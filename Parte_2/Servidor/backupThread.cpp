@@ -18,7 +18,6 @@
 extern DeviceManager deviceManager;
 extern ActiveConnections_t activeConnections;
 
-//thread_local pid_t tid = 0;
 thread_local Connection_t client_backup = Connection_t(0, 0, 0xFFFF, "");
 
 void create_client_dirs(std::vector<Connection_t> clientList, const std::string base_path)

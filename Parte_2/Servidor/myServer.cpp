@@ -119,8 +119,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    socklen_t clilen;
-    struct sockaddr_in serv_addr, cli_addr;
+    struct sockaddr_in serv_addr;
 
     if ((main_thread_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {
@@ -143,8 +142,6 @@ int main(int argc, char *argv[])
 
     printf("Servidor está escutando na porta: %d.\n", port);
 
-    clilen = sizeof(struct sockaddr_in);
-
     if (backup) {
         ServerThreadArg backup_thread_arg;
 
@@ -158,12 +155,25 @@ int main(int argc, char *argv[])
         pthread_create(&backup_thread, NULL, backupThread, &backup_thread_arg);
         
         // Fica em busy waiting até deixar de ser backup
-        while (true) {
-            sleep(1);
+        while (backup) {
+            Package package = Package();
+            std::vector<char> fileContentBuffer;
+
+            // Aguardando pacotes de election...
+            if (read_package_from_socket(main_thread_socket, package, fileContentBuffer)) {
+                printf("Nenhum pacote election recebido");
+            } else {
+                printf("Pacote election recebido\n");
+            }
+            sleep(10);
         }
     }
 
-    while (1)
+    socklen_t clilen;
+    struct sockaddr_in cli_addr;
+    clilen = sizeof(struct sockaddr_in);
+
+    while (true)
     {
         ServerThreadArg thread_arg; // { };
         pthread_t thread;

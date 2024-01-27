@@ -85,6 +85,10 @@ PackageReplicaManagerPing::PackageReplicaManagerPing() {}
 
 PackageReplicaManagerPingResponse::PackageReplicaManagerPingResponse() {}
 
+PackageReplicaManagerElectionElection::PackageReplicaManagerElectionElection() {}
+
+PackageReplicaManagerElectionAnswer::PackageReplicaManagerElectionAnswer() {}
+
 PackageSpecific::PackageSpecific() {}
 
 PackageSpecific::PackageSpecific(PackageUserIdentification userIdentification)
@@ -134,6 +138,12 @@ PackageSpecific::PackageSpecific(PackageReplicaManagerPing replicaManagerPing)
 
 PackageSpecific::PackageSpecific(PackageReplicaManagerPingResponse replicaManagerPingResponse)
     : replicaManagerPingResponse(replicaManagerPingResponse) {}
+
+PackageSpecific::PackageSpecific(PackageReplicaManagerElectionElection replicaManagerElectionElection)
+    : replicaManagerElectionElection(replicaManagerElectionElection) {}
+
+PackageSpecific::PackageSpecific(PackageReplicaManagerElectionAnswer replicaManagerElectionAnswer)
+    : replicaManagerElectionAnswer(replicaManagerElectionAnswer) {}
 
 PackageSpecific::~PackageSpecific() {}
 
@@ -193,6 +203,12 @@ Package::Package(const Package &&rhs)
         break;
     case REPLICA_MANAGER_TRANSFER_IDENTIFICATION_RESPONSE:
         package_specific.replicaManagerTransferIdentificationResponse = std::move(rhs.package_specific.replicaManagerTransferIdentificationResponse);
+        break;
+    case REPLICA_MANAGER_ELECTION_ELECTION:
+        package_specific.replicaManagerElectionElection = std::move(rhs.package_specific.replicaManagerElectionElection);
+        break;
+    case REPLICA_MANAGER_ELECTION_ANSWER:
+        package_specific.replicaManagerElectionAnswer = std::move(rhs.package_specific.replicaManagerElectionAnswer);
         break;
     default:
         throw std::invalid_argument("Unknown package_type.");
@@ -258,6 +274,12 @@ Package &Package::operator=(const Package &rhs)
     case REPLICA_MANAGER_TRANSFER_IDENTIFICATION_RESPONSE:
         package_specific.replicaManagerTransferIdentificationResponse = rhs.package_specific.replicaManagerTransferIdentificationResponse;
         break;
+    case REPLICA_MANAGER_ELECTION_ELECTION:
+        package_specific.replicaManagerElectionElection = rhs.package_specific.replicaManagerElectionElection;
+        break;
+    case REPLICA_MANAGER_ELECTION_ANSWER:
+        package_specific.replicaManagerElectionAnswer = rhs.package_specific.replicaManagerElectionAnswer;
+        break;
     default:
         throw std::invalid_argument("Unknown package_type.");
     }
@@ -313,6 +335,12 @@ Package::Package(PackageReplicaManagerTransferIdentification replicaManagerTrans
 Package::Package(PackageReplicaManagerTransferIdentificationResponse replicaManagerTransferIdentificationResponse)
     : package_type(REPLICA_MANAGER_TRANSFER_IDENTIFICATION_RESPONSE), package_specific(replicaManagerTransferIdentificationResponse) {}
 
+Package::Package(PackageReplicaManagerElectionElection replicaManagerElectionElection)
+    : package_type(REPLICA_MANAGER_ELECTION_ELECTION), package_specific(replicaManagerElectionElection) {}
+
+Package::Package(PackageReplicaManagerElectionAnswer replicaManagerElectionAnswer)
+    : package_type(REPLICA_MANAGER_ELECTION_ANSWER), package_specific(replicaManagerElectionAnswer) {}
+
 // Conversão de Package de representação local para be
 void Package::htobe(void)
 {
@@ -329,6 +357,8 @@ void Package::htobe(void)
     case REPLICA_MANAGER_PING:
     case REPLICA_MANAGER_PING_RESPONSE:
     case REPLICA_MANAGER_TRANSFER_IDENTIFICATION_RESPONSE:
+    case REPLICA_MANAGER_ELECTION_ELECTION:
+    case REPLICA_MANAGER_ELECTION_ANSWER:
     case FILE_NOT_FOUND:
         break;
     case FILE_CONTENT:
@@ -380,6 +410,8 @@ void Package::betoh(void)
     case REPLICA_MANAGER_PING:
     case REPLICA_MANAGER_PING_RESPONSE:
     case REPLICA_MANAGER_TRANSFER_IDENTIFICATION_RESPONSE:
+    case REPLICA_MANAGER_ELECTION_ELECTION:
+    case REPLICA_MANAGER_ELECTION_ANSWER:
     case FILE_NOT_FOUND:
         break;
     case FILE_CONTENT:
