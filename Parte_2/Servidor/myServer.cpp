@@ -101,13 +101,15 @@ int main(int argc, char *argv[])
             printf("Erro: informe a porta do servidor principal\n");
             exit(0);
         }
-        printf("Conectando no servidor principal %s:%s\n", dadosConexao.endereco_ip, dadosConexao.numero_porta);
+//        printf("Conectando no servidor principal %s:%s\n", dadosConexao.endereco_ip, dadosConexao.numero_porta);
 
-        if (conecta_backup_main(dadosConexao)) {
-            exit(EXIT_FAILURE);
-        } else {
-            printf("Handshake succeeded\n");
-        }
+        // Iniciar thread de ping 
+        ServerThreadArg ping_thread_arg;
+        pthread_t ping_thread;
+        ping_thread_arg.port = atoi(dadosConexao.numero_porta);
+        strcpy(ping_thread_arg.hostname, dadosConexao.endereco_ip);
+
+        pthread_create(&ping_thread, NULL, pingThread, &ping_thread_arg);
     }
 
     // Cria sync_dir do servidor
@@ -151,14 +153,14 @@ int main(int argc, char *argv[])
             backup_thread_arg.port = atoi(dadosConexao.numero_porta);
             strcpy(backup_thread_arg.hostname, dadosConexao.endereco_ip);
 
-            pthread_t new_thread;
+            pthread_t backup_thread;
             
             // Inicia thread para ficar aguardando novas conexões no servidor principal 
-            pthread_create(&new_thread, NULL, backupThread, &backup_thread_arg);
-            
+            pthread_create(&backup_thread, NULL, backupThread, &backup_thread_arg);
+
             // Thread atual fica enviando pings para o servidor principal e recebendo ACKs
             while (true) {
-                send_ping_to_main(dadosConexao.socket);
+ /*               send_ping_to_main(dadosConexao.socket);
                 std::vector<char> fileContentBuffer;
                 Package package;
                 if (read_package_from_socket(dadosConexao.socket, package, fileContentBuffer)) {
@@ -172,7 +174,7 @@ int main(int argc, char *argv[])
                     printf("Resposta invalida do servidor.\n");
                     exit(0);
                 }
-            //    printf("ACK RECEBIDO\n");
+            //    printf("ACK RECEBIDO\n"); */
                 sleep(1);
             }
         } else {

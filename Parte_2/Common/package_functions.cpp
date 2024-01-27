@@ -215,7 +215,7 @@ int read_package_from_socket(int socket, Package &package, std::vector<char> &fi
                 be16toh(*(uint16_t *)&(buffer_data[3 * ALIGN_VALUE])),
                 be32toh(*(uint32_t *)&(buffer_data[4 * ALIGN_VALUE])),
                 be16toh(*(uint16_t *)&(buffer_data[5 * ALIGN_VALUE])),
-                &(buffer_data[5 * ALIGN_VALUE]))));
+                &(buffer_data[6 * ALIGN_VALUE]))));
         break;
     case UPLOAD_FILE:
         package = Package(PackageUploadFile(

@@ -71,11 +71,7 @@ PackageFileList::PackageFileList(uint16_t count, uint16_t seqn, File file)
 Connection_t::Connection_t(uint16_t port, uint32_t host, uint16_t socket_id, const char _user_name[USER_NAME_MAX_LENGTH])
     : port(port), host(host), socket_id(socket_id)
 {
-    if (_user_name) {
-        strncpy(user_name, _user_name, USER_NAME_MAX_LENGTH - 1);
-    } else {
-        strncpy(user_name, "", USER_NAME_MAX_LENGTH - 1);
-    }
+    strncpy(user_name, _user_name, USER_NAME_MAX_LENGTH - 1);
 }
 
 PackageActiveConnectionsList::PackageActiveConnectionsList(uint16_t count, uint16_t seqn, bool is_client, Connection_t connection)

@@ -8,6 +8,10 @@
 
 #include "../Common/package_functions.hpp"
 #include "../Common/package.hpp"
+#include "../Common/package_file.hpp"
+#include "serverThread.hpp"
+
+extern bool backup;
 
 std::optional<int> conecta_servidor(DadosConexao &dadosConexao)
 {
@@ -123,4 +127,35 @@ int conecta_backup_main(DadosConexao &dadosConexao)
 
     dadosConexao.deviceID = package.package_specific.replicaManagerIdentificationResponse.deviceID;
     return 0;
+}
+
+void *pingThread(void *arg)
+{
+    DadosConexao dadosConexao = DadosConexao();
+    strcpy(dadosConexao.endereco_ip, ((ServerThreadArg*)arg)->hostname);
+    sprintf(dadosConexao.numero_porta, "%d", ((ServerThreadArg*)arg)->port);
+
+    if (conecta_backup_main(dadosConexao)) {
+        exit(EXIT_FAILURE);
+    } else {
+        printf("Thread de ping conectada\n");
+    }
+
+    while (true) {
+        send_ping_to_main(dadosConexao.socket);
+        std::vector<char> fileContentBuffer;
+        Package package;
+        if (read_package_from_socket(dadosConexao.socket, package, fileContentBuffer)) {
+            printf("Erro ao ler pacote do servidor.\n");
+            exit(0);
+            // inicia algoritmo de seleção
+            // seta backup = false se for escolhido
+        }
+        // Resposta inválida
+        if (package.package_type != REPLICA_MANAGER_PING_RESPONSE) {
+            printf("Resposta invalida do servidor.\n");
+            exit(0);
+        }
+        sleep(1);
+    }
 }

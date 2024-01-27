@@ -7,6 +7,7 @@
 #include "../Common/package.hpp"
 #include "../Common/package_file.hpp"
 #include "../Common/connections.hpp"
+#include "../Common/functions.hpp"
 
 #include <pthread.h>
 #include <threads.h>
@@ -20,10 +21,12 @@ extern ActiveConnections_t activeConnections;
 //thread_local pid_t tid = 0;
 thread_local Connection_t client_backup = Connection_t(0, 0, 0xFFFF, "");
 
-void create_client_dirs(Connection_t clientList, )
+void create_client_dirs(std::vector<Connection_t> clientList, const std::string base_path)
 {
     for (Connection_t c : clientList) {
-
+        std::string path = base_path;
+        path.append(c.user_name);
+        create_dir_if_not_exists(path.c_str());
     }
 }
 
@@ -141,7 +144,7 @@ void *backupThread(void *arg)
     if (conecta_backup_transfer_main(dadosConexao)) {
         exit(EXIT_FAILURE);
     } else {
-        printf("Thread secundaria conectada\n");
+        printf("Thread de transferencia conectada\n");
     }
 
     while (true) {
@@ -163,16 +166,17 @@ void *backupThread(void *arg)
                 pthread_mutex_unlock(activeConnections.lock);
                 // Criar diretorios para cada um dos usuarios ativos em seu sync dir
                 pthread_mutex_lock(activeConnections.lock);
-                create_client_dirs(activeConnections.clients);
+                create_client_dirs(activeConnections.clients, path_base);
                 pthread_mutex_unlock(activeConnections.lock);
 
                 pthread_mutex_lock(activeConnections.lock);
                 printf("Clientes conectados:\n");
                 for (Connection_t c : activeConnections.clients) {
-                char *endereco_ip = inet_ntoa(*(struct in_addr *)&c.host);
-                printf("%s\t", endereco_ip);
-                printf("%d\t", c.port);
-                printf("%d\n", c.socket_id);
+                    char *endereco_ip = inet_ntoa(*(struct in_addr *)&c.host);
+                    printf("%s\t", endereco_ip);
+                    printf("%d\t", c.port);
+                    printf("%d\t", c.socket_id);
+                    printf("%s\n", c.user_name);
                 }
                 printf("Backups conectados:\n");
                 for (Connection_t c : activeConnections.backups) {

@@ -305,7 +305,8 @@ std::optional<DeviceConnectReturn> DeviceManager::connectBackupTransfer(Connecti
         char *endereco_ip = inet_ntoa(*(struct in_addr *)&c.host);
         printf("%s\t", endereco_ip);
         printf("%d\t", c.port);
-        printf("%d\n", c.socket_id);
+        printf("%d\t", c.socket_id);
+        printf("%s\n", c.user_name);
     }
     printf("Backups conectados:\n");
     for (Connection_t c : activeConnections.backups) {
@@ -403,13 +404,15 @@ std::optional<DeviceConnectReturn> DeviceManager::connectClient(Connection_t cli
 
     // adicionar cliente na lista de clientes conectados
     pthread_mutex_lock(activeConnections.lock);
+    strcpy(client.user_name, user.c_str());
     activeConnections.clients.push_back(client);
     printf("Clientes conectados:\n");
     for (Connection_t c : activeConnections.clients) {
         char *endereco_ip = inet_ntoa(*(struct in_addr *)&c.host);
         printf("%s\t", endereco_ip);
         printf("%d\t", c.port);
-        printf("%d\n", c.socket_id);
+        printf("%d\t", c.socket_id);
+        printf("%s\n", c.user_name);
     }
     printf("Backups conectados:\n");
     for (Connection_t c : activeConnections.backups) {
@@ -468,7 +471,8 @@ void DeviceManager::disconnectBackup(uint8_t id, Connection_t backup)
         char *endereco_ip = inet_ntoa(*(struct in_addr *)&c.host);
         printf("%s\t", endereco_ip);
         printf("%d\t", c.port);
-        printf("%d\n", c.socket_id);
+        printf("%d\t", c.socket_id);
+        printf("%s\n", c.user_name);
     }
     printf("Backups conectados:\n");
     for (Connection_t c : activeConnections.backups) {
@@ -548,7 +552,8 @@ void DeviceManager::disconnectClient(std::string &user, uint8_t id, Connection_t
         char *endereco_ip = inet_ntoa(*(struct in_addr *)&c.host);
         printf("%s\t", endereco_ip);
         printf("%d\t", c.port);
-        printf("%d\n", c.socket_id);
+        printf("%d\t", c.socket_id);
+        printf("%s\n", c.user_name);
     }
     printf("Backups conectados:\n");
     for (Connection_t c : activeConnections.backups) {

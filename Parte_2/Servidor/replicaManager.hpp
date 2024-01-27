@@ -9,3 +9,4 @@
 std::optional<int> conecta_servidor(DadosConexao &dadosConexao);
 int conecta_backup_main(DadosConexao &dadosConexao);
 int conecta_backup_transfer_main(DadosConexao &dadosConexao);
+void *pingThread(void *arg);
