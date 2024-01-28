@@ -31,9 +31,6 @@
 pthread_mutex_t print_package_lock = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
-// Lock utilizado para um backup se conectar com uma thread de cada vez
-pthread_mutex_t backup_connection_lock = PTHREAD_MUTEX_INITIALIZER;
-
 DeviceManager deviceManager = DeviceManager();
 ActiveConnections_t activeConnections;
 DadosConexao dadosConexao = DadosConexao();
@@ -232,6 +229,8 @@ int main(int argc, char *argv[])
                 strcpy(dadosConexao.endereco_ip, endereco_ip);
                 sprintf(dadosConexao.numero_porta, "%d", new_coordinator.port);
 
+                printf("Iniciando conexoes com novo coordenador...\n");
+                sleep(3);
                 // Iniciar thread de transfer
                 pthread_create(&backup_thread, NULL, backupThread, NULL);
                 dadosConexao.backup_thread = backup_thread;

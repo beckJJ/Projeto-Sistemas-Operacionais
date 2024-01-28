@@ -81,7 +81,9 @@ void *frontendThread(void *)
                 // imprimir dados do servidor
                 char *endereco_ip = inet_ntoa(*(struct in_addr *)&package.package_specific.newServerInfo.host);
                 printf("Endereco do novo servidor: %s:%d\n", endereco_ip, package.package_specific.newServerInfo.port);
-
+                
+                printf("Conectando-se ao servidor...\n");
+                sleep(5);
                 // TODO: apontar novas conexoes para o servidor recebido
                 strcpy(dados_conexao.endereco_ip, endereco_ip);
                 sprintf(dados_conexao.numero_porta, "%d", package.package_specific.newServerInfo.port);
@@ -95,7 +97,7 @@ void *frontendThread(void *)
                 pthread_t new_thread;
                 pthread_create(&new_thread, NULL, readThread, NULL);
                 dados_conexao.sync_thread = new_thread;
-                
+                printf("Conectado ao novo servidor!\n");
                 break;
             }
             default:

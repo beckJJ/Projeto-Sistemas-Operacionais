@@ -22,6 +22,9 @@ extern DadosConexao dadosConexao;
 
 void break_accept_on_main_thread()
 {
+    sleep(5);
+    // seta backup = false porque foi escolhido
+    dadosConexao.backup_flag = false;
     printf("Quebrando accept do main...\n");
     DadosConexao dadosConexao_main = DadosConexao();
     strcpy(dadosConexao_main.endereco_ip, "127.0.0.1");
@@ -98,8 +101,6 @@ void *pingThread(void *)
             
             // se não recebeu nenhum answer, foi eleito 
             if (answers_received == 0) {
-                // seta backup = false se for escolhido
-                dadosConexao.backup_flag = false;
                 break_accept_on_main_thread();
             }
             // else : aguarda coordinator e inicia novas conexões
