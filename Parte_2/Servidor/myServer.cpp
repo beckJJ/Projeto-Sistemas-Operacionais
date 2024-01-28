@@ -198,7 +198,7 @@ int main(int argc, char *argv[])
             }
             pthread_mutex_unlock(dadosConexao.socket_lock);
             
-            switch(package.package_type) {
+            switch (package.package_type) {
             case REPLICA_MANAGER_ELECTION_ELECTION: // se recebeu election
                 // envia um answer
                 printf("Election Recebido\n");
@@ -282,7 +282,23 @@ int main(int argc, char *argv[])
         }
 
         // TODO: realizar nova conexão com os clientes
+        for (Connection_t c : temp_clients) {
+            DadosConexao dadosConexao_cliente = DadosConexao();
+            char *endereco_ip = inet_ntoa(*(struct in_addr *)&c.host);
+            strcpy(dadosConexao_cliente.endereco_ip, endereco_ip);
+            sprintf(dadosConexao_cliente.numero_porta, "%d", c.port);
 
+            std::optional<int> socket_opt = conecta_servidor(dadosConexao_cliente);
+            if (!socket_opt.has_value()) {
+                printf("Erro na abertura de conexao\n");
+                continue;
+            }
+            int current_socket = socket_opt.value();
+            pthread_mutex_lock(dadosConexao.socket_lock);
+            printf("Enviando ping para o cliente %s:%s\n", dadosConexao_cliente.endereco_ip, dadosConexao_cliente.numero_porta);
+            send_ping_to_socket(current_socket);
+            pthread_mutex_unlock(dadosConexao.socket_lock);
+        }
     }
 
     socklen_t clilen;

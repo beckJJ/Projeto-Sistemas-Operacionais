@@ -109,6 +109,8 @@ std::optional<ssize_t> sizeof_base_package(PackageType package_type)
         return sizeof(PackageReplicaManagerElectionAnswer);
     case REPLICA_MANAGER_ELECTION_COORDINATOR:
         return sizeof(PackageReplicaManagerElectionCoordinator);
+    case NEW_SERVER_INFO:
+        return sizeof(PackageNewServerInfo);
     default:
         printf("[sizeof_base_package] Unknown package type: 0x%02x\n", (uint8_t)package_type);
         return std::nullopt;
@@ -151,7 +153,8 @@ int read_package_from_socket(int socket, Package &package, std::vector<char> &fi
     case INITIAL_USER_IDENTIFICATION:
         package = Package(PackageUserIdentification(
             *(uint8_t *)buffer_data,
-            &buffer_data[ALIGN_VALUE]));
+            be16toh(*(uint16_t *)&(buffer_data[ALIGN_VALUE])),
+            &buffer_data[2 * ALIGN_VALUE]));
         break;
     case INITIAL_REPLICA_MANAGER_IDENTIFICATION:
         package = Package(PackageReplicaManagerIdentification(
@@ -260,6 +263,9 @@ int read_package_from_socket(int socket, Package &package, std::vector<char> &fi
     case REPLICA_MANAGER_ELECTION_COORDINATOR: // mensagem COORDINATOR
         package = Package(PackageReplicaManagerElectionCoordinator(
             *(uint8_t *)buffer_data));
+        break;
+    case NEW_SERVER_INFO:
+        // TODO: Definir os campos que o novo servidor envia para os clientes
         break;
     default:
         return 1;
@@ -522,6 +528,9 @@ void print_package(FILE *fout, bool sending, Package &package, std::vector<char>
         fprintf(fout,
                 "Package(REPLICA_MANAGER_ELECTION_COORDINATOR, 0x%02x",
                 (uint8_t)package.package_specific.replicaManagerElectionCoordinator.deviceID);
+        break;
+    case NEW_SERVER_INFO:
+        // TODO: Fazer o fprintf de NEW_SERVER_INFO
         break;
     default:
         fprintf(fout, "Package(UNKOWN[0x%02x]", (uint8_t)package.package_type);

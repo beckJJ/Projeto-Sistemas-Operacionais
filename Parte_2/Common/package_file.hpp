@@ -39,7 +39,7 @@ int read_file_and_save(int socket, const char *path);
 //   caso PackageUploadFile read_file_and_save será chamado
 int read_upload_file_and_save(int socket, const char *path);
 
-int send_backup_ack(int socket);
-int send_ping_to_main(int socket);
+int send_ping_response_to_socket(int socket);
+int send_ping_to_socket(int socket);
 
 #endif

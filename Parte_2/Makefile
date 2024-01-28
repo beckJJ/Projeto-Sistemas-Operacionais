@@ -24,7 +24,7 @@ CFLAGS:=$(HARDENING) -g -O2 -Wall -Wextra -pthread -std=c++17
 #   DEBUG_PACOTE_FILE_CONTENT: Imprime conteúdo do arquivo enviado no pacote em hex
 #   LIMPA_TELA_NOOP:           Função limpatela() não limpará a tela
 
-DEFINES:=-DDEBUG_PACOTE=false -DDEBUG_PACOTE_TID=false -DLIMPA_TELA_NOOP=false
+DEFINES:=-DDEBUG_PACOTE=false -DDEBUG_PACOTE_TID=false -DLIMPA_TELA_NOOP=true
 # DEFINES:=-DDEBUG_PACOTE=true
 
 default: all
@@ -32,8 +32,8 @@ default: all
 all: myClient myServer
 
 
-myClient: Cliente/myClient.cpp auxiliaresCliente interfaceCliente comunicacaoCliente package functions package_file package_functions eventThread readThread DadosConexao
-	$(CC) $(CFLAGS) $(DEFINES) -o myClient Cliente/myClient.cpp Cliente/auxiliaresCliente.o Cliente/interfaceCliente.o Cliente/comunicacaoCliente.o Cliente/eventThread.o Cliente/readThread.o Common/DadosConexao.o Common/package.o Common/functions.o Common/package_file.o Common/package_functions.o
+myClient: Cliente/myClient.cpp auxiliaresCliente interfaceCliente comunicacaoCliente package functions package_file package_functions eventThread readThread frontendThread DadosConexao
+	$(CC) $(CFLAGS) $(DEFINES) -o myClient Cliente/myClient.cpp Cliente/auxiliaresCliente.o Cliente/interfaceCliente.o Cliente/comunicacaoCliente.o Cliente/eventThread.o Cliente/readThread.o Cliente/frontendThread.o Common/DadosConexao.o Common/package.o Common/functions.o Common/package_file.o Common/package_functions.o
 
 auxiliaresCliente: Cliente/auxiliaresCliente.cpp
 	$(CC) $(CFLAGS) $(DEFINES) -c -o Cliente/auxiliaresCliente.o Cliente/auxiliaresCliente.cpp
@@ -49,6 +49,9 @@ eventThread: Cliente/eventThread.cpp
 
 readThread: Cliente/readThread.cpp
 	$(CC) $(CFLAGS) $(DEFINES) -c -o Cliente/readThread.o Cliente/readThread.cpp
+
+frontendThread: Cliente/frontendThread.cpp
+	$(CC) $(CFLAGS) $(DEFINES) -c -o Cliente/frontendThread.o Cliente/frontendThread.cpp
 
 
 myServer: Servidor/myServer.cpp serverThread deviceManager serverLoop replicaManager backupThread pingThread package functions package_file package_functions DadosConexao

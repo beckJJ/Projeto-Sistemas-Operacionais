@@ -5,6 +5,7 @@ DadosConexao::DadosConexao()
     socket = -1;
     socket_transfer = -1;
     socket_ping = -1;
+    socket_frontend = -1;
 
     nome_usuario[0] = 0;
     endereco_ip[0]  = 0;

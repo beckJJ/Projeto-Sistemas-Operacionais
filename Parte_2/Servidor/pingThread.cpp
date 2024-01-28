@@ -83,7 +83,7 @@ void *pingThread(void *)
     pthread_mutex_unlock(dadosConexao.backup_connection_lock);
 
     while (true) {
-        send_ping_to_main(dadosConexao.socket_ping);
+        send_ping_to_socket(dadosConexao.socket_ping);
         std::vector<char> fileContentBuffer;
         Package package;
         if (read_package_from_socket(dadosConexao.socket_ping, package, fileContentBuffer)) {

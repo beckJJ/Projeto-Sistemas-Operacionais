@@ -122,6 +122,7 @@ int conecta_device(DadosConexao &dadosConexao)
     // Envia pacote inicial de identificação, especificando dispositivo
     auto package = Package(PackageUserIdentification(
         dadosConexao.deviceID,
+        dadosConexao.listen_port,
         dadosConexao.nome_usuario));
     std::vector<char> fileContentBuffer;
 

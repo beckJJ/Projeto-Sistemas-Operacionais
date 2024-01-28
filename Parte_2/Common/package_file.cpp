@@ -80,7 +80,7 @@ int send_active_connections_list(int socket, ActiveConnections_t activeConnectio
 }
 
 // Faz um ping do servidor de backup para o servidor principal
-int send_ping_to_main(int socket)
+int send_ping_to_socket(int socket)
 {
     std::vector<char> fileContentBuffer;
     Package package = Package(PackageReplicaManagerPing());
@@ -109,7 +109,7 @@ int send_coordinator_to_socket(int socket, uint8_t deviceID)
 }
 
 // Retorna um ACK do servidor principal para um backup
-int send_backup_ack(int socket)
+int send_ping_response_to_socket(int socket)
 {
     std::vector<char> fileContentBuffer;
     Package package = Package(PackageReplicaManagerPingResponse());

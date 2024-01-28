@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include "auxiliaresCliente.hpp"
 #include "readThread.hpp"
+#include "frontendThread.hpp"
 #include <csignal>
 
 #if DEBUG_PACOTE
@@ -39,6 +40,10 @@ void cancel_threads()
     if (dados_conexao.event_thread.has_value())
     {
         pthread_cancel(dados_conexao.event_thread.value());
+    }
+
+    if (dados_conexao.frontend_thread.has_value()) {
+        pthread_cancel(dados_conexao.frontend_thread.value());
     }
 }
 
@@ -75,6 +80,11 @@ int main(int argc, char *argv[])
     strcpy(dados_conexao.endereco_ip, argv[2]);
     strcpy(dados_conexao.numero_porta, argv[3]);
 
+    // gera uma porta aleatória entre 5000 e 5999 para o frontend
+    srand(time(NULL));
+    dados_conexao.listen_port = (rand() % 1000) + 5000;
+    printf("Porta gerada: %d\n", dados_conexao.listen_port);
+
     /* Inicia a conexao do dispositivo com o servidor. */
     if (conecta_device(dados_conexao))
     {
@@ -89,6 +99,10 @@ int main(int argc, char *argv[])
     }
 
     pthread_t new_thread;
+
+    // Inicia thread de frontend
+    pthread_create(&new_thread, NULL, frontendThread, NULL);
+    dados_conexao.frontend_thread = new_thread;
 
     // Inicia thread de eventos
     pthread_create(&new_thread, NULL, eventThread, NULL);

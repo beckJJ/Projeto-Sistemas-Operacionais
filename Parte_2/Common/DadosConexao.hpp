@@ -41,6 +41,11 @@ struct DadosConexao
     std::optional<pthread_t> event_thread;
     // ID do dispositivo
     uint8_t deviceID;
+
+    // Nova thread de frontend do cliente
+    std::optional<pthread_t> frontend_thread;
+    int socket_frontend; // socket do frontend
+    // cliente também usará listen_port para a thread de frontend
     
     // Novos campos que o backup utilizará
     pthread_mutex_t *backup_connection_lock;

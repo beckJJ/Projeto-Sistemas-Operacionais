@@ -58,7 +58,9 @@ enum PackageType : char
     // Pacote para resposta de eleição (pacote answer)
     REPLICA_MANAGER_ELECTION_ANSWER,
     // Pacote para coordenador de eleição (pacote coordinator)
-    REPLICA_MANAGER_ELECTION_COORDINATOR
+    REPLICA_MANAGER_ELECTION_COORDINATOR,
+    // Pacote para enviar informações do novo servidor para os clientes
+    NEW_SERVER_INFO
 };
 
 // Indica aceitação ou rejeição da conexão do dispositivo
@@ -114,10 +116,12 @@ struct alignas(ALIGN_VALUE) PackageUserIdentification
 {
     // ID do dispositivo, usado caso connectionType == EVENT_CONNECTION
     alignas(ALIGN_VALUE) uint8_t deviceID;
+    // Numero da porta que o frontend ficará aguardando novas conexões de backups eleitos
+    alignas(ALIGN_VALUE) uint16_t listen_port;
     // Nome do usuário que deseja se conectar
     alignas(ALIGN_VALUE) char user_name[USER_NAME_MAX_LENGTH]{};
 
-    PackageUserIdentification(uint8_t deviceID, const char _user_name[USER_NAME_MAX_LENGTH]);
+    PackageUserIdentification(uint8_t deviceID, uint16_t listen_port, const char _user_name[USER_NAME_MAX_LENGTH]);
 };
 
 // Resposta do servidor para identificação do usuário
@@ -293,6 +297,11 @@ struct alignas(ALIGN_VALUE) PackageReplicaManagerElectionCoordinator
     PackageReplicaManagerElectionCoordinator(uint8_t deviceID);
 };
 
+struct alignas(ALIGN_VALUE) PackageNewServerInfo
+{
+    // TODO: Definir a struct PackageNewServerInfo
+};
+
 
 // União de todos os pacotes
 union alignas(ALIGN_VALUE) PackageSpecific
@@ -316,6 +325,7 @@ union alignas(ALIGN_VALUE) PackageSpecific
     alignas(ALIGN_VALUE) PackageReplicaManagerElectionElection replicaManagerElectionElection;
     alignas(ALIGN_VALUE) PackageReplicaManagerElectionAnswer replicaManagerElectionAnswer;
     alignas(ALIGN_VALUE) PackageReplicaManagerElectionCoordinator replicaManagerElectionCoordinator;
+    alignas(ALIGN_VALUE) PackageNewServerInfo newServerInfo;
 
     PackageSpecific();
     PackageSpecific(PackageUserIdentification userIdentification);
@@ -337,6 +347,7 @@ union alignas(ALIGN_VALUE) PackageSpecific
     PackageSpecific(PackageReplicaManagerElectionElection replicaManagerElectionElection);
     PackageSpecific(PackageReplicaManagerElectionAnswer replicaManagerElectionAnswer);
     PackageSpecific(PackageReplicaManagerElectionCoordinator replicaManagerElectionCoordinator);
+    PackageSpecific(PackageNewServerInfo newServerInfo);
     ~PackageSpecific();
 };
 
@@ -375,6 +386,7 @@ struct alignas(ALIGN_VALUE) Package
     Package(PackageReplicaManagerElectionElection replicaManagerElectionElection);
     Package(PackageReplicaManagerElectionAnswer replicaManagerElectionAnswer);
     Package(PackageReplicaManagerElectionCoordinator replicaManagerElectionCoordinator);
+    Package(PackageNewServerInfo newServerInfo)
 };
 
 #endif

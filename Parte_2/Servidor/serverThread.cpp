@@ -129,6 +129,7 @@ int connectUser(Connection_t client, std::string &username, User *&user, Device 
 {
     username = std::string(package.package_specific.userIdentification.user_name);
     deviceID = package.package_specific.userIdentification.deviceID;
+    client.port = package.package_specific.userIdentification.listen_port;
 
     std::optional<DeviceConnectReturn> deviceConnectReturn;
 

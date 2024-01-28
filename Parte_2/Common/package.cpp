@@ -20,8 +20,8 @@ bool File::operator<(const File &a) const
     return strcmp(name, a.name) < 0;
 }
 
-PackageUserIdentification::PackageUserIdentification(uint8_t deviceID, const char _user_name[USER_NAME_MAX_LENGTH])
-    : deviceID(deviceID)
+PackageUserIdentification::PackageUserIdentification(uint8_t deviceID, uint16_t listen_port, const char _user_name[USER_NAME_MAX_LENGTH])
+    : deviceID(deviceID), listen_port(listen_port)
 {
     strncpy(user_name, _user_name, USER_NAME_MAX_LENGTH - 1);
 }
@@ -92,6 +92,9 @@ PackageReplicaManagerElectionAnswer::PackageReplicaManagerElectionAnswer() {}
 PackageReplicaManagerElectionCoordinator::PackageReplicaManagerElectionCoordinator(uint8_t deviceID)
     : deviceID(deviceID) {}
 
+// TODO : Definir o pacote de PackageNewServerInfo
+PackageNewServerInfo::PackageNewServerInfo() {}
+
 PackageSpecific::PackageSpecific() {}
 
 PackageSpecific::PackageSpecific(PackageUserIdentification userIdentification)
@@ -150,6 +153,9 @@ PackageSpecific::PackageSpecific(PackageReplicaManagerElectionAnswer replicaMana
 
 PackageSpecific::PackageSpecific(PackageReplicaManagerElectionCoordinator replicaManagerElectionCoordinator)
     : replicaManagerElectionCoordinator(replicaManagerElectionCoordinator) {}
+
+PackageSpecific::PackageSpecific(PackageNewServerInfo newServerInfo)
+    : newServerInfo(newServerInfo) {}
 
 PackageSpecific::~PackageSpecific() {}
 
@@ -218,6 +224,9 @@ Package::Package(const Package &&rhs)
         break;
     case REPLICA_MANAGER_ELECTION_COORDINATOR:
         package_specific.replicaManagerElectionCoordinator = std::move(rhs.package_specific.replicaManagerElectionCoordinator);
+        break;
+    case NEW_SERVER_INFO:
+        package_specific.newServerInfo = std::move(rhs.package_specific.newServerInfo);
         break;
     default:
         throw std::invalid_argument("Unknown package_type.");
@@ -292,6 +301,9 @@ Package &Package::operator=(const Package &rhs)
     case REPLICA_MANAGER_ELECTION_COORDINATOR:
         package_specific.replicaManagerElectionCoordinator = rhs.package_specific.replicaManagerElectionCoordinator;
         break;
+    case NEW_SERVER_INFO:
+        package_specific.newServerInfo = rhs.package_specific.newServerInfo;
+        break;
     default:
         throw std::invalid_argument("Unknown package_type.");
     }
@@ -356,13 +368,15 @@ Package::Package(PackageReplicaManagerElectionAnswer replicaManagerElectionAnswe
 Package::Package(PackageReplicaManagerElectionCoordinator replicaManagerElectionCoordinator)
     : package_type(REPLICA_MANAGER_ELECTION_COORDINATOR), package_specific(replicaManagerElectionCoordinator) {}
 
+Package::Package(PackageNewServerInfo newServerInfo)
+    : package_type(NEW_SERVER_INFO), package_specific(newServerInfo) {}
+
 // Conversão de Package de representação local para be
 void Package::htobe(void)
 {
     switch (this->package_type)
     {
     // Não há campo para converter
-    case INITIAL_USER_IDENTIFICATION:
     case INITIAL_REPLICA_MANAGER_IDENTIFICATION:
     case USER_IDENTIFICATION_RESPONSE:
     case REPLICA_MANAGER_IDENTIFICATION_RESPONSE:
@@ -376,6 +390,9 @@ void Package::htobe(void)
     case REPLICA_MANAGER_ELECTION_ANSWER:
     case REPLICA_MANAGER_ELECTION_COORDINATOR:
     case FILE_NOT_FOUND:
+        break;
+    case INITIAL_USER_IDENTIFICATION:
+        package_specific.userIdentification.listen_port = htobe16(package_specific.userIdentification.listen_port);
         break;
     case FILE_CONTENT:
         package_specific.fileContent.size = htobe64(package_specific.fileContent.size);
@@ -406,6 +423,9 @@ void Package::htobe(void)
     case REPLICA_MANAGER_TRANSFER_IDENTIFICATION:
         package_specific.replicaManagerTransferIdentification.listen_port = htobe16(package_specific.replicaManagerTransferIdentification.listen_port);
         break;
+    case NEW_SERVER_INFO:
+        // TODO: definir as conversões de NEW_SERVER_INFO
+        break;
     default:
         throw std::invalid_argument("Unknown package_type.");
     }
@@ -416,7 +436,6 @@ void Package::betoh(void)
     switch (this->package_type)
     {
     // Não há campo para converter
-    case INITIAL_USER_IDENTIFICATION:
     case INITIAL_REPLICA_MANAGER_IDENTIFICATION:
     case USER_IDENTIFICATION_RESPONSE:
     case REPLICA_MANAGER_IDENTIFICATION_RESPONSE:
@@ -430,6 +449,9 @@ void Package::betoh(void)
     case REPLICA_MANAGER_ELECTION_ANSWER:
     case REPLICA_MANAGER_ELECTION_COORDINATOR:
     case FILE_NOT_FOUND:
+        break;
+    case INITIAL_USER_IDENTIFICATION:
+        package_specific.userIdentification.listen_port = be16toh(package_specific.userIdentification.listen_port);
         break;
     case FILE_CONTENT:
         package_specific.fileContent.size = be64toh(package_specific.fileContent.size);
@@ -459,6 +481,9 @@ void Package::betoh(void)
         break;
     case REPLICA_MANAGER_TRANSFER_IDENTIFICATION:
         package_specific.replicaManagerTransferIdentification.listen_port = be16toh(package_specific.replicaManagerTransferIdentification.listen_port);
+        break;
+    case NEW_SERVER_INFO:
+        // TODO: definir as conversões de NEW_SERVER_INFO
         break;
     default:
         throw std::invalid_argument("Unknown package_type.");
