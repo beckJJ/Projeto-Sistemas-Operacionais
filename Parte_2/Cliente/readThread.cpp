@@ -170,7 +170,6 @@ void *readThread(void *)
             break;
         }
     }
-
     exitReadThread();
 
     return NULL;

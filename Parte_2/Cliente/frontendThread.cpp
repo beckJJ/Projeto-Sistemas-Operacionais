@@ -24,6 +24,8 @@
 #include "../Common/defines.hpp"
 #include "../Common/functions.hpp"
 #include "../Common/package_file.hpp"
+#include "readThread.hpp"
+#include "auxiliaresCliente.hpp"
 
 extern DadosConexao dados_conexao;
 
@@ -81,6 +83,18 @@ void *frontendThread(void *)
                 printf("Endereco do novo servidor: %s:%d\n", endereco_ip, package.package_specific.newServerInfo.port);
 
                 // TODO: apontar novas conexoes para o servidor recebido
+                strcpy(dados_conexao.endereco_ip, endereco_ip);
+                sprintf(dados_conexao.numero_porta, "%d", package.package_specific.newServerInfo.port);
+                if (conecta_device(dados_conexao)) {
+                    continue;
+                }
+                if (get_sync_dir(dados_conexao)) {
+                    exit(EXIT_FAILURE);
+                }
+                // Iniciar nova thread de read
+                pthread_t new_thread;
+                pthread_create(&new_thread, NULL, readThread, NULL);
+                dados_conexao.sync_thread = new_thread;
                 
                 break;
             }
