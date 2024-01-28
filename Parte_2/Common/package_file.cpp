@@ -101,6 +101,13 @@ int send_answer_to_socket(int socket)
     return write_package_to_socket(socket, package, fileContentBuffer);
 }
 
+int send_coordinator_to_socket(int socket, uint8_t deviceID)
+{
+    std::vector<char> fileContentBuffer;
+    Package package = Package(PackageReplicaManagerElectionCoordinator(deviceID));
+    return write_package_to_socket(socket, package, fileContentBuffer);
+}
+
 // Retorna um ACK do servidor principal para um backup
 int send_backup_ack(int socket)
 {

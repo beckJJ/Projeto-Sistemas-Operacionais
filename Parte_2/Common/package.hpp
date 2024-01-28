@@ -286,6 +286,14 @@ struct alignas(ALIGN_VALUE) PackageReplicaManagerElectionAnswer
     PackageReplicaManagerElectionAnswer();
 };
 
+struct alignas(ALIGN_VALUE) PackageReplicaManagerElectionCoordinator
+{
+    alignas(ALIGN_VALUE) uint8_t deviceID;
+
+    PackageReplicaManagerElectionCoordinator(uint8_t deviceID);
+};
+
+
 // União de todos os pacotes
 union alignas(ALIGN_VALUE) PackageSpecific
 {
@@ -307,6 +315,7 @@ union alignas(ALIGN_VALUE) PackageSpecific
     alignas(ALIGN_VALUE) PackageReplicaManagerPingResponse replicaManagerPingResponse;
     alignas(ALIGN_VALUE) PackageReplicaManagerElectionElection replicaManagerElectionElection;
     alignas(ALIGN_VALUE) PackageReplicaManagerElectionAnswer replicaManagerElectionAnswer;
+    alignas(ALIGN_VALUE) PackageReplicaManagerElectionCoordinator replicaManagerElectionCoordinator;
 
     PackageSpecific();
     PackageSpecific(PackageUserIdentification userIdentification);
@@ -327,6 +336,7 @@ union alignas(ALIGN_VALUE) PackageSpecific
     PackageSpecific(PackageReplicaManagerPingResponse replicaManagerPingResponse);
     PackageSpecific(PackageReplicaManagerElectionElection replicaManagerElectionElection);
     PackageSpecific(PackageReplicaManagerElectionAnswer replicaManagerElectionAnswer);
+    PackageSpecific(PackageReplicaManagerElectionCoordinator replicaManagerElectionCoordinator);
     ~PackageSpecific();
 };
 
@@ -364,6 +374,7 @@ struct alignas(ALIGN_VALUE) Package
     Package(PackageReplicaManagerPingResponse replicaManagerPingResponse);
     Package(PackageReplicaManagerElectionElection replicaManagerElectionElection);
     Package(PackageReplicaManagerElectionAnswer replicaManagerElectionAnswer);
+    Package(PackageReplicaManagerElectionCoordinator replicaManagerElectionCoordinator);
 };
 
 #endif

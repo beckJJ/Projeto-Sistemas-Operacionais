@@ -89,6 +89,9 @@ PackageReplicaManagerElectionElection::PackageReplicaManagerElectionElection() {
 
 PackageReplicaManagerElectionAnswer::PackageReplicaManagerElectionAnswer() {}
 
+PackageReplicaManagerElectionCoordinator::PackageReplicaManagerElectionCoordinator(uint8_t deviceID)
+    : deviceID(deviceID) {}
+
 PackageSpecific::PackageSpecific() {}
 
 PackageSpecific::PackageSpecific(PackageUserIdentification userIdentification)
@@ -144,6 +147,9 @@ PackageSpecific::PackageSpecific(PackageReplicaManagerElectionElection replicaMa
 
 PackageSpecific::PackageSpecific(PackageReplicaManagerElectionAnswer replicaManagerElectionAnswer)
     : replicaManagerElectionAnswer(replicaManagerElectionAnswer) {}
+
+PackageSpecific::PackageSpecific(PackageReplicaManagerElectionCoordinator replicaManagerElectionCoordinator)
+    : replicaManagerElectionCoordinator(replicaManagerElectionCoordinator) {}
 
 PackageSpecific::~PackageSpecific() {}
 
@@ -209,6 +215,9 @@ Package::Package(const Package &&rhs)
         break;
     case REPLICA_MANAGER_ELECTION_ANSWER:
         package_specific.replicaManagerElectionAnswer = std::move(rhs.package_specific.replicaManagerElectionAnswer);
+        break;
+    case REPLICA_MANAGER_ELECTION_COORDINATOR:
+        package_specific.replicaManagerElectionCoordinator = std::move(rhs.package_specific.replicaManagerElectionCoordinator);
         break;
     default:
         throw std::invalid_argument("Unknown package_type.");
@@ -280,6 +289,9 @@ Package &Package::operator=(const Package &rhs)
     case REPLICA_MANAGER_ELECTION_ANSWER:
         package_specific.replicaManagerElectionAnswer = rhs.package_specific.replicaManagerElectionAnswer;
         break;
+    case REPLICA_MANAGER_ELECTION_COORDINATOR:
+        package_specific.replicaManagerElectionCoordinator = rhs.package_specific.replicaManagerElectionCoordinator;
+        break;
     default:
         throw std::invalid_argument("Unknown package_type.");
     }
@@ -341,6 +353,9 @@ Package::Package(PackageReplicaManagerElectionElection replicaManagerElectionEle
 Package::Package(PackageReplicaManagerElectionAnswer replicaManagerElectionAnswer)
     : package_type(REPLICA_MANAGER_ELECTION_ANSWER), package_specific(replicaManagerElectionAnswer) {}
 
+Package::Package(PackageReplicaManagerElectionCoordinator replicaManagerElectionCoordinator)
+    : package_type(REPLICA_MANAGER_ELECTION_COORDINATOR), package_specific(replicaManagerElectionCoordinator) {}
+
 // Conversão de Package de representação local para be
 void Package::htobe(void)
 {
@@ -359,6 +374,7 @@ void Package::htobe(void)
     case REPLICA_MANAGER_TRANSFER_IDENTIFICATION_RESPONSE:
     case REPLICA_MANAGER_ELECTION_ELECTION:
     case REPLICA_MANAGER_ELECTION_ANSWER:
+    case REPLICA_MANAGER_ELECTION_COORDINATOR:
     case FILE_NOT_FOUND:
         break;
     case FILE_CONTENT:
@@ -412,6 +428,7 @@ void Package::betoh(void)
     case REPLICA_MANAGER_TRANSFER_IDENTIFICATION_RESPONSE:
     case REPLICA_MANAGER_ELECTION_ELECTION:
     case REPLICA_MANAGER_ELECTION_ANSWER:
+    case REPLICA_MANAGER_ELECTION_COORDINATOR:
     case FILE_NOT_FOUND:
         break;
     case FILE_CONTENT:

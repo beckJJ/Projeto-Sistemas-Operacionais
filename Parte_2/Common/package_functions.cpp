@@ -107,6 +107,8 @@ std::optional<ssize_t> sizeof_base_package(PackageType package_type)
         return sizeof(PackageReplicaManagerElectionElection);
     case REPLICA_MANAGER_ELECTION_ANSWER:
         return sizeof(PackageReplicaManagerElectionAnswer);
+    case REPLICA_MANAGER_ELECTION_COORDINATOR:
+        return sizeof(PackageReplicaManagerElectionCoordinator);
     default:
         printf("[sizeof_base_package] Unknown package type: 0x%02x\n", (uint8_t)package_type);
         return std::nullopt;
@@ -256,7 +258,8 @@ int read_package_from_socket(int socket, Package &package, std::vector<char> &fi
         package = Package(PackageReplicaManagerElectionAnswer());
         break;
     case REPLICA_MANAGER_ELECTION_COORDINATOR: // mensagem COORDINATOR
-        // TODO: implementar package de coordinator
+        package = Package(PackageReplicaManagerElectionCoordinator(
+            *(uint8_t *)buffer_data));
         break;
     default:
         return 1;
@@ -514,6 +517,11 @@ void print_package(FILE *fout, bool sending, Package &package, std::vector<char>
         break;
     case REPLICA_MANAGER_ELECTION_ANSWER:
         fprintf(fout, "Package(REPLICA_MANAGER_ELECTION_ANSWER");
+        break;
+    case REPLICA_MANAGER_ELECTION_COORDINATOR:
+        fprintf(fout,
+                "Package(REPLICA_MANAGER_ELECTION_COORDINATOR, 0x%02x",
+                (uint8_t)package.package_specific.replicaManagerElectionCoordinator.deviceID);
         break;
     default:
         fprintf(fout, "Package(UNKOWN[0x%02x]", (uint8_t)package.package_type);
