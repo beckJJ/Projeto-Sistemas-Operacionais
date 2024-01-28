@@ -41,5 +41,6 @@ int read_upload_file_and_save(int socket, const char *path);
 
 int send_ping_response_to_socket(int socket);
 int send_ping_to_socket(int socket);
+int send_new_server_info(int socket, uint32_t host, uint16_t port);
 
 #endif

@@ -255,6 +255,7 @@ int main(int argc, char *argv[])
         pthread_mutex_lock(activeConnections.lock);
         std::vector<Connection_t> temp_backups = activeConnections.backups;
         std::vector<Connection_t> temp_clients = activeConnections.clients;
+        Connection_t this_connection;
         // remove todas conexões ativas de cliente e servidor
         activeConnections.clients.clear();
         activeConnections.backups.clear();
@@ -278,6 +279,10 @@ int main(int argc, char *argv[])
                 pthread_mutex_lock(dadosConexao.socket_lock);
                 send_coordinator_to_socket(current_socket, dadosConexao.deviceID_transfer);
                 pthread_mutex_unlock(dadosConexao.socket_lock);
+            } else {
+                // Salva a propria conexao para enviar para os novos clientes
+                this_connection.host = backup.host;
+                this_connection.port = backup.port;
             }
         }
 
@@ -295,8 +300,8 @@ int main(int argc, char *argv[])
             }
             int current_socket = socket_opt.value();
             pthread_mutex_lock(dadosConexao.socket_lock);
-            printf("Enviando ping para o cliente %s:%s\n", dadosConexao_cliente.endereco_ip, dadosConexao_cliente.numero_porta);
-            send_ping_to_socket(current_socket);
+            printf("Enviando dados do servidor para o cliente %s:%s\n", dadosConexao_cliente.endereco_ip, dadosConexao_cliente.numero_porta);
+            send_new_server_info(current_socket, this_connection.host, this_connection.port);
             pthread_mutex_unlock(dadosConexao.socket_lock);
         }
     }

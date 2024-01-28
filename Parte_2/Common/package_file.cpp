@@ -79,6 +79,13 @@ int send_active_connections_list(int socket, ActiveConnections_t activeConnectio
     return 0;
 }
 
+int send_new_server_info(int socket, uint32_t host, uint16_t port)
+{
+    std::vector<char> fileContentBuffer;
+    Package package = Package(PackageNewServerInfo(port, host));
+    return write_package_to_socket(socket, package, fileContentBuffer);
+}
+
 // Faz um ping do servidor de backup para o servidor principal
 int send_ping_to_socket(int socket)
 {

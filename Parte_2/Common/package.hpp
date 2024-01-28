@@ -299,7 +299,10 @@ struct alignas(ALIGN_VALUE) PackageReplicaManagerElectionCoordinator
 
 struct alignas(ALIGN_VALUE) PackageNewServerInfo
 {
-    // TODO: Definir a struct PackageNewServerInfo
+    alignas(ALIGN_VALUE) uint16_t port;
+    alignas(ALIGN_VALUE) uint32_t host;
+
+    PackageNewServerInfo(uint16_t port, uint32_t host);
 };
 
 
@@ -386,7 +389,7 @@ struct alignas(ALIGN_VALUE) Package
     Package(PackageReplicaManagerElectionElection replicaManagerElectionElection);
     Package(PackageReplicaManagerElectionAnswer replicaManagerElectionAnswer);
     Package(PackageReplicaManagerElectionCoordinator replicaManagerElectionCoordinator);
-    Package(PackageNewServerInfo newServerInfo)
+    Package(PackageNewServerInfo newServerInfo);
 };
 
 #endif

@@ -92,8 +92,8 @@ PackageReplicaManagerElectionAnswer::PackageReplicaManagerElectionAnswer() {}
 PackageReplicaManagerElectionCoordinator::PackageReplicaManagerElectionCoordinator(uint8_t deviceID)
     : deviceID(deviceID) {}
 
-// TODO : Definir o pacote de PackageNewServerInfo
-PackageNewServerInfo::PackageNewServerInfo() {}
+PackageNewServerInfo::PackageNewServerInfo(uint16_t port, uint32_t host) 
+    : port(port), host(host) {}
 
 PackageSpecific::PackageSpecific() {}
 
@@ -424,7 +424,8 @@ void Package::htobe(void)
         package_specific.replicaManagerTransferIdentification.listen_port = htobe16(package_specific.replicaManagerTransferIdentification.listen_port);
         break;
     case NEW_SERVER_INFO:
-        // TODO: definir as conversões de NEW_SERVER_INFO
+        package_specific.newServerInfo.port = htobe16(package_specific.newServerInfo.port);
+        package_specific.newServerInfo.host = htobe32(package_specific.newServerInfo.host);
         break;
     default:
         throw std::invalid_argument("Unknown package_type.");
@@ -483,7 +484,8 @@ void Package::betoh(void)
         package_specific.replicaManagerTransferIdentification.listen_port = be16toh(package_specific.replicaManagerTransferIdentification.listen_port);
         break;
     case NEW_SERVER_INFO:
-        // TODO: definir as conversões de NEW_SERVER_INFO
+        package_specific.newServerInfo.port = be16toh(package_specific.newServerInfo.port);
+        package_specific.newServerInfo.host = be32toh(package_specific.newServerInfo.host);
         break;
     default:
         throw std::invalid_argument("Unknown package_type.");

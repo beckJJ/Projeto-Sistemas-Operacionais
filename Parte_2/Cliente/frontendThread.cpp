@@ -75,6 +75,15 @@ void *frontendThread(void *)
         pthread_mutex_unlock(dados_conexao.socket_lock);
 
         switch (package.package_type) {
+            case NEW_SERVER_INFO: {
+                // imprimir dados do servidor
+                char *endereco_ip = inet_ntoa(*(struct in_addr *)&package.package_specific.newServerInfo.host);
+                printf("Endereco do novo servidor: %s:%d\n", endereco_ip, package.package_specific.newServerInfo.port);
+
+                // TODO: apontar novas conexoes para o servidor recebido
+                
+                break;
+            }
             default:
                 printf("Package type: 0x%2x\n", package.package_type);
                 break;
