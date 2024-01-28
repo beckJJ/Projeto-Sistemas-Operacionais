@@ -50,6 +50,8 @@ struct DadosConexao
     int socket_ping;
     uint8_t deviceID_transfer;
     uint8_t deviceID_ping;
+    std::optional<pthread_t> backup_thread;
+    std::optional<pthread_t> ping_thread;
 
 
     DadosConexao();

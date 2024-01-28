@@ -20,6 +20,15 @@ extern DeviceManager deviceManager;
 extern ActiveConnections_t activeConnections;
 extern DadosConexao dadosConexao;
 
+void break_accept_on_main_thread()
+{
+    printf("Quebrando accept do main...\n");
+    DadosConexao dadosConexao_main = DadosConexao();
+    strcpy(dadosConexao_main.endereco_ip, "127.0.0.1");
+    sprintf(dadosConexao_main.numero_porta, "%d", dadosConexao.listen_port);
+    conecta_servidor(dadosConexao_main);
+}
+
 void *pingThread(void *)
 {
     pthread_mutex_lock(dadosConexao.backup_connection_lock);
@@ -37,7 +46,9 @@ void *pingThread(void *)
         Package package;
         if (read_package_from_socket(dadosConexao.socket_ping, package, fileContentBuffer)) {
             printf("Erro ao ler pacote do servidor.\n");
+            printf("Fechando sockets abertos...\n");
             close(dadosConexao.socket_ping);
+            close(dadosConexao.socket_transfer);
             // inicia algoritmo de seleção
             pthread_mutex_lock(activeConnections.lock);
      //       int answers_received = send_election_to_backups_list(activeConnections.backups);
@@ -48,11 +59,10 @@ void *pingThread(void *)
             if (answers_received == 0) {
                 // seta backup = false se for escolhido
                 dadosConexao.backup_flag = false;
-         //       break;
-         //       break_accept_on_main_thread();
+                break_accept_on_main_thread();
             }
             // else : aguarda coordinator e inicia novas conexões
-            while(dadosConexao.backup_flag);
+            while(true);
         }
         // Resposta inválida
         if (package.package_type != REPLICA_MANAGER_PING_RESPONSE) {

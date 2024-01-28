@@ -38,20 +38,68 @@ DeviceManager deviceManager = DeviceManager();
 ActiveConnections_t activeConnections;
 DadosConexao dadosConexao = DadosConexao();
 
+void cancel_threads()
+{
+    if (dadosConexao.backup_thread.has_value()) {
+        pthread_cancel(dadosConexao.backup_thread.value());
+    }
+    if (dadosConexao.ping_thread.has_value()) {
+        pthread_cancel(dadosConexao.ping_thread.value());
+    }
+}
+
+void close_sockets()
+{
+    if (dadosConexao.socket_ping != -1) {
+        close(dadosConexao.socket_ping);
+    }
+    if (dadosConexao.socket_transfer != -1) {
+        close(dadosConexao.socket_transfer);
+    }
+    if (dadosConexao.socket != -1) {
+        close(dadosConexao.socket);
+    }
+}
+
 void sigint_handler_main(int)
 {
     printf("Main thread received SIGINT.\n");
 
     // Desconecta todos os dispositivos
     deviceManager.disconnect_all();
-
-    if (dadosConexao.socket != -1)
-    {
-        close(dadosConexao.socket);
-    }
-
+    // Cancela os threads
+    cancel_threads();
+    // Fecha os sockets
+    close_sockets();
     // Encerra o servidor
     exit(EXIT_FAILURE);
+}
+
+void bind_socket()
+{
+    struct sockaddr_in serv_addr;
+
+    if ((dadosConexao.socket = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+    {
+        printf("Erro! Nao foi possivel iniciar utilizacao do socket do servidor!\n");
+        exit(EXIT_FAILURE);
+    }
+
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(dadosConexao.listen_port);
+    serv_addr.sin_addr.s_addr = INADDR_ANY;
+    bzero(&(serv_addr.sin_zero), sizeof(serv_addr.sin_zero));
+
+    int sockOptTrue = 1;
+    setsockopt(dadosConexao.socket, SOL_SOCKET, SO_REUSEADDR, &sockOptTrue, sizeof(sockOptTrue));
+
+    if (bind(dadosConexao.socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    {
+        printf("Erro! Nao foi possivel atribuir uma identidade ao socket do servidor!\n");
+        exit(EXIT_FAILURE);
+    }
+
+    listen(dadosConexao.socket, 5);
 }
 
 int main(int argc, char *argv[])
@@ -112,26 +160,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    struct sockaddr_in serv_addr;
-
-    if ((dadosConexao.socket = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-    {
-        printf("Erro! Nao foi possivel iniciar utilizacao do socket do servidor!\n");
-        exit(EXIT_FAILURE);
-    }
-
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(dadosConexao.listen_port);
-    serv_addr.sin_addr.s_addr = INADDR_ANY;
-    bzero(&(serv_addr.sin_zero), sizeof(serv_addr.sin_zero));
-
-    if (bind(dadosConexao.socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
-    {
-        printf("Erro! Nao foi possivel atribuir uma identidade ao socket do servidor!\n");
-        exit(EXIT_FAILURE);
-    }
-
-    listen(dadosConexao.socket, 5);
+    bind_socket();
 
     printf("Servidor está escutando na porta: %d.\n", dadosConexao.listen_port);
 
@@ -139,16 +168,13 @@ int main(int argc, char *argv[])
         printf("Conectando no servidor principal %s:%s\n", dadosConexao.endereco_ip, dadosConexao.numero_porta);
         // Inicia thread para ficar aguardando novas conexões no servidor principal 
         pthread_t backup_thread;
-        
         pthread_create(&backup_thread, NULL, backupThread, NULL);
+        dadosConexao.backup_thread = backup_thread;
 
         // Iniciar thread de ping 
-        ServerThreadArg ping_thread_arg;
         pthread_t ping_thread;
-        ping_thread_arg.port = atoi(dadosConexao.numero_porta);
-        strcpy(ping_thread_arg.hostname, dadosConexao.endereco_ip);
-
-        pthread_create(&ping_thread, NULL, pingThread, &ping_thread_arg);
+        pthread_create(&ping_thread, NULL, pingThread, NULL);
+        dadosConexao.ping_thread = ping_thread;
         
         // Fica em busy waiting até deixar de ser backup
         while (dadosConexao.backup_flag) {
@@ -161,6 +187,9 @@ int main(int argc, char *argv[])
             if ((socket_id = accept(dadosConexao.socket, (struct sockaddr *)&backup_addr, &backup_len)) == -1) {
                 continue;
             }
+            if (!dadosConexao.backup_flag) {
+                break;
+            }
 
             Package package = Package();
             std::vector<char> fileContentBuffer;
@@ -169,9 +198,13 @@ int main(int argc, char *argv[])
             } else {
                 printf("Pacote election recebido\n");
             }
-
-            sleep(10); 
         }
+        printf("Saiu do while\n");
+        // cancelar threads abertas e fechar sockets 
+        cancel_threads();
+        close_sockets();
+        // rebind socket
+        bind_socket();
     }
 
     socklen_t clilen;

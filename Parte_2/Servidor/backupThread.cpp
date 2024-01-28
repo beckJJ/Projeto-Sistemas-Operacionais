@@ -21,6 +21,13 @@ extern DadosConexao dadosConexao;
 
 thread_local Connection_t client_backup = Connection_t(0, 0, 0xFFFF, "");
 
+// Encerra thread
+void exitBackupThread(void)
+{
+    dadosConexao.backup_thread = std::nullopt;
+    pthread_exit(NULL);
+}
+
 void create_client_dirs(std::vector<Connection_t> clientList, const std::string base_path)
 {
     for (Connection_t c : clientList) {
@@ -143,7 +150,7 @@ void *backupThread(void *)
     pthread_mutex_lock(dadosConexao.backup_connection_lock);
     if (conecta_backup_transfer_main(dadosConexao)) {
         pthread_mutex_unlock(dadosConexao.backup_connection_lock);
-        exit(EXIT_FAILURE);
+        exitBackupThread();
     } else {
         printf("Thread de transferencia conectada\n");
     }
@@ -155,7 +162,7 @@ void *backupThread(void *)
 
         if (read_package_from_socket(dadosConexao.socket_transfer, package, fileContentBuffer)) {
             printf("Erro ao ler pacote do servidor.\n");
-            break;
+            exitBackupThread();
         }
 
         printf("\nRECEBIDO PACOTE: %d\n",package.package_type);
@@ -198,5 +205,5 @@ void *backupThread(void *)
             break;
         }    
     }
-    return NULL;
+    exitBackupThread();
 }
