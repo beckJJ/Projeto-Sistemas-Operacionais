@@ -138,15 +138,9 @@ int main(int argc, char *argv[])
     if (dadosConexao.backup_flag) {
         printf("Conectando no servidor principal %s:%s\n", dadosConexao.endereco_ip, dadosConexao.numero_porta);
         // Inicia thread para ficar aguardando novas conexões no servidor principal 
-        ServerThreadArg backup_thread_arg;
-
-        backup_thread_arg.port = atoi(dadosConexao.numero_porta);
-        strcpy(backup_thread_arg.hostname, dadosConexao.endereco_ip);
-        backup_thread_arg.listen_port = dadosConexao.listen_port;
-
         pthread_t backup_thread;
         
-        pthread_create(&backup_thread, NULL, backupThread, &backup_thread_arg);
+        pthread_create(&backup_thread, NULL, backupThread, NULL);
 
         // Iniciar thread de ping 
         ServerThreadArg ping_thread_arg;

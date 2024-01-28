@@ -135,14 +135,15 @@ void handleActiveConnectionsList(Package &package, int socket_id)
 }
 
 // Thread que fica recebendo novas conexões do servidor principal
-void *backupThread(void *arg)
+void *backupThread(void *)
 {
     DadosConexao dadosConexao_backup = DadosConexao();
-    strcpy(dadosConexao_backup.endereco_ip, ((ServerThreadArg*)arg)->hostname);
-    sprintf(dadosConexao_backup.numero_porta, "%d", ((ServerThreadArg*)arg)->port);
+    strcpy(dadosConexao_backup.endereco_ip, dadosConexao.endereco_ip);
+    strcpy(dadosConexao_backup.numero_porta, dadosConexao.numero_porta);
+
     std::string path_base = std::string(PREFIXO_DIRETORIO_SERVIDOR);
     path_base.append("/");
-    uint16_t listen_port = ((ServerThreadArg*)arg)->listen_port;
+    uint16_t listen_port = dadosConexao.listen_port;
 
     pthread_mutex_lock(dadosConexao.backup_connection_lock);
     if (conecta_backup_transfer_main(dadosConexao_backup, listen_port)) {
