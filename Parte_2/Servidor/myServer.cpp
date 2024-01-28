@@ -286,7 +286,6 @@ int main(int argc, char *argv[])
             }
         }
 
-        // TODO: realizar nova conexão com os clientes
         for (Connection_t c : temp_clients) {
             DadosConexao dadosConexao_cliente = DadosConexao();
             char *endereco_ip = inet_ntoa(*(struct in_addr *)&c.host);
