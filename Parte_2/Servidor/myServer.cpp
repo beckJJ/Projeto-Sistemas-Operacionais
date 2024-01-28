@@ -222,15 +222,13 @@ int main(int argc, char *argv[])
                         break;
                     }
                 }
-                // limpa as listas de clientes e backups conectados
+                // limpar as listas de clientes e backups conectados
                 activeConnections.clients.clear();
                 activeConnections.backups.clear();
                 pthread_mutex_unlock(activeConnections.lock);
-                // TODO: cria threads com o novo coordenador
-                printf("Novo coordenador: ");
-                    
+                // Criar threads com o novo coordenador
                 char *endereco_ip = inet_ntoa(*(struct in_addr *)&new_coordinator.host);
-                printf("%s:%d\n", endereco_ip, new_coordinator.port);
+                printf("Novo coordenador: %s:%d\n", endereco_ip, new_coordinator.port);
                 strcpy(dadosConexao.endereco_ip, endereco_ip);
                 sprintf(dadosConexao.numero_porta, "%d", new_coordinator.port);
 
