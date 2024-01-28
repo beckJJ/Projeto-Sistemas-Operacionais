@@ -22,6 +22,7 @@ int send_file_to_backups(ActiveConnections_t activeConnections, const char *path
 
 int send_election_to_socket(int socket);
 int send_answer_to_socket(int socket);
+int send_coordinator_to_socket(int socket, uint8_t deviceID);
 
 // Envia um arquivo em path com o nome de filename, enviará o pacote PackageUploadFile ou
 //   PackageNotFound, caso PackageUploadFile tenha sido enviado chamará send_file para enviar o

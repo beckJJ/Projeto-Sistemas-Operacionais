@@ -32,7 +32,6 @@ void break_accept_on_main_thread()
 int send_election_to_backups_list(std::vector<Connection_t> backups)
 {
     int answers_received = 0;
-    printf("DeviceID_transfer desse processo: %d\n", dadosConexao.deviceID_transfer);
     for (Connection_t c : backups) {
         if (c.socket_id > dadosConexao.deviceID_transfer) {
             printf("Enviando election\n");

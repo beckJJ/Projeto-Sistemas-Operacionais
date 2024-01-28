@@ -208,6 +208,7 @@ int main(int argc, char *argv[])
                 printf("Answer enviado\n");
                 break;
             case REPLICA_MANAGER_ELECTION_COORDINATOR: // se recebeu coordinator
+                printf("Coordinator recebido, id = %d\n", package.package_specific.replicaManagerElectionCoordinator.deviceID);
                 // mata threads e fecha sockets abertos com o servidor antigo
                 cancel_threads();
                 close_sockets();
@@ -230,14 +231,35 @@ int main(int argc, char *argv[])
         // cancelar threads abertas e fechar sockets 
         cancel_threads();
         close_sockets();
-        // TODO: salvar clients e backups em listas temporárias
-
-        // remove todas conexões ativas de cliente e servidor
+        // salvar clients e backups em listas temporárias
         pthread_mutex_lock(activeConnections.lock);
+        std::vector<Connection_t> temp_backups = activeConnections.backups;
+        std::vector<Connection_t> temp_clients = activeConnections.clients;
+        // remove todas conexões ativas de cliente e servidor
         activeConnections.clients.clear();
         activeConnections.backups.clear();
         pthread_mutex_unlock(activeConnections.lock);
-        // TODO: enviar coordinator para os outros backups
+        // enviar coordinator para os outros backups
+        for (Connection_t backup : temp_backups) {
+            if (backup.socket_id != dadosConexao.deviceID_transfer) {
+                printf("Enviando coordinator...\n");
+                DadosConexao dadosConexao_backup = DadosConexao();
+                char *endereco_ip = inet_ntoa(*(struct in_addr *)&backup.host);
+                strcpy(dadosConexao_backup.endereco_ip, endereco_ip);
+                sprintf(dadosConexao_backup.numero_porta, "%d", backup.port);
+                std::optional<int> socket_opt = conecta_servidor(dadosConexao_backup);
+                if (!socket_opt.has_value()) {
+                    printf("Erro na abertura de conexao\n");
+                    continue;
+                }
+                // enviar pacote coordinator
+                int current_socket = socket_opt.value();
+                printf("Enviando coordinator\n");
+                pthread_mutex_lock(dadosConexao.socket_lock);
+                send_coordinator_to_socket(current_socket, dadosConexao.deviceID_transfer);
+                pthread_mutex_unlock(dadosConexao.socket_lock);
+            }
+        }
 
         // TODO: realizar nova conexão com os clientes
 
