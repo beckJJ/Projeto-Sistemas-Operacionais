@@ -42,6 +42,8 @@ void handleChangeEvent(PackageChangeEvent &changeEvent, std::string &path_base, 
     // Remove arquivo de sync dir local
     case FILE_DELETED:
         path = path_base;
+        path.append(changeEvent.username);
+        path.append("/");
         path.append(changeEvent.filename1);
         if (remove(path.c_str())) {
             printf("Erro ao remover arquivo \"%s\".\n", changeEvent.filename1);
@@ -162,42 +164,42 @@ void *backupThread(void *arg)
 
         printf("\nRECEBIDO PACOTE: %d\n",package.package_type);
         switch(package.package_type) {
-            case ACTIVE_CONNECTIONS_LIST:
-                printf("\nRECEBIDO NOVO PACOTE DE ACTIVE_CONNECTIONS_LIST\n");
-                // Ler sequencia de conexoes ativas
-                pthread_mutex_lock(activeConnections.lock);
-                handleActiveConnectionsList(package, dadosConexao.socket);
-                pthread_mutex_unlock(activeConnections.lock);
-                // Criar diretorios para cada um dos usuarios ativos em seu sync dir
-                pthread_mutex_lock(activeConnections.lock);
-                create_client_dirs(activeConnections.clients, path_base);
-                pthread_mutex_unlock(activeConnections.lock);
+        case ACTIVE_CONNECTIONS_LIST:
+            printf("\nRECEBIDO NOVO PACOTE DE ACTIVE_CONNECTIONS_LIST\n");
+            // Ler sequencia de conexoes ativas
+            pthread_mutex_lock(activeConnections.lock);
+            handleActiveConnectionsList(package, dadosConexao.socket);
+            pthread_mutex_unlock(activeConnections.lock);
+            // Criar diretorios para cada um dos usuarios ativos em seu sync dir
+            pthread_mutex_lock(activeConnections.lock);
+            create_client_dirs(activeConnections.clients, path_base);
+            pthread_mutex_unlock(activeConnections.lock);
 
-                pthread_mutex_lock(activeConnections.lock);
-                printf("Clientes conectados:\n");
-                for (Connection_t c : activeConnections.clients) {
-                    char *endereco_ip = inet_ntoa(*(struct in_addr *)&c.host);
-                    printf("%s\t", endereco_ip);
-                    printf("%d\t", c.port);
-                    printf("%d\t", c.socket_id);
-                    printf("%s\n", c.user_name);
-                }
-                printf("Backups conectados:\n");
-                for (Connection_t c : activeConnections.backups) {
-                    char *endereco_ip = inet_ntoa(*(struct in_addr *)&c.host);
-                    printf("%s\t", endereco_ip);
-                    printf("%d\t", c.port);
-                    printf("%d\n", c.socket_id);
-                }
-                printf("\n");
-                pthread_mutex_unlock(activeConnections.lock);
-                break;
-            case CHANGE_EVENT:
-                printf("\nRECEBIDO NOVO PACOTE DE CHANGE_EVENT\n");
-                handleChangeEvent(package.package_specific.changeEvent, path_base, dadosConexao.socket);
-                break;
-            default:
-                break;
+            pthread_mutex_lock(activeConnections.lock);
+            printf("Clientes conectados:\n");
+            for (Connection_t c : activeConnections.clients) {
+                char *endereco_ip = inet_ntoa(*(struct in_addr *)&c.host);
+                printf("%s\t", endereco_ip);
+                printf("%d\t", c.port);
+                printf("%d\t", c.socket_id);
+                printf("%s\n", c.user_name);
+            }
+            printf("Backups conectados:\n");
+            for (Connection_t c : activeConnections.backups) {
+                char *endereco_ip = inet_ntoa(*(struct in_addr *)&c.host);
+                printf("%s\t", endereco_ip);
+                printf("%d\t", c.port);
+                printf("%d\n", c.socket_id);
+            }
+            printf("\n");
+            pthread_mutex_unlock(activeConnections.lock);
+            break;
+        case CHANGE_EVENT:
+            printf("\nRECEBIDO NOVO PACOTE DE CHANGE_EVENT\n");
+            handleChangeEvent(package.package_specific.changeEvent, path_base, dadosConexao.socket);
+            break;
+        default:
+            break;
         }    
     }
     return NULL;
