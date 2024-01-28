@@ -137,16 +137,11 @@ void handleActiveConnectionsList(Package &package, int socket_id)
 // Thread que fica recebendo novas conexões do servidor principal
 void *backupThread(void *)
 {
-    DadosConexao dadosConexao_backup = DadosConexao();
-    strcpy(dadosConexao_backup.endereco_ip, dadosConexao.endereco_ip);
-    strcpy(dadosConexao_backup.numero_porta, dadosConexao.numero_porta);
-
     std::string path_base = std::string(PREFIXO_DIRETORIO_SERVIDOR);
     path_base.append("/");
-    uint16_t listen_port = dadosConexao.listen_port;
 
     pthread_mutex_lock(dadosConexao.backup_connection_lock);
-    if (conecta_backup_transfer_main(dadosConexao_backup, listen_port)) {
+    if (conecta_backup_transfer_main(dadosConexao)) {
         pthread_mutex_unlock(dadosConexao.backup_connection_lock);
         exit(EXIT_FAILURE);
     } else {
@@ -158,7 +153,7 @@ void *backupThread(void *)
         std::vector<char> fileContentBuffer;
         Package package;
 
-        if (read_package_from_socket(dadosConexao_backup.socket, package, fileContentBuffer)) {
+        if (read_package_from_socket(dadosConexao.socket_transfer, package, fileContentBuffer)) {
             printf("Erro ao ler pacote do servidor.\n");
             break;
         }
@@ -169,7 +164,7 @@ void *backupThread(void *)
             printf("\nRECEBIDO NOVO PACOTE DE ACTIVE_CONNECTIONS_LIST\n");
             // Ler sequencia de conexoes ativas
             pthread_mutex_lock(activeConnections.lock);
-            handleActiveConnectionsList(package, dadosConexao_backup.socket);
+            handleActiveConnectionsList(package, dadosConexao.socket_transfer);
             pthread_mutex_unlock(activeConnections.lock);
             // Criar diretorios para cada um dos usuarios ativos em seu sync dir
             pthread_mutex_lock(activeConnections.lock);
@@ -197,7 +192,7 @@ void *backupThread(void *)
             break;
         case CHANGE_EVENT:
             printf("\nRECEBIDO NOVO PACOTE DE CHANGE_EVENT\n");
-            handleChangeEvent(package.package_specific.changeEvent, path_base, dadosConexao_backup.socket);
+            handleChangeEvent(package.package_specific.changeEvent, path_base, dadosConexao.socket_transfer);
             break;
         default:
             break;

@@ -46,6 +46,8 @@ struct DadosConexao
     pthread_mutex_t *backup_connection_lock;
     bool backup_flag;
     uint16_t listen_port;
+    int socket_transfer;
+    uint8_t deviceID_transfer;
 
 
     DadosConexao();

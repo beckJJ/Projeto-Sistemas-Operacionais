@@ -51,7 +51,7 @@ std::optional<int> conecta_servidor(DadosConexao &dadosConexao)
 }
 
 // Conecta thread de transfer do backup ao servidor principal
-int conecta_backup_transfer_main(DadosConexao &dadosConexao, uint16_t listen_port)
+int conecta_backup_transfer_main(DadosConexao &dadosConexao)
 {
     std::optional<int> socket_opt = conecta_servidor(dadosConexao);
     if (!socket_opt.has_value()) {
@@ -59,9 +59,9 @@ int conecta_backup_transfer_main(DadosConexao &dadosConexao, uint16_t listen_por
     }
 
     int current_socket = socket_opt.value();
-    dadosConexao.socket = current_socket;
+    dadosConexao.socket_transfer = current_socket;
 
-    Package package = Package(PackageReplicaManagerTransferIdentification(dadosConexao.deviceID, listen_port));
+    Package package = Package(PackageReplicaManagerTransferIdentification(dadosConexao.deviceID_transfer, dadosConexao.listen_port));
     std::vector<char> fileContentBuffer;
 
     if (write_package_to_socket(current_socket, package, fileContentBuffer)) {
@@ -86,7 +86,7 @@ int conecta_backup_transfer_main(DadosConexao &dadosConexao, uint16_t listen_por
         return 1;
     }
 
-    dadosConexao.deviceID = package.package_specific.replicaManagerTransferIdentificationResponse.deviceID;
+    dadosConexao.deviceID_transfer = package.package_specific.replicaManagerTransferIdentificationResponse.deviceID;
     return 0;
 }
 
