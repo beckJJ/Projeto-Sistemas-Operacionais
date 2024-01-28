@@ -47,7 +47,9 @@ struct DadosConexao
     bool backup_flag;
     uint16_t listen_port;
     int socket_transfer;
+    int socket_ping;
     uint8_t deviceID_transfer;
+    uint8_t deviceID_ping;
 
 
     DadosConexao();

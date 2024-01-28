@@ -99,9 +99,9 @@ int conecta_backup_main(DadosConexao &dadosConexao)
     }
 
     int current_socket = socket_opt.value();
-    dadosConexao.socket = current_socket;
+    dadosConexao.socket_ping = current_socket;
 
-    Package package = Package(PackageReplicaManagerIdentification(dadosConexao.deviceID));
+    Package package = Package(PackageReplicaManagerIdentification(dadosConexao.deviceID_ping));
     std::vector<char> fileContentBuffer;
 
     if (write_package_to_socket(current_socket, package, fileContentBuffer)) {
@@ -126,6 +126,6 @@ int conecta_backup_main(DadosConexao &dadosConexao)
         return 1;
     }
 
-    dadosConexao.deviceID = package.package_specific.replicaManagerIdentificationResponse.deviceID;
+    dadosConexao.deviceID_ping = package.package_specific.replicaManagerIdentificationResponse.deviceID;
     return 0;
 }
