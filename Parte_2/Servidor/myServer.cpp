@@ -24,6 +24,7 @@
 #include "replicaManager.hpp"
 #include "../Common/package_file.hpp"
 #include "backupThread.hpp"
+#include "pingThread.hpp"
 
 #if DEBUG_PACOTE
 // Lock usado por print_package para exibir completamente um pacote
@@ -34,9 +35,7 @@ pthread_mutex_t print_package_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t backup_connection_lock = PTHREAD_MUTEX_INITIALIZER;
 
 DeviceManager deviceManager = DeviceManager();
-int main_thread_socket = -1;
 ActiveConnections_t activeConnections;
-bool backup = false;
 DadosConexao dadosConexao = DadosConexao();
 
 void sigint_handler_main(int)
@@ -46,9 +45,9 @@ void sigint_handler_main(int)
     // Desconecta todos os dispositivos
     deviceManager.disconnect_all();
 
-    if (main_thread_socket != -1)
+    if (dadosConexao.socket != -1)
     {
-        close(main_thread_socket);
+        close(dadosConexao.socket);
     }
 
     // Encerra o servidor
@@ -76,7 +75,7 @@ int main(int argc, char *argv[])
             port = atoi(optarg);
             break;
         case 'b':  // inicializar server como backup
-            backup = true;
+            dadosConexao.backup_flag = true;
             break;
         case 's': // informar ip do servidor principal
             strcpy(dadosConexao.endereco_ip, optarg);
@@ -94,7 +93,7 @@ int main(int argc, char *argv[])
     // Registra sigint_handler_main para SIGINT
     signal(SIGINT, sigint_handler_main);
 
-    if (backup) {
+    if (dadosConexao.backup_flag) {
         printf("Inicializando Backup\n");
         if (!dadosConexao.endereco_ip[0]) {
             printf("Erro: Informe o endereco ip do servidor principal\n");
@@ -115,7 +114,7 @@ int main(int argc, char *argv[])
 
     struct sockaddr_in serv_addr;
 
-    if ((main_thread_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+    if ((dadosConexao.socket = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {
         printf("Erro! Nao foi possivel iniciar utilizacao do socket do servidor!\n");
         exit(EXIT_FAILURE);
@@ -126,17 +125,17 @@ int main(int argc, char *argv[])
     serv_addr.sin_addr.s_addr = INADDR_ANY;
     bzero(&(serv_addr.sin_zero), sizeof(serv_addr.sin_zero));
 
-    if (bind(main_thread_socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    if (bind(dadosConexao.socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
     {
         printf("Erro! Nao foi possivel atribuir uma identidade ao socket do servidor!\n");
         exit(EXIT_FAILURE);
     }
 
-    listen(main_thread_socket, 5);
+    listen(dadosConexao.socket, 5);
 
     printf("Servidor está escutando na porta: %d.\n", port);
 
-    if (backup) {
+    if (dadosConexao.backup_flag) {
         printf("Conectando no servidor principal %s:%s\n", dadosConexao.endereco_ip, dadosConexao.numero_porta);
         // Inicia thread para ficar aguardando novas conexões no servidor principal 
         ServerThreadArg backup_thread_arg;
@@ -158,14 +157,14 @@ int main(int argc, char *argv[])
         pthread_create(&ping_thread, NULL, pingThread, &ping_thread_arg);
         
         // Fica em busy waiting até deixar de ser backup
-        while (backup) {
-  /*          socklen_t backup_len;
+        while (dadosConexao.backup_flag) {
+            socklen_t backup_len;
             struct sockaddr_in backup_addr;
             backup_len = sizeof(struct sockaddr_in);
 
             int socket_id = -1;
             // Aguardando pacotes de election...
-            if ((socket_id = accept(main_thread_socket, (struct sockaddr *)&backup_addr, &backup_len)) == -1) {
+            if ((socket_id = accept(dadosConexao.socket, (struct sockaddr *)&backup_addr, &backup_len)) == -1) {
                 continue;
             }
 
@@ -176,7 +175,7 @@ int main(int argc, char *argv[])
             } else {
                 printf("Pacote election recebido\n");
             }
-*/
+
             sleep(10); 
         }
     }
@@ -191,7 +190,7 @@ int main(int argc, char *argv[])
         pthread_t thread;
 
         printf("Aguardando nova conexao...\n");
-        if ((thread_arg.socket_id = accept(main_thread_socket, (struct sockaddr *)&cli_addr, &clilen)) == -1) {
+        if ((thread_arg.socket_id = accept(dadosConexao.socket, (struct sockaddr *)&cli_addr, &clilen)) == -1) {
             printf("Erro! Nao foi possivel realizar conexao com o cliente!\n");
             break;
         }
@@ -204,7 +203,7 @@ int main(int argc, char *argv[])
         pthread_create(&thread, NULL, serverThread, &thread_arg);
     }
 
-    close(main_thread_socket);
+    close(dadosConexao.socket);
 
     return 0;
 }

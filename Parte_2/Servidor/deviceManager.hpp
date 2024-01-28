@@ -115,7 +115,7 @@ public:
 
     // Desconecta determinado dispositivo de um usuário, os sockets serão fechados por
     //   device.close_sockets()
-    void disconnect(std::string &username, uint8_t id, Connection_t connection, bool backupTransfer);
+    void disconnect(std::string &username, uint8_t id, Connection_t connection, bool backupPing);
 
     // Desconecta todas os usuários
     void disconnect_all(void);

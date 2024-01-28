@@ -129,37 +129,3 @@ int conecta_backup_main(DadosConexao &dadosConexao)
     dadosConexao.deviceID = package.package_specific.replicaManagerIdentificationResponse.deviceID;
     return 0;
 }
-
-void *pingThread(void *arg)
-{
-    DadosConexao dadosConexao = DadosConexao();
-    strcpy(dadosConexao.endereco_ip, ((ServerThreadArg*)arg)->hostname);
-    sprintf(dadosConexao.numero_porta, "%d", ((ServerThreadArg*)arg)->port);
-
-    pthread_mutex_lock(&backup_connection_lock);
-    if (conecta_backup_main(dadosConexao)) {
-        pthread_mutex_unlock(&backup_connection_lock);
-        exit(EXIT_FAILURE);
-    } else {
-        printf("Thread de ping conectada\n");
-    }
-    pthread_mutex_unlock(&backup_connection_lock);
-
-    while (true) {
-        send_ping_to_main(dadosConexao.socket);
-        std::vector<char> fileContentBuffer;
-        Package package;
-        if (read_package_from_socket(dadosConexao.socket, package, fileContentBuffer)) {
-            printf("Erro ao ler pacote do servidor.\n");
-            exit(0);
-            // inicia algoritmo de seleção
-            // seta backup = false se for escolhido
-        }
-        // Resposta inválida
-        if (package.package_type != REPLICA_MANAGER_PING_RESPONSE) {
-            printf("Resposta invalida do servidor.\n");
-            exit(0);
-        }
-        sleep(1);
-    }
-}

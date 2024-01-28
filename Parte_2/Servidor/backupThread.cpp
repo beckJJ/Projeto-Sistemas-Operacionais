@@ -17,7 +17,7 @@
 
 extern DeviceManager deviceManager;
 extern ActiveConnections_t activeConnections;
-extern pthread_mutex_t backup_connection_lock;
+extern DadosConexao dadosConexao;
 
 thread_local Connection_t client_backup = Connection_t(0, 0, 0xFFFF, "");
 
@@ -137,27 +137,27 @@ void handleActiveConnectionsList(Package &package, int socket_id)
 // Thread que fica recebendo novas conexões do servidor principal
 void *backupThread(void *arg)
 {
-    DadosConexao dadosConexao = DadosConexao();
-    strcpy(dadosConexao.endereco_ip, ((ServerThreadArg*)arg)->hostname);
-    sprintf(dadosConexao.numero_porta, "%d", ((ServerThreadArg*)arg)->port);
+    DadosConexao dadosConexao_backup = DadosConexao();
+    strcpy(dadosConexao_backup.endereco_ip, ((ServerThreadArg*)arg)->hostname);
+    sprintf(dadosConexao_backup.numero_porta, "%d", ((ServerThreadArg*)arg)->port);
     std::string path_base = std::string(PREFIXO_DIRETORIO_SERVIDOR);
     path_base.append("/");
     uint16_t listen_port = ((ServerThreadArg*)arg)->listen_port;
 
-    pthread_mutex_lock(&backup_connection_lock);
-    if (conecta_backup_transfer_main(dadosConexao, listen_port)) {
-        pthread_mutex_unlock(&backup_connection_lock);
+    pthread_mutex_lock(dadosConexao.backup_connection_lock);
+    if (conecta_backup_transfer_main(dadosConexao_backup, listen_port)) {
+        pthread_mutex_unlock(dadosConexao.backup_connection_lock);
         exit(EXIT_FAILURE);
     } else {
         printf("Thread de transferencia conectada\n");
     }
-    pthread_mutex_unlock(&backup_connection_lock);
+    pthread_mutex_unlock(dadosConexao.backup_connection_lock);
 
     while (true) {
         std::vector<char> fileContentBuffer;
         Package package;
 
-        if (read_package_from_socket(dadosConexao.socket, package, fileContentBuffer)) {
+        if (read_package_from_socket(dadosConexao_backup.socket, package, fileContentBuffer)) {
             printf("Erro ao ler pacote do servidor.\n");
             break;
         }
@@ -168,7 +168,7 @@ void *backupThread(void *arg)
             printf("\nRECEBIDO NOVO PACOTE DE ACTIVE_CONNECTIONS_LIST\n");
             // Ler sequencia de conexoes ativas
             pthread_mutex_lock(activeConnections.lock);
-            handleActiveConnectionsList(package, dadosConexao.socket);
+            handleActiveConnectionsList(package, dadosConexao_backup.socket);
             pthread_mutex_unlock(activeConnections.lock);
             // Criar diretorios para cada um dos usuarios ativos em seu sync dir
             pthread_mutex_lock(activeConnections.lock);
@@ -196,7 +196,7 @@ void *backupThread(void *arg)
             break;
         case CHANGE_EVENT:
             printf("\nRECEBIDO NOVO PACOTE DE CHANGE_EVENT\n");
-            handleChangeEvent(package.package_specific.changeEvent, path_base, dadosConexao.socket);
+            handleChangeEvent(package.package_specific.changeEvent, path_base, dadosConexao_backup.socket);
             break;
         default:
             break;

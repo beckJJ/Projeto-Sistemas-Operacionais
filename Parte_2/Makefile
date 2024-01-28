@@ -51,8 +51,8 @@ readThread: Cliente/readThread.cpp
 	$(CC) $(CFLAGS) $(DEFINES) -c -o Cliente/readThread.o Cliente/readThread.cpp
 
 
-myServer: Servidor/myServer.cpp serverThread deviceManager serverLoop replicaManager backupThread package functions package_file package_functions DadosConexao
-	$(CC) $(CFLAGS) $(DEFINES) -o myServer Servidor/myServer.cpp Servidor/serverThread.o Servidor/deviceManager.o Servidor/serverLoop.o Servidor/replicaManager.o Servidor/backupThread.o Common/package.o Common/functions.o Common/package_file.o Common/package_functions.o Common/DadosConexao.o
+myServer: Servidor/myServer.cpp serverThread deviceManager serverLoop replicaManager backupThread pingThread package functions package_file package_functions DadosConexao
+	$(CC) $(CFLAGS) $(DEFINES) -o myServer Servidor/myServer.cpp Servidor/serverThread.o Servidor/deviceManager.o Servidor/serverLoop.o Servidor/replicaManager.o Servidor/backupThread.o Servidor/pingThread.o Common/package.o Common/functions.o Common/package_file.o Common/package_functions.o Common/DadosConexao.o
 
 replicaManager: Servidor/replicaManager.cpp
 	$(CC) $(CFLAGS) $(DEFINES) -c -o Servidor/replicaManager.o Servidor/replicaManager.cpp
@@ -68,6 +68,9 @@ serverLoop: Servidor/serverLoop.cpp
 
 backupThread: Servidor/backupThread.cpp
 	$(CC) $(CFLAGS) $(DEFINES) -c -o Servidor/backupThread.o Servidor/backupThread.cpp
+
+pingThread: Servidor/pingThread.cpp
+	$(CC) $(CFLAGS) $(DEFINES) -c -o Servidor/pingThread.o Servidor/pingThread.cpp	
 
 
 package: Common/package.cpp

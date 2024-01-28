@@ -41,6 +41,11 @@ struct DadosConexao
     std::optional<pthread_t> event_thread;
     // ID do dispositivo
     uint8_t deviceID;
+    
+    // Novos campos que o backup utilizará
+    pthread_mutex_t *backup_connection_lock;
+    bool backup_flag;
+
 
     DadosConexao();
     ~DadosConexao();

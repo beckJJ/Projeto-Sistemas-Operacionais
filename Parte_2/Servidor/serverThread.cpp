@@ -25,7 +25,7 @@ extern bool backup;
 
 thread_local pid_t tid = 0;
 
-int connectToServer(Connection_t connection, std::string &username, User *&user, Device *&device, uint8_t &deviceID, bool &backupTransfer)
+int connectToServer(Connection_t connection, std::string &username, User *&user, Device *&device, uint8_t &deviceID, bool &backupPing)
 {
     auto package = Package();
     std::vector<char> fileContentBuffer;
@@ -40,11 +40,11 @@ int connectToServer(Connection_t connection, std::string &username, User *&user,
         return connectUser(connection, username, user, device, deviceID, package, fileContentBuffer);
     case INITIAL_REPLICA_MANAGER_IDENTIFICATION: // thread de ping do servidor principal com o backup
         username = "backup";
-        backupTransfer = false;
+        backupPing = true;
         return connectBackup(connection, deviceID, package, fileContentBuffer);
     case REPLICA_MANAGER_TRANSFER_IDENTIFICATION: // thread de transferência de arquivos do servidor principal para o backup
         username = "backup";
-        backupTransfer = true;
+        backupPing = false;
         return connectBackupTransfer(connection, deviceID, package, fileContentBuffer);
     default: 
         printf("[tid: %d] Pacote inicial da conexao nao e identificacao: 0x%02x\n", tid, (uint8_t)package.package_type);
@@ -195,9 +195,9 @@ void *serverThread(void *arg)
 
     std::vector<char> fileContentBuffer;
 
-    bool backupTransfer = false;
+    bool backupPing = false;
     // Tentar conectar-se como um dispositivo do usuário
-    if (connectToServer(client, username, user, device, deviceID, backupTransfer))
+    if (connectToServer(client, username, user, device, deviceID, backupPing))
     {
         close(client.socket_id);
         return NULL;
@@ -207,7 +207,7 @@ void *serverThread(void *arg)
 
     // Desconecta o dispositivo atual, serverLoop só retorna no caso de não ser possível ler pacotes
     printf("[tid: %d] Disconnecting thread.\n", tid);
-    deviceManager.disconnect(username, deviceID, client, backupTransfer);
+    deviceManager.disconnect(username, deviceID, client, backupPing);
 
     // socket_id será fechado no destrutor de Device
 
