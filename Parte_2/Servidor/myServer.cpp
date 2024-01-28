@@ -56,9 +56,6 @@ void close_sockets()
     if (dadosConexao.socket_transfer != -1) {
         close(dadosConexao.socket_transfer);
     }
-    if (dadosConexao.socket != -1) {
-        close(dadosConexao.socket);
-    }
 }
 
 void sigint_handler_main(int)
@@ -71,6 +68,9 @@ void sigint_handler_main(int)
     cancel_threads();
     // Fecha os sockets
     close_sockets();
+    if (dadosConexao.socket != -1) {
+        close(dadosConexao.socket);
+    }
     // Encerra o servidor
     exit(EXIT_FAILURE);
 }
@@ -89,9 +89,6 @@ void bind_socket()
     serv_addr.sin_port = htons(dadosConexao.listen_port);
     serv_addr.sin_addr.s_addr = INADDR_ANY;
     bzero(&(serv_addr.sin_zero), sizeof(serv_addr.sin_zero));
-
-    int sockOptTrue = 1;
-    setsockopt(dadosConexao.socket, SOL_SOCKET, SO_REUSEADDR, &sockOptTrue, sizeof(sockOptTrue));
 
     if (bind(dadosConexao.socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
     {
@@ -204,7 +201,10 @@ int main(int argc, char *argv[])
         cancel_threads();
         close_sockets();
         // rebind socket
-        bind_socket();
+        //bind_socket();
+        // remove todas conexões ativas de cliente e servidor
+        activeConnections.clients.clear();
+        activeConnections.backups.clear();
     }
 
     socklen_t clilen;
