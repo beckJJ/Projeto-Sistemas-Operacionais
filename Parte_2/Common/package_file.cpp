@@ -87,6 +87,20 @@ int send_ping_to_main(int socket)
     return write_package_to_socket(socket, package, fileContentBuffer);
 }
 
+int send_election_to_socket(int socket)
+{
+    std::vector<char> fileContentBuffer;
+    Package package = Package(PackageReplicaManagerElectionElection());
+    return write_package_to_socket(socket, package, fileContentBuffer);
+}
+
+int send_answer_to_socket(int socket)
+{
+    std::vector<char> fileContentBuffer;
+    Package package = Package(PackageReplicaManagerElectionAnswer());
+    return write_package_to_socket(socket, package, fileContentBuffer);
+}
+
 // Retorna um ACK do servidor principal para um backup
 int send_backup_ack(int socket)
 {

@@ -29,6 +29,49 @@ void break_accept_on_main_thread()
     conecta_servidor(dadosConexao_main);
 }
 
+int send_election_to_backups_list(std::vector<Connection_t> backups)
+{
+    int answers_received = 0;
+    printf("DeviceID_transfer desse processo: %d\n", dadosConexao.deviceID_transfer);
+    for (Connection_t c : backups) {
+        if (c.socket_id > dadosConexao.deviceID_transfer) {
+            printf("Enviando election\n");
+            // Abrir conexao
+            DadosConexao dadosConexao_backup = DadosConexao();
+            char *endereco_ip = inet_ntoa(*(struct in_addr *)&c.host);
+            strcpy(dadosConexao_backup.endereco_ip, endereco_ip);
+            sprintf(dadosConexao_backup.numero_porta, "%d", c.port);
+            std::optional<int> socket_opt = conecta_servidor(dadosConexao_backup);
+            if (!socket_opt.has_value()) {
+                printf("Erro na abertura de conexao\n");
+                continue;
+            }
+            // enviar pacote election
+            int current_socket = socket_opt.value();
+            printf("Enviando election\n");
+            pthread_mutex_lock(dadosConexao.socket_lock);
+            send_election_to_socket(current_socket);
+            pthread_mutex_unlock(dadosConexao.socket_lock);
+            printf("Election enviado!\n");
+            // receber answer
+            Package package = Package();
+            std::vector<char> fileContentBuffer;
+            pthread_mutex_lock(dadosConexao.socket_lock);
+            if (read_package_from_socket(current_socket, package, fileContentBuffer)) {
+                pthread_mutex_unlock(dadosConexao.socket_lock);
+                printf("Erro na leitura de answer");
+                continue;
+            }
+            pthread_mutex_unlock(dadosConexao.socket_lock);
+            // se recebeu um answer, incrementa
+            if (package.package_type == REPLICA_MANAGER_ELECTION_ANSWER) {
+                answers_received++;
+            }
+        }
+    }
+    return answers_received;
+}
+
 void *pingThread(void *)
 {
     pthread_mutex_lock(dadosConexao.backup_connection_lock);
@@ -51,8 +94,7 @@ void *pingThread(void *)
             close(dadosConexao.socket_transfer);
             // inicia algoritmo de seleção
             pthread_mutex_lock(activeConnections.lock);
-     //       int answers_received = send_election_to_backups_list(activeConnections.backups);
-            int answers_received = 0;
+            int answers_received = send_election_to_backups_list(activeConnections.backups);
             pthread_mutex_unlock(activeConnections.lock);
             
             // se não recebeu nenhum answer, foi eleito 

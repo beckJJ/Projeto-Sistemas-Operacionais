@@ -190,11 +190,23 @@ int main(int argc, char *argv[])
 
             Package package = Package();
             std::vector<char> fileContentBuffer;
+            pthread_mutex_lock(dadosConexao.socket_lock);
             if (read_package_from_socket(socket_id, package, fileContentBuffer)) {
-                printf("Nenhum pacote election recebido");
+                printf("Nenhum pacote recebido\n");
             } else {
-                printf("Pacote election recebido\n");
+                printf("Pacote recebido\n");
             }
+            pthread_mutex_unlock(dadosConexao.socket_lock);
+            // se recebeu election
+            if (package.package_type == REPLICA_MANAGER_ELECTION_ELECTION) {
+                // envia um answer
+                printf("Election Recebido\n");
+                pthread_mutex_lock(dadosConexao.socket_lock);
+                send_answer_to_socket(socket_id);
+                pthread_mutex_unlock(dadosConexao.socket_lock);
+                printf("Answer enviado\n");
+            }
+            close(socket_id);
         }
         printf("Saiu do while\n");
         // cancelar threads abertas e fechar sockets 

@@ -73,7 +73,8 @@ int connectBackupTransfer(Connection_t server, uint8_t &deviceID, Package &packa
     printf("[tid: %d] Nova conexao de transferencia com backup, dispositivo: 0x%02x.\n", tid, (uint8_t)deviceID);
 
     // Responde ao backup indicando sucesso da conexão
-    package = Package(PackageReplicaManagerTransferIdentificationResponse(ACCEPTED_RM_T, deviceID));
+    package = Package(PackageReplicaManagerTransferIdentificationResponse(ACCEPTED_RM_T, server.socket_id));
+    printf("server.socket_id enviado: %d\n", server.socket_id);
 
     if (write_package_to_socket(server.socket_id, package, fileContentBuffer)) {
         printf("[tid: %d] Erro ao enviar resposta inicial de transferencia ao backup.\n", tid);
