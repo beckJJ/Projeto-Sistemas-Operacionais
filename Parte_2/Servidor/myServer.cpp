@@ -207,21 +207,43 @@ int main(int argc, char *argv[])
                 pthread_mutex_unlock(dadosConexao.socket_lock);
                 printf("Answer enviado\n");
                 break;
-            case REPLICA_MANAGER_ELECTION_COORDINATOR: // se recebeu coordinator
+            case REPLICA_MANAGER_ELECTION_COORDINATOR: { // se recebeu coordinator
                 printf("Coordinator recebido, id = %d\n", package.package_specific.replicaManagerElectionCoordinator.deviceID);
                 // mata threads e fecha sockets abertos com o servidor antigo
                 cancel_threads();
                 close_sockets();
-                // TODO: busca id do coordenador na lista de backups e salva em um temp
-
-                // limpa as listas de clientes e backups conectados
+                // busca id do coordenador na lista de backups e salva em um temp
                 pthread_mutex_lock(activeConnections.lock);
+                Connection_t new_coordinator;
+                for (Connection_t c : activeConnections.backups) {
+                    if (c.socket_id == package.package_specific.replicaManagerElectionCoordinator.deviceID) {
+                        new_coordinator.host = c.host;
+                        new_coordinator.port = c.port;
+                        break;
+                    }
+                }
+                // limpa as listas de clientes e backups conectados
                 activeConnections.clients.clear();
                 activeConnections.backups.clear();
                 pthread_mutex_unlock(activeConnections.lock);
                 // TODO: cria threads com o novo coordenador
+                printf("Novo coordenador: ");
+                    
+                char *endereco_ip = inet_ntoa(*(struct in_addr *)&new_coordinator.host);
+                printf("%s:%d\n", endereco_ip, new_coordinator.port);
+                strcpy(dadosConexao.endereco_ip, endereco_ip);
+                sprintf(dadosConexao.numero_porta, "%d", new_coordinator.port);
+
+                // Iniciar thread de transfer
+                pthread_create(&backup_thread, NULL, backupThread, NULL);
+                dadosConexao.backup_thread = backup_thread;
+
+                // Iniciar thread de ping 
+                pthread_create(&ping_thread, NULL, pingThread, NULL);
+                dadosConexao.ping_thread = ping_thread;
 
                 break;
+            }
             default:
                 break;
             }
