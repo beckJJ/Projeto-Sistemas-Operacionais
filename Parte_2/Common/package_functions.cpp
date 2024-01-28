@@ -250,12 +250,13 @@ int read_package_from_socket(int socket, Package &package, std::vector<char> &fi
             *(uint8_t *)&buffer_data[ALIGN_VALUE]));
         break;
     case REPLICA_MANAGER_ELECTION_ELECTION: // mensagem ELECTION
-        // TODO : VER O QUE VAI TER NAS MENSAGENS DE ELECTION E ANSWER
         package = Package(PackageReplicaManagerElectionElection());
         break;
     case REPLICA_MANAGER_ELECTION_ANSWER: // mensagem ANSWER
-        // TODO : VER O QUE VAI TER NAS MENSAGENS DE ELECTION E ANSWER
         package = Package(PackageReplicaManagerElectionAnswer());
+        break;
+    case REPLICA_MANAGER_ELECTION_COORDINATOR: // mensagem COORDINATOR
+        // TODO: implementar package de coordinator
         break;
     default:
         return 1;

@@ -197,26 +197,50 @@ int main(int argc, char *argv[])
                 printf("Pacote recebido\n");
             }
             pthread_mutex_unlock(dadosConexao.socket_lock);
-            // se recebeu election
-            if (package.package_type == REPLICA_MANAGER_ELECTION_ELECTION) {
+            
+            switch(package.package_type) {
+            case REPLICA_MANAGER_ELECTION_ELECTION: // se recebeu election
                 // envia um answer
                 printf("Election Recebido\n");
                 pthread_mutex_lock(dadosConexao.socket_lock);
                 send_answer_to_socket(socket_id);
                 pthread_mutex_unlock(dadosConexao.socket_lock);
                 printf("Answer enviado\n");
+                break;
+            case REPLICA_MANAGER_ELECTION_COORDINATOR: // se recebeu coordinator
+                // mata threads e fecha sockets abertos com o servidor antigo
+                cancel_threads();
+                close_sockets();
+                // TODO: busca id do coordenador na lista de backups e salva em um temp
+
+                // limpa as listas de clientes e backups conectados
+                pthread_mutex_lock(activeConnections.lock);
+                activeConnections.clients.clear();
+                activeConnections.backups.clear();
+                pthread_mutex_unlock(activeConnections.lock);
+                // TODO: cria threads com o novo coordenador
+
+                break;
+            default:
+                break;
             }
             close(socket_id);
         }
-        printf("Saiu do while\n");
+        printf("Saiu do while, backup eleito\n");
         // cancelar threads abertas e fechar sockets 
         cancel_threads();
         close_sockets();
-        // rebind socket
-        //bind_socket();
+        // TODO: salvar clients e backups em listas temporárias
+
         // remove todas conexões ativas de cliente e servidor
+        pthread_mutex_lock(activeConnections.lock);
         activeConnections.clients.clear();
         activeConnections.backups.clear();
+        pthread_mutex_unlock(activeConnections.lock);
+        // TODO: enviar coordinator para os outros backups
+
+        // TODO: realizar nova conexão com os clientes
+
     }
 
     socklen_t clilen;

@@ -56,7 +56,9 @@ enum PackageType : char
     // Pacote para inicio de eleição (pacote election)
     REPLICA_MANAGER_ELECTION_ELECTION,
     // Pacote para resposta de eleição (pacote answer)
-    REPLICA_MANAGER_ELECTION_ANSWER
+    REPLICA_MANAGER_ELECTION_ANSWER,
+    // Pacote para coordenador de eleição (pacote coordinator)
+    REPLICA_MANAGER_ELECTION_COORDINATOR
 };
 
 // Indica aceitação ou rejeição da conexão do dispositivo
@@ -238,7 +240,6 @@ struct alignas(ALIGN_VALUE) Connection_t
     Connection_t(uint16_t port, uint32_t host, uint16_t socket_id, const char _user_name[USER_NAME_MAX_LENGTH]);
 };
 
-// TODO: DEFINIR PackageActiveConnectionsList CONFORME NECESSÁRIO, TALVEZ SEJA PARECIDO COM O DE CIMA
 struct alignas(ALIGN_VALUE) PackageActiveConnectionsList
 {
     // Tamanho da lista sendo enviada
