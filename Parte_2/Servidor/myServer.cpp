@@ -56,7 +56,7 @@ void sigint_handler_main(int)
 
 int main(int argc, char *argv[])
 {
-    uint16_t port = PORT;
+    dadosConexao.listen_port = PORT;
     char c;
 
     activeConnections.lock = new pthread_mutex_t;
@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
             puts("\t-h\tExibe mensagem de ajuda.");
             exit(0);
         case 'p':
-            port = atoi(optarg);
+            dadosConexao.listen_port = atoi(optarg);
             break;
         case 'b':  // inicializar server como backup
             dadosConexao.backup_flag = true;
@@ -121,7 +121,7 @@ int main(int argc, char *argv[])
     }
 
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(port);
+    serv_addr.sin_port = htons(dadosConexao.listen_port);
     serv_addr.sin_addr.s_addr = INADDR_ANY;
     bzero(&(serv_addr.sin_zero), sizeof(serv_addr.sin_zero));
 
@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
 
     listen(dadosConexao.socket, 5);
 
-    printf("Servidor está escutando na porta: %d.\n", port);
+    printf("Servidor está escutando na porta: %d.\n", dadosConexao.listen_port);
 
     if (dadosConexao.backup_flag) {
         printf("Conectando no servidor principal %s:%s\n", dadosConexao.endereco_ip, dadosConexao.numero_porta);
@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
 
         backup_thread_arg.port = atoi(dadosConexao.numero_porta);
         strcpy(backup_thread_arg.hostname, dadosConexao.endereco_ip);
-        backup_thread_arg.listen_port = port;
+        backup_thread_arg.listen_port = dadosConexao.listen_port;
 
         pthread_t backup_thread;
         

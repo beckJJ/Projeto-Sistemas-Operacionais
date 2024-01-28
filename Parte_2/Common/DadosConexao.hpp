@@ -45,6 +45,7 @@ struct DadosConexao
     // Novos campos que o backup utilizará
     pthread_mutex_t *backup_connection_lock;
     bool backup_flag;
+    uint16_t listen_port;
 
 
     DadosConexao();
