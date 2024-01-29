@@ -62,19 +62,15 @@ void *frontendThread(void *)
         struct sockaddr_in backup_addr;
         backup_len = sizeof(struct sockaddr_in);
         int socket_id = -1;
-        printf("Aguardando pacotes de novas conexoes...\n");
+      //  printf("Aguardando pacotes de novas conexoes...\n");
         if ((socket_id = accept(dados_conexao.socket_frontend, (struct sockaddr *)&backup_addr, &backup_len)) == -1) {
             continue;
         }
         std::vector<char> fileContentBuffer;
         Package package = Package();
-        pthread_mutex_lock(dados_conexao.socket_lock);
         if (read_package_from_socket(socket_id, package, fileContentBuffer)) {
             printf("Nenhum pacote recebido\n");
-        } else {
-            printf("Pacote recebido\n");
         }
-        pthread_mutex_unlock(dados_conexao.socket_lock);
 
         switch (package.package_type) {
             case NEW_SERVER_INFO: {
@@ -89,9 +85,6 @@ void *frontendThread(void *)
                 sprintf(dados_conexao.numero_porta, "%d", package.package_specific.newServerInfo.port);
                 if (conecta_device(dados_conexao)) {
                     continue;
-                }
-                if (get_sync_dir(dados_conexao)) {
-                    exit(EXIT_FAILURE);
                 }
                 // Iniciar nova thread de read
                 pthread_t new_thread;
