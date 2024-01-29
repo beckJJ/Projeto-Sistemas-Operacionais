@@ -26,7 +26,7 @@
 #include "../Common/package_file.hpp"
 #include "readThread.hpp"
 #include "auxiliaresCliente.hpp"
-
+#include "interfaceCliente.hpp"
 extern DadosConexao dados_conexao;
 
 void exitFrontendThread(void)
@@ -76,11 +76,9 @@ void *frontendThread(void *)
             case NEW_SERVER_INFO: {
                 // imprimir dados do servidor
                 char *endereco_ip = inet_ntoa(*(struct in_addr *)&package.package_specific.newServerInfo.host);
-                printf("Endereco do novo servidor: %s:%d\n", endereco_ip, package.package_specific.newServerInfo.port);
                 
-                printf("Conectando-se ao servidor...\n");
+                printf("Reconectando-se ao servidor...\n");
                 sleep(5);
-                // TODO: apontar novas conexoes para o servidor recebido
                 strcpy(dados_conexao.endereco_ip, endereco_ip);
                 sprintf(dados_conexao.numero_porta, "%d", package.package_specific.newServerInfo.port);
                 if (conecta_device(dados_conexao)) {
@@ -90,11 +88,13 @@ void *frontendThread(void *)
                 pthread_t new_thread;
                 pthread_create(&new_thread, NULL, readThread, NULL);
                 dados_conexao.sync_thread = new_thread;
-                printf("Conectado ao novo servidor!\n");
+                printf("Conectado ao servidor!\n");
+                limpaTela();
+                menu_principal(dados_conexao);
                 break;
             }
             default:
-                printf("Package type: 0x%2x\n", package.package_type);
+       //         printf("Package type: 0x%2x\n", package.package_type);
                 break;
         }
         close(socket_id);
