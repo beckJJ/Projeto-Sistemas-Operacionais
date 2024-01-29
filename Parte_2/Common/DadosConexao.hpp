@@ -58,6 +58,7 @@ struct DadosConexao
     std::optional<pthread_t> backup_thread;
     std::optional<pthread_t> ping_thread;
 
+    pthread_mutex_t *connection_lock;
 
     DadosConexao();
     ~DadosConexao();

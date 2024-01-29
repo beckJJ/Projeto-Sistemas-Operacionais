@@ -93,7 +93,7 @@ void bind_socket()
         exit(EXIT_FAILURE);
     }
 
-    listen(dadosConexao.socket, 5);
+    listen(dadosConexao.socket, 10);
 }
 
 int main(int argc, char *argv[])
@@ -203,8 +203,10 @@ int main(int argc, char *argv[])
                 send_answer_to_socket(socket_id);
                 pthread_mutex_unlock(dadosConexao.socket_lock);
                 printf("Answer enviado\n");
+                close(socket_id);
                 break;
             case REPLICA_MANAGER_ELECTION_COORDINATOR: { // se recebeu coordinator
+                close(socket_id);
                 printf("Coordinator recebido, id = %d\n", package.package_specific.replicaManagerElectionCoordinator.deviceID);
                 // mata threads e fecha sockets abertos com o servidor antigo
                 cancel_threads();
@@ -234,7 +236,6 @@ int main(int argc, char *argv[])
                 // Iniciar thread de transfer
                 pthread_create(&backup_thread, NULL, backupThread, NULL);
                 dadosConexao.backup_thread = backup_thread;
-
                 // Iniciar thread de ping 
                 pthread_create(&ping_thread, NULL, pingThread, NULL);
                 dadosConexao.ping_thread = ping_thread;
@@ -244,7 +245,6 @@ int main(int argc, char *argv[])
             default:
                 break;
             }
-            close(socket_id);
         }
         printf("Saiu do while, backup eleito\n");
         // cancelar threads abertas e fechar sockets 
@@ -313,6 +313,7 @@ int main(int argc, char *argv[])
         ServerThreadArg thread_arg; // { };
         pthread_t thread;
 
+        pthread_mutex_lock(dadosConexao.connection_lock);
         printf("Aguardando nova conexao...\n");
         if ((thread_arg.socket_id = accept(dadosConexao.socket, (struct sockaddr *)&cli_addr, &clilen)) == -1) {
             printf("Erro! Nao foi possivel realizar conexao com o cliente!\n");

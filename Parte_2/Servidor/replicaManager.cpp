@@ -12,7 +12,6 @@
 #include "serverThread.hpp"
 
 extern bool backup;
-extern pthread_mutex_t backup_connection_lock; 
 
 std::optional<int> conecta_servidor(DadosConexao &dadosConexao)
 {

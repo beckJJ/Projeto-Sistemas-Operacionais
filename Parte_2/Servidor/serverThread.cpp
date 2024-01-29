@@ -18,10 +18,11 @@
 #include "serverLoop.hpp"
 #include "../Common/connections.hpp"
 #include <arpa/inet.h>
+#include "../Common/DadosConexao.hpp"
 
 extern DeviceManager deviceManager;
 extern ActiveConnections_t activeConnections;
-extern bool backup;
+extern DadosConexao dadosConexao;
 
 thread_local pid_t tid = 0;
 
@@ -204,6 +205,8 @@ void *serverThread(void *arg)
         close(client.socket_id);
         return NULL;
     }
+    pthread_mutex_unlock(dadosConexao.connection_lock);
+
 
     serverLoop(client.socket_id, tid, username, user, device);
 

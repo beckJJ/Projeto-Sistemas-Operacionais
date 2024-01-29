@@ -32,6 +32,12 @@ void break_accept_on_main_thread()
     conecta_servidor(dadosConexao_main);
 }
 
+void exitPingThread(void)
+{
+    dadosConexao.ping_thread = std::nullopt;
+    pthread_exit(NULL);
+}
+
 int send_election_to_backups_list(std::vector<Connection_t> backups)
 {
     int answers_received = 0;
@@ -86,7 +92,9 @@ void *pingThread(void *)
     pthread_mutex_unlock(dadosConexao.backup_connection_lock);
 
     while (true) {
+        pthread_mutex_lock(dadosConexao.socket_lock);
         send_ping_to_socket(dadosConexao.socket_ping);
+        pthread_mutex_unlock(dadosConexao.socket_lock);
         std::vector<char> fileContentBuffer;
         Package package;
         if (read_package_from_socket(dadosConexao.socket_ping, package, fileContentBuffer)) {
@@ -103,8 +111,8 @@ void *pingThread(void *)
             if (answers_received == 0) {
                 break_accept_on_main_thread();
             }
-            // else : aguarda coordinator e inicia novas conexões
-            while(true);
+            // else mata essa thread de ping
+            exitPingThread();
         }
         // Resposta inválida
         if (package.package_type != REPLICA_MANAGER_PING_RESPONSE) {
