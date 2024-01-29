@@ -202,6 +202,7 @@ void *serverThread(void *arg)
     // Tentar conectar-se como um dispositivo do usuário
     if (connectToServer(client, username, user, device, deviceID, backupPing))
     {
+        pthread_mutex_unlock(dadosConexao.connection_lock);
         close(client.socket_id);
         return NULL;
     }

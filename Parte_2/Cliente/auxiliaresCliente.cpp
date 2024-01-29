@@ -170,11 +170,11 @@ int get_sync_dir(DadosConexao &dadosConexao)
     if (stat(sync_dir_path.c_str(), &st) != -1)
     {
         // Deve ser removido recursivamente já que pode existir arquivos
-        if (remove_path_tree(sync_dir_path.c_str()))
+       /* if (remove_path_tree(sync_dir_path.c_str()))
         {
             printf("Nao foi possivel remover sync_dir local.\n");
             return 1;
-        }
+        } */
     }
 
     // Cria sync dir novamente
