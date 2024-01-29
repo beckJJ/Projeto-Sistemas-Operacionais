@@ -183,6 +183,8 @@ void propagate_event_backups(PackageChangeEvent packageChangeEvent, char usernam
     Package package = Package(packageChangeEvent);
     std::vector<char> fileContentBuffer;
 
+    int oks_received = 0;
+
     for (Connection_t backup : activeConnections.backups) {
         printf("Enviando pacote para %d...\n", backup.socket_id);
         if (write_package_to_socket(backup.socket_id, package, fileContentBuffer)) {
@@ -204,7 +206,20 @@ void propagate_event_backups(PackageChangeEvent packageChangeEvent, char usernam
                        package.package_specific.changeEvent.filename1);
             }
         }
-
+        // aguarda um ack
+        if (read_package_from_socket(backup.socket_id, package, fileContentBuffer)) {
+            printf("Erro ao receber OK da transacao\n");
+            continue;
+        }
+        if (package.package_type == TRANSACTION_OK) {
+            oks_received++;
+        }
+    }
+    if (oks_received >= (int)activeConnections.backups.size()) {
+        // enviar commit para todos os backups
+        for (Connection_t backup : activeConnections.backups) {
+            send_commit_event_to_socket(backup.socket_id);
+        }
     }
 }
 

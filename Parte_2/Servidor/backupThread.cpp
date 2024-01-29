@@ -37,7 +37,71 @@ void create_client_dirs(std::vector<Connection_t> clientList, const std::string 
     }
 }
 
-void handleChangeEvent(PackageChangeEvent &changeEvent, std::string &path_base, int socket_id)
+void handleCommitEvent(PackageChangeEvent &prevPackage, std::string &path_base)
+{
+    std::vector<char> fileContentBuffer;
+    std::string old_path = path_base;
+    std::string new_path = path_base;
+    std::string path;
+
+    switch (prevPackage.event) {
+    case FILE_DELETED:
+        path = path_base;
+        path.append(prevPackage.username);
+        path.append("/");
+        path.append(prevPackage.filename1);
+        path.append(".tmp");
+        if (remove(path.c_str())) {
+            printf("Erro ao remover arquivo \"%s\".\n", prevPackage.filename1);
+            return;
+        }
+        break;
+    case FILE_CREATED:
+        new_path = path_base;
+        new_path.append(prevPackage.username);
+        new_path.append("/");
+        new_path.append(prevPackage.filename1);
+        old_path = new_path;
+        old_path.append(".tmp");
+        if (rename(old_path.c_str(), new_path.c_str())) {
+            printf("Erro ao criar arquivo \"%s\".\n", prevPackage.filename1);
+            return;
+        }
+        break;
+    case FILE_MODIFIED:
+        // remove versao antiga (.tmp)
+        path = path_base;
+        path.append(prevPackage.username);
+        path.append("/");
+        path.append(prevPackage.filename1);
+        path.append(".tmp");
+        if (remove(path.c_str())) {
+            printf("Nao foi possivel baixar versao modificada do arquivo \"%s\".\n", prevPackage.filename1);
+            return;
+        }
+        break;
+    case FILE_RENAME:
+        old_path = path_base;
+        old_path.append(prevPackage.username);
+        old_path.append("/");
+        old_path.append(prevPackage.filename1);
+        old_path.append(".tmp");
+        new_path = path_base;
+        new_path.append(prevPackage.username);
+        new_path.append("/");
+        new_path.append(prevPackage.filename2);
+        if (rename(old_path.c_str(), new_path.c_str())) {
+            printf("Erro ao renomear arquivo de \"%s\" para \"%s\".\n", prevPackage.filename1, prevPackage.filename2);
+            return;
+        }
+        break;
+    default:
+        printf("Evento desconhecido: 0x%02x\n", (uint8_t)prevPackage.event);
+        break;
+    }
+}
+
+int handleChangeEvent(PackageChangeEvent &changeEvent, std::string &path_base, int socket_id)
 {
     std::vector<char> fileContentBuffer;
     std::string old_path = path_base;
@@ -48,38 +112,55 @@ void handleChangeEvent(PackageChangeEvent &changeEvent, std::string &path_base, 
     switch (changeEvent.event) {
     // Remove arquivo de sync dir local
     case FILE_DELETED:
-        path = path_base;
-        path.append(changeEvent.username);
-        path.append("/");
-        path.append(changeEvent.filename1);
-        if (remove(path.c_str())) {
+        // ao inves de remover arquivo, apenas renomear para [filename].tmp
+        old_path = path_base;
+        old_path.append(changeEvent.username);
+        old_path.append("/");
+        old_path.append(changeEvent.filename1);
+
+        new_path = old_path;
+        new_path.append(".tmp");
+
+        if (rename(old_path.c_str(), new_path.c_str())) {
             printf("Erro ao remover arquivo \"%s\".\n", changeEvent.filename1);
+            return -1;
         }
         break;
     // Cria arquivo no sync dir local
     case FILE_CREATED:
+        // criar arquivo com [filename].tmp
         path = path_base;
         path.append(changeEvent.username);
         path.append("/");
         path.append(changeEvent.filename1);
+        path.append(".tmp");
         fp = fopen(path.c_str(), "w");
 
         if (!fp) {
             printf("Erro ao criar arquivo \"%s\".\n", changeEvent.filename1);
+            return -1;
         } else {
             fclose(fp);
         }
         break;
     // Baixa versão atualizada do arquivo no sync dir local
     case FILE_MODIFIED:
+        // renomeia versao antiga para [filename].tmp
         path = path_base;
         path.append(changeEvent.username);
         path.append("/");
         path.append(changeEvent.filename1);
 
+        new_path = path;
+        new_path.append(".tmp");
+        if (rename(path.c_str(), new_path.c_str())) {
+            printf("Nao foi possivel renomear arquivo \"%s\", se o arquivo nao existia pode ser ignorado.\n", changeEvent.filename1);
+        }
+
         // Após o evento FILE_MODIFIED haverá pacotes de upload de arquivo
         if (read_upload_file_and_save(socket_id, path.c_str())) {
             printf("Nao foi possivel baixar versao modificada do arquivo \"%s\".\n", changeEvent.filename1);
+            return -1;
         }
         break;
     // Renomeia arquivo no sync dir local
@@ -89,19 +170,21 @@ void handleChangeEvent(PackageChangeEvent &changeEvent, std::string &path_base, 
         old_path.append("/");
         old_path.append(changeEvent.filename1);
 
-        new_path = path_base;
-        new_path.append(changeEvent.username);
-        new_path.append("/");
-        new_path.append(changeEvent.filename2);
+        new_path = old_path;
+        new_path.append(".tmp");
 
+        // renomeia o arquivo para [nome antigo].tmp
         if (rename(old_path.c_str(), new_path.c_str())) {
             printf("Erro ao renomear arquivo de \"%s\" para \"%s\".\n", changeEvent.filename1, changeEvent.filename2);
+            return -1;
         }
         break;
     default:
         printf("Evento desconhecido: 0x%02x\n", (uint8_t)changeEvent.event);
+        return -1;
         break;
     }
+    return 0;
 }
 
 // Lê uma sequência de pacotes de PackageActiveConnectionsList, package já é um pacote que deve ser processado
@@ -160,6 +243,8 @@ void *backupThread(void *)
         std::vector<char> fileContentBuffer;
         Package package;
 
+        Package last_package; // utilizado para saber qual o ultimo evento
+
         if (read_package_from_socket(dadosConexao.socket_transfer, package, fileContentBuffer)) {
             printf("Erro ao ler pacote do servidor.\n");
             exitBackupThread();
@@ -199,7 +284,21 @@ void *backupThread(void *)
             break;
         case CHANGE_EVENT:
             printf("\nRECEBIDO NOVO PACOTE DE CHANGE_EVENT\n");
-            handleChangeEvent(package.package_specific.changeEvent, path_base, dadosConexao.socket_transfer);
+            // salva o pacote
+            last_package = package;
+            // Muda o event em um 
+            if (handleChangeEvent(package.package_specific.changeEvent, path_base, dadosConexao.socket_transfer)) {
+                // ocorreu um erro ao modificar o arquivo
+            } else {
+                // envia um OK pro servidor principal
+                pthread_mutex_lock(dadosConexao.socket_lock);
+                send_transaction_ok_to_socket(dadosConexao.socket_transfer);
+                pthread_mutex_unlock(dadosConexao.socket_lock);
+            }
+            break;
+        case COMMIT_EVENT:
+            printf("\nRECEBIDO NOVO PACOTE DE COMMIT_EVENT\n");
+            handleCommitEvent(last_package.package_specific.changeEvent, path_base);
             break;
         default:
             break;

@@ -123,6 +123,20 @@ int send_ping_response_to_socket(int socket)
     return write_package_to_socket(socket, package, fileContentBuffer);
 }
 
+int send_commit_event_to_socket(int socket)
+{
+    std::vector<char> fileContentBuffer;
+    Package package = Package(PackageCommitEvent());
+    return write_package_to_socket(socket, package, fileContentBuffer);
+}
+
+int send_transaction_ok_to_socket(int socket)
+{
+    std::vector<char> fileContentBuffer;
+    Package package = Package(PackageTransactionOK());
+    return write_package_to_socket(socket, package, fileContentBuffer);
+}
+
 // Envia uma sequência de pacotes PackageFileContent contendo o conteúdo em path
 int send_file(int socket, const char *path)
 {

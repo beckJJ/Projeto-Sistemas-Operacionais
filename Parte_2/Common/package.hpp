@@ -60,7 +60,11 @@ enum PackageType : char
     // Pacote para coordenador de eleição (pacote coordinator)
     REPLICA_MANAGER_ELECTION_COORDINATOR,
     // Pacote para enviar informações do novo servidor para os clientes
-    NEW_SERVER_INFO
+    NEW_SERVER_INFO,
+    // Pacote para enviar sinal de commit para backups finalizarem transações
+    COMMIT_EVENT,
+    // Pacote para enviar um OK ao receber um evento
+    TRANSACTION_OK
 };
 
 // Indica aceitação ou rejeição da conexão do dispositivo
@@ -305,6 +309,15 @@ struct alignas(ALIGN_VALUE) PackageNewServerInfo
     PackageNewServerInfo(uint16_t port, uint32_t host);
 };
 
+struct alignas(ALIGN_VALUE) PackageCommitEvent
+{
+    PackageCommitEvent();
+};
+
+struct alignas(ALIGN_VALUE) PackageTransactionOK
+{
+    PackageTransactionOK();
+};
 
 // União de todos os pacotes
 union alignas(ALIGN_VALUE) PackageSpecific
@@ -329,6 +342,8 @@ union alignas(ALIGN_VALUE) PackageSpecific
     alignas(ALIGN_VALUE) PackageReplicaManagerElectionAnswer replicaManagerElectionAnswer;
     alignas(ALIGN_VALUE) PackageReplicaManagerElectionCoordinator replicaManagerElectionCoordinator;
     alignas(ALIGN_VALUE) PackageNewServerInfo newServerInfo;
+    alignas(ALIGN_VALUE) PackageCommitEvent commitEvent;
+    alignas(ALIGN_VALUE) PackageTransactionOK transactionOK;
 
     PackageSpecific();
     PackageSpecific(PackageUserIdentification userIdentification);
@@ -351,6 +366,8 @@ union alignas(ALIGN_VALUE) PackageSpecific
     PackageSpecific(PackageReplicaManagerElectionAnswer replicaManagerElectionAnswer);
     PackageSpecific(PackageReplicaManagerElectionCoordinator replicaManagerElectionCoordinator);
     PackageSpecific(PackageNewServerInfo newServerInfo);
+    PackageSpecific(PackageCommitEvent commitEvent);
+    PackageSpecific(PackageTransactionOK transactionOK);
     ~PackageSpecific();
 };
 
@@ -390,6 +407,8 @@ struct alignas(ALIGN_VALUE) Package
     Package(PackageReplicaManagerElectionAnswer replicaManagerElectionAnswer);
     Package(PackageReplicaManagerElectionCoordinator replicaManagerElectionCoordinator);
     Package(PackageNewServerInfo newServerInfo);
+    Package(PackageCommitEvent commitEvent);
+    Package(PackageTransactionOK transactionOK);
 };
 
 #endif

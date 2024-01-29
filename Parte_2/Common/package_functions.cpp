@@ -111,6 +111,10 @@ std::optional<ssize_t> sizeof_base_package(PackageType package_type)
         return sizeof(PackageReplicaManagerElectionCoordinator);
     case NEW_SERVER_INFO:
         return sizeof(PackageNewServerInfo);
+    case COMMIT_EVENT:
+        return sizeof(PackageCommitEvent);
+    case TRANSACTION_OK:
+        return sizeof(PackageTransactionOK);
     default:
         printf("[sizeof_base_package] Unknown package type: 0x%02x\n", (uint8_t)package_type);
         return std::nullopt;
@@ -268,6 +272,12 @@ int read_package_from_socket(int socket, Package &package, std::vector<char> &fi
         package = Package(PackageNewServerInfo(
             be16toh(*(uint16_t *)buffer_data),
             be32toh(*(uint32_t *)&(buffer_data[ALIGN_VALUE]))));
+        break;
+    case COMMIT_EVENT:
+        package = Package(PackageCommitEvent());
+        break;
+    case TRANSACTION_OK:
+        package = Package(PackageTransactionOK());
         break;
     default:
         return 1;
@@ -535,6 +545,12 @@ void print_package(FILE *fout, bool sending, Package &package, std::vector<char>
     case NEW_SERVER_INFO:
         // TODO: Fazer o fprintf de NEW_SERVER_INFO
         // ignorar isso
+        break;
+    case COMMIT_EVENT:
+        fprintf(fout, "Package(COMMIT_EVENT");
+        break;
+    case TRANSACTION_OK:
+        fprintf(fout, "Package(TRANSACTION_OK");
         break;
     default:
         fprintf(fout, "Package(UNKOWN[0x%02x]", (uint8_t)package.package_type);

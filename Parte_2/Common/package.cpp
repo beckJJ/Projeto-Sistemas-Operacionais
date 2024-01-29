@@ -95,6 +95,11 @@ PackageReplicaManagerElectionCoordinator::PackageReplicaManagerElectionCoordinat
 PackageNewServerInfo::PackageNewServerInfo(uint16_t port, uint32_t host) 
     : port(port), host(host) {}
 
+PackageCommitEvent::PackageCommitEvent() {}
+
+PackageTransactionOK::PackageTransactionOK() {}
+
+
 PackageSpecific::PackageSpecific() {}
 
 PackageSpecific::PackageSpecific(PackageUserIdentification userIdentification)
@@ -156,6 +161,12 @@ PackageSpecific::PackageSpecific(PackageReplicaManagerElectionCoordinator replic
 
 PackageSpecific::PackageSpecific(PackageNewServerInfo newServerInfo)
     : newServerInfo(newServerInfo) {}
+
+PackageSpecific::PackageSpecific(PackageCommitEvent commitEvent)
+    : commitEvent(commitEvent) {}
+
+PackageSpecific::PackageSpecific(PackageTransactionOK transactionOK)
+    : transactionOK(transactionOK) {}
 
 PackageSpecific::~PackageSpecific() {}
 
@@ -227,6 +238,12 @@ Package::Package(const Package &&rhs)
         break;
     case NEW_SERVER_INFO:
         package_specific.newServerInfo = std::move(rhs.package_specific.newServerInfo);
+        break;
+    case COMMIT_EVENT:
+        package_specific.commitEvent = std::move(rhs.package_specific.commitEvent);
+        break;
+    case TRANSACTION_OK:
+        package_specific.transactionOK = std::move(rhs.package_specific.transactionOK);
         break;
     default:
         throw std::invalid_argument("Unknown package_type.");
@@ -304,6 +321,12 @@ Package &Package::operator=(const Package &rhs)
     case NEW_SERVER_INFO:
         package_specific.newServerInfo = rhs.package_specific.newServerInfo;
         break;
+    case COMMIT_EVENT:
+        package_specific.commitEvent = rhs.package_specific.commitEvent;
+        break;
+    case TRANSACTION_OK:
+        package_specific.transactionOK = rhs.package_specific.transactionOK;
+        break;
     default:
         throw std::invalid_argument("Unknown package_type.");
     }
@@ -371,6 +394,12 @@ Package::Package(PackageReplicaManagerElectionCoordinator replicaManagerElection
 Package::Package(PackageNewServerInfo newServerInfo)
     : package_type(NEW_SERVER_INFO), package_specific(newServerInfo) {}
 
+Package::Package(PackageCommitEvent commitEvent)
+    : package_type(COMMIT_EVENT), package_specific(commitEvent) {}
+
+Package::Package(PackageTransactionOK transactionOK)
+    : package_type(TRANSACTION_OK), package_specific(transactionOK) {}
+
 // Conversão de Package de representação local para be
 void Package::htobe(void)
 {
@@ -389,6 +418,8 @@ void Package::htobe(void)
     case REPLICA_MANAGER_ELECTION_ELECTION:
     case REPLICA_MANAGER_ELECTION_ANSWER:
     case REPLICA_MANAGER_ELECTION_COORDINATOR:
+    case COMMIT_EVENT:
+    case TRANSACTION_OK:
     case FILE_NOT_FOUND:
         break;
     case INITIAL_USER_IDENTIFICATION:
@@ -450,6 +481,8 @@ void Package::betoh(void)
     case REPLICA_MANAGER_ELECTION_ANSWER:
     case REPLICA_MANAGER_ELECTION_COORDINATOR:
     case FILE_NOT_FOUND:
+    case COMMIT_EVENT:
+    case TRANSACTION_OK:
         break;
     case INITIAL_USER_IDENTIFICATION:
         package_specific.userIdentification.listen_port = be16toh(package_specific.userIdentification.listen_port);
